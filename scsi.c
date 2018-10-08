@@ -10,6 +10,7 @@
 #include "queue.h"
 #include "debug.h"
 #include "api/syscall.h"
+#include "ipc_proto.h"
 
 #define assert(val) if (!(val)) { while (1) ; };
 
@@ -17,6 +18,9 @@
 
 #define MAX_SCSI_CMD_QUEUE_SIZE 10
 struct queue *scsi_cmd_queue = NULL;
+
+volatile uint8_t id_data_source = 0;
+volatile uint8_t id_data_sink = 0;
 
 typedef struct {
 	uint32_t rw_count;
@@ -172,13 +176,32 @@ void mockup_scsi_write10_data(void){
 	unsigned int i;
 	unsigned int sz = (size < buflen) ? size : buflen;
 	unsigned int num = size / sz;
+    struct dataplane_command dataplane_command_wr = { 0 };
+    struct dataplane_command dataplane_command_ack = { 0 };
+    dataplane_command_wr.magic = DATA_WR_DMA_REQ;
+    dataplane_command_wr.sector_address = current_cmd->rw_addr / BLOCK_SIZE;
+    dataplane_command_wr.num_sectors = sz / BLOCK_SIZE;
+    uint8_t sinker = 0;
+    logsize_t ipcsize = sizeof(struct dataplane_command);
 
-#if 0
-debug_log("==> mockup_scsi_write10_data 0x%x %d\n", addr, size);
-debug_log("==> num = %d, sz = %d\n", num, sz);
+#if 1
+printf("==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw_addr, size);
+printf("==> num = %d, sz = %d\n", num, sz);
 #endif
 	for(i = 0; i < num; i++){
 		scsi_get_data(global_buff, sz);
+
+        // ipc_dma_request to cryp
+        sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
+        do {
+           sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
+        } while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
+        if (dataplane_command_ack.magic != DATA_WR_DMA_ACK) {
+          printf("dma request to sinker didn't received acknowledge\n");
+        }
+
+        dataplane_command_wr.sector_address += sz / BLOCK_SIZE;
+
 	}
         /* Fractional residue */
         if(((num * sz) != size) && (size > (num * sz))){
@@ -186,7 +209,19 @@ debug_log("==> num = %d, sz = %d\n", num, sz);
 dbg_log("==> Fractional residue = %d\n", size - (num * sz));
 dbg_flush();
 #endif
+                // TODO: assert that size - (num * sz) *must* be a sector multiple
                 scsi_get_data(global_buff, size - (num * sz));
+
+                dataplane_command_wr.num_sectors = (size - (num * sz)) / BLOCK_SIZE;
+                // ipc_dma_request to cryp (residual content)
+                sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
+                do {
+                    sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
+                } while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
+                if (dataplane_command_ack.magic != DATA_WR_DMA_ACK) {
+                    printf("dma request to sinker didn't received acknowledge\n");
+                }
+
         }
 }
 
@@ -568,8 +603,10 @@ void scsi_init(void)
 /*
  * Main USB SCSI loop
  */
-void scsi_state_machine(void)
+void scsi_state_machine(uint8_t sink, uint8_t source)
 {
+    id_data_sink = sink;
+    id_data_source = source;
 	while(1){
 		/* Our loop simply waits for commands to execute them */
 		scsi_execute_cmd();

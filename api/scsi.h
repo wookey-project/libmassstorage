@@ -31,7 +31,11 @@ void scsi_init(void);
 void scsi_send_data(void *data, uint32_t size);
 void scsi_get_data(void *buffer, uint32_t size);
 
-void scsi_state_machine(void);
+/*
+ * id_data_sink: the target task of the usb data content (write mode)
+ * id_data_source: the source of the usb data content (read mode)
+ */
+void scsi_state_machine(uint8_t id_data_sink, uint8_t id_data_source);
 
 int scsi_is_ready_for_data(void);
 void scsi_send_status(void);
