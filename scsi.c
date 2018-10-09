@@ -181,10 +181,10 @@ void mockup_scsi_write10_data(void){
     dataplane_command_wr.magic = DATA_WR_DMA_REQ;
     dataplane_command_wr.sector_address = current_cmd->rw_addr / BLOCK_SIZE;
     dataplane_command_wr.num_sectors = sz / BLOCK_SIZE;
-    uint8_t sinker = 0;
+    uint8_t sinker = id_data_sink;
     logsize_t ipcsize = sizeof(struct dataplane_command);
 
-#if 1
+#if 0
 printf("==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw_addr, size);
 printf("==> num = %d, sz = %d\n", num, sz);
 #endif
@@ -193,9 +193,11 @@ printf("==> num = %d, sz = %d\n", num, sz);
 
         // ipc_dma_request to cryp
         sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
-        do {
+        //do {
+           sinker = id_data_sink;
+           ipcsize = sizeof(struct dataplane_command);
            sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
-        } while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
+        //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
         if (dataplane_command_ack.magic != DATA_WR_DMA_ACK) {
           printf("dma request to sinker didn't received acknowledge\n");
         }
@@ -215,9 +217,11 @@ dbg_flush();
                 dataplane_command_wr.num_sectors = (size - (num * sz)) / BLOCK_SIZE;
                 // ipc_dma_request to cryp (residual content)
                 sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
-                do {
+                //do {
+                    sinker = id_data_sink;
+                    ipcsize = sizeof(struct dataplane_command);
                     sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
-                } while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
+                //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
                 if (dataplane_command_ack.magic != DATA_WR_DMA_ACK) {
                     printf("dma request to sinker didn't received acknowledge\n");
                 }
@@ -535,7 +539,6 @@ static void scsi_execute_cmd(void)
 		printf("Error: failed exiting critical section!\n");
 	}
 #endif
-        //printf("CMD = %d\n", current_cmd->cmd);
 	switch (current_cmd->cmd) {
 	case SCSI_CMD_INQUIRY:
 		scsi_cmd_inquiry();
