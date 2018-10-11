@@ -184,17 +184,17 @@ void mockup_scsi_write10_data(void){
     uint8_t sinker = id_data_sink;
     logsize_t ipcsize = sizeof(struct dataplane_command);
 
-#if 0
-printf("==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw_addr, size);
-printf("==> num = %d, sz = %d\n", num, sz);
+#if 1
+printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw_addr, size);
+printf("!!!!!!!!!!!!!!! ==> num = %d, sz = %d\n", num, sz);
 #endif
 	for(i = 0; i < num; i++) {
 		scsi_get_data(global_buff, sz);
 
         // FIXME memcpy(global_buff, "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17\x2a\xae\x2d\x8a\x57\x1e\x03\xac\x9c\x9e\xb7\x6f\xac\x45\xaf\x8e\x51\x30\xc8\x1c\x46\xa3\x5c\xe4\x11\xe5\xfb\xc1\x19\x1a\x0a\x52\xef\xf6\x9f\x24\x45\xdf\x4f\x9b\x17\xad\x2b\x41\x7b\xe6\x6c\x37\x10", 64);
         // FIXME
-        printf("dumping usb buf after reception\n");
-        hexdump(global_buff, 16);
+printf("dumping usb buf after reception, %x\n", global_buff[0x1b0]);
+        //hexdump(global_buff, 512);
 
         // ipc_dma_request to cryp
         sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
@@ -212,9 +212,8 @@ printf("==> num = %d, sz = %d\n", num, sz);
 	}
     /* Fractional residue */
     if(((num * sz) != size) && (size > (num * sz))){
-#if 0
-        dbg_log("==> Fractional residue = %d\n", size - (num * sz));
-        dbg_flush();
+#if 1
+        printf("==> Fractional residue = %d\n", size - (num * sz));
 #endif
         // TODO: assert that size - (num * sz) *must* be a sector multiple
         scsi_get_data(global_buff, size - (num * sz));
@@ -253,7 +252,7 @@ void mockup_scsi_read10_data(void){
     logsize_t ipcsize = sizeof(struct dataplane_command);
 
 
-#if 0
+#if 1
 printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_address, size);
 printf("==> num = %d, sz = %d\n", num, sz);
 #endif
@@ -272,15 +271,14 @@ printf("==> num = %d, sz = %d\n", num, sz);
 
         dataplane_command_rd.sector_address += sz / BLOCK_SIZE;
 
-        printf("dumping USB buf\n");
-        hexdump(global_buff, 16);
+//        printf("dumping USB buf\n");
+//        hexdump(global_buff, 16);
 		scsi_send_data(global_buff, sz);
 	}
     /* Fractional residue */
     if(((num * sz) != size) && (size > (num * sz))) {
-#if 0
-        dbg_log("==> Fractional residue = %d\n", size - (num * sz));
-        dbg_flush();
+#if 1
+        printf("==> Fractional residue = %d\n", size - (num * sz));
 #endif
         dataplane_command_rd.num_sectors = (size - (num * sz)) / BLOCK_SIZE;
         // ipc_dma_request to cryp (residual content)
@@ -294,8 +292,8 @@ printf("==> num = %d, sz = %d\n", num, sz);
             printf("dma request to sinker didn't received acknowledge\n");
         }
 
-        printf("dumping USB buf\n");
-        hexdump(global_buff, 16);
+//        printf("dumping USB buf\n");
+//        hexdump(global_buff, 16);
         scsi_send_data(global_buff, size - (num * sz));
     }
 }
@@ -609,7 +607,7 @@ static void scsi_execute_cmd(void)
 		mockup_scsi_write10_data();
 		break;
 	default:
-#if 0
+#if 1
 		debug_log("[SCSI] Unsupported command %x\n", current_cmd->cmd);
 #endif
 		last_error = SCSI_ERROR_INVALID_COMMAND;
