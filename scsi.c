@@ -14,12 +14,15 @@
 
 #define assert(val) if (!(val)) { while (1) ; };
 
-#define SCSI_DEBUG 1
+#define SCSI_DEBUG 0
 
 #define BLOCK_SIZE 512
 
 #define MAX_SCSI_CMD_QUEUE_SIZE 10
 struct queue *scsi_cmd_queue = NULL;
+
+// FIXME
+extern uint32_t called;
 
 volatile uint8_t id_data_source = 0;
 volatile uint8_t id_data_sink = 0;
@@ -194,12 +197,15 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
 	for(i = buflen; i <= size; i+= buflen) {
 		scsi_get_data(global_buff, sz);
 
+        while(!scsi_is_ready_for_data_receive()){
+            continue;
+        }
+
         // FIXME memcpy(global_buff, "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17\x2a\xae\x2d\x8a\x57\x1e\x03\xac\x9c\x9e\xb7\x6f\xac\x45\xaf\x8e\x51\x30\xc8\x1c\x46\xa3\x5c\xe4\x11\xe5\xfb\xc1\x19\x1a\x0a\x52\xef\xf6\x9f\x24\x45\xdf\x4f\x9b\x17\xad\x2b\x41\x7b\xe6\x6c\x37\x10", 64);
         // FIXME
 #if SCSI_DEBUG
 printf("dumping usb buf after reception, %x\n", global_buff[0x1b0]);
         //hexdump(global_buff, 512);
-#endif
               for (int i = 0; i < 8192; i+=16) {
                   printf("%x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x \n",
                           global_buff[i+0],
@@ -220,6 +226,7 @@ printf("dumping usb buf after reception, %x\n", global_buff[0x1b0]);
                           global_buff[i+15]);
               }
 
+#endif
 
         // ipc_dma_request to cryp
         sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
@@ -244,6 +251,10 @@ printf("dumping usb buf after reception, %x\n", global_buff[0x1b0]);
 #endif
         // TODO: assert that size - (num * sz) *must* be a sector multiple
         scsi_get_data(global_buff, size - i + buflen);
+
+        while(!scsi_is_ready_for_data_receive()){
+            continue;
+        }
 
 //        sys_sleep(100, SLEEP_MODE_INTERRUPTIBLE); 
 #if 0
@@ -666,7 +677,7 @@ static void scsi_execute_cmd(void)
 		mockup_scsi_write10_data();
 		break;
 	default:
-#if 1
+#if 0
 		debug_log("[SCSI] Unsupported command %x\n", current_cmd->cmd);
 #endif
 		last_error = SCSI_ERROR_INVALID_COMMAND;
