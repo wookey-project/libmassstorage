@@ -201,33 +201,6 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
             continue;
         }
 
-        // FIXME memcpy(global_buff, "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17\x2a\xae\x2d\x8a\x57\x1e\x03\xac\x9c\x9e\xb7\x6f\xac\x45\xaf\x8e\x51\x30\xc8\x1c\x46\xa3\x5c\xe4\x11\xe5\xfb\xc1\x19\x1a\x0a\x52\xef\xf6\x9f\x24\x45\xdf\x4f\x9b\x17\xad\x2b\x41\x7b\xe6\x6c\x37\x10", 64);
-        // FIXME
-#if SCSI_DEBUG
-printf("dumping usb buf after reception, %x\n", global_buff[0x1b0]);
-        //hexdump(global_buff, 512);
-              for (int i = 0; i < 8192; i+=16) {
-                  printf("%x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x \n",
-                          global_buff[i+0],
-                          global_buff[i+1],
-                          global_buff[i+2],
-                          global_buff[i+3],
-                          global_buff[i+4],
-                          global_buff[i+5],
-                          global_buff[i+6],
-                          global_buff[i+7],
-                          global_buff[i+8],
-                          global_buff[i+9],
-                          global_buff[i+10],
-                          global_buff[i+11],
-                          global_buff[i+12],
-                          global_buff[i+13],
-                          global_buff[i+14],
-                          global_buff[i+15]);
-              }
-
-#endif
-
         // ipc_dma_request to cryp
         sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
         //do {
@@ -245,7 +218,6 @@ printf("dumping usb buf after reception, %x\n", global_buff[0x1b0]);
     /* Fractional residue */
     if ((i - buflen) < size) {
 
-//    if(((num * sz) != size) && (size > (num * sz))){
 #if SCSI_DEBUG
         printf("==> Fractional residue = %d\n", size - i + buflen);
 #endif
@@ -256,38 +228,6 @@ printf("dumping usb buf after reception, %x\n", global_buff[0x1b0]);
             continue;
         }
 
-//        sys_sleep(100, SLEEP_MODE_INTERRUPTIBLE); 
-#if 0
-        {
-            volatile int tamere = 0;
-            volatile int tonpere= size;
-            for (tamere = 0; tamere < 100000; tamere++)
-            {
-               tonpere++; 
-            }
-        }
-              for (int i = 0; i < 8192; i+=16) {
-                  printf("%x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x  %x \n",
-                          global_buff[i+0],
-                          global_buff[i+1],
-                          global_buff[i+2],
-                          global_buff[i+3],
-                          global_buff[i+4],
-                          global_buff[i+5],
-                          global_buff[i+6],
-                          global_buff[i+7],
-                          global_buff[i+8],
-                          global_buff[i+9],
-                          global_buff[i+10],
-                          global_buff[i+11],
-                          global_buff[i+12],
-                          global_buff[i+13],
-                          global_buff[i+14],
-                          global_buff[i+15]);
-              }
-#endif
-
-        //FIXME memcpy(global_buff, "\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17\x2a\xae\x2d\x8a\x57\x1e\x03\xac\x9c\x9e\xb7\x6f\xac\x45\xaf\x8e\x51\x30\xc8\x1c\x46\xa3\x5c\xe4\x11\xe5\xfb\xc1\x19\x1a\x0a\x52\xef\xf6\x9f\x24\x45\xdf\x4f\x9b\x17\xad\x2b\x41\x7b\xe6\x6c\x37\x10", 64);
         dataplane_command_wr.num_sectors = (size - i + buflen) / BLOCK_SIZE;
         // ipc_dma_request to cryp (residual content)
         sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
@@ -307,11 +247,9 @@ void mockup_scsi_read10_data(void){
 	if(current_cmd == NULL){
 		return;
 	}
-	//uint32_t addr = current_cmd->rw_addr;
 	uint32_t size = current_cmd->rw_count;
 	unsigned int i;
 	unsigned int sz = (size < buflen) ? size : buflen;
-	//unsigned int num = size / sz;
     struct dataplane_command dataplane_command_rd = { 0 };
     struct dataplane_command dataplane_command_ack = { 0 };
     dataplane_command_rd.magic = DATA_RD_DMA_REQ;
@@ -323,7 +261,6 @@ void mockup_scsi_read10_data(void){
 
 #if SCSI_DEBUG
 printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_address, size);
-//printf("==> num = %d, sz = %d\n", num, sz);
 #endif
 	for(i = buflen; i <= size; i+= buflen) {
 
@@ -340,13 +277,10 @@ printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_addr
 
         dataplane_command_rd.sector_address += sz / BLOCK_SIZE;
 
-//        printf("dumping USB buf\n");
-//        hexdump(global_buff, 16);
 		scsi_send_data(global_buff, sz);
 	}
     /* Fractional residue */
     if ((i - buflen) < size) {
-    //if(((num * sz) != size) && (size > (num * sz))) {
 #if SCSI_DEBUG
         printf("==> Fractional residue = %d\n", size - i + buflen);
 #endif
@@ -362,8 +296,6 @@ printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_addr
             printf("dma request to sinker didn't received acknowledge\n");
         }
 
-//        printf("dumping USB buf\n");
-//        hexdump(global_buff, 16);
         scsi_send_data(global_buff, size - i + buflen);
     }
 }
