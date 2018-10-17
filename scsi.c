@@ -16,7 +16,7 @@
 
 #define SCSI_DEBUG 0
 
-#define BLOCK_SIZE 512
+uint32_t BLOCK_SIZE  = 512;
 
 #define MAX_SCSI_CMD_QUEUE_SIZE 10
 struct queue *scsi_cmd_queue = NULL;
@@ -366,11 +366,47 @@ static void scsi_cmd_inquiry(void)
 }
 
 
-static uint32_t sd_get_capacity(void){
-	return (1024*1024*1024*1);
+static uint32_t scsi_get_sd_capacity(void){
+    uint8_t sinker = id_data_sink;
+    logsize_t size = sizeof(struct sync_command_data);
+    e_syscall_ret ret;
+    uint32_t block_num = 0;
+    uint32_t block_size = 0;
+    
+    struct sync_command_data ipc_sync_cmd_data = { 0 };
+    ipc_sync_cmd_data.magic = MAGIC_STORAGE_SCSI_BLOCK_NUM_CMD;
+    sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
+
+    ret = sys_ipc(IPC_RECV_SYNC, &sinker, &size, (char*)&ipc_sync_cmd_data);
+    if (ipc_sync_cmd_data.magic == MAGIC_STORAGE_SCSI_BLOCK_NUM_RESP) {
+        block_size = ipc_sync_cmd_data.data.u32[0];
+        block_num = ipc_sync_cmd_data.data.u32[1];
+    } else {
+    // defaulting...
+	  block_num = (19531000); // 10MB with block size of 512
+    }
+    return block_num;
 }
 
-static uint32_t sd_get_block_size(void){
+static uint32_t scsi_get_sd_block_size(void){
+    uint8_t sinker = id_data_sink;
+    logsize_t size = sizeof(struct sync_command_data);
+    e_syscall_ret ret;
+    uint32_t value;
+    
+    struct sync_command_data ipc_sync_cmd_data = { 0 };
+    ipc_sync_cmd_data.magic = MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD;
+    sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
+
+    ret = sys_ipc(IPC_RECV_SYNC, &sinker, &size, (char*)&ipc_sync_cmd_data);
+    if (ipc_sync_cmd_data.magic == MAGIC_STORAGE_SCSI_BLOCK_SIZE_RESP) {
+        BLOCK_SIZE = ipc_sync_cmd_data.data.u32[0];
+        //printf("received block size is %d\n", ipc_sync_cmd_data.data.u32[0]);
+        value = ipc_sync_cmd_data.data.u32[0];
+        return value;
+    }
+    
+    // defaulting...
 	return BLOCK_SIZE;
 }
 
@@ -379,12 +415,12 @@ static void scsi_cmd_read_capacity(uint8_t read)
 	assert(read == 10 || read == 16);
 	uint32_t response[2];
 
-	uint32_t sd_card_size = sd_get_capacity();
-	uint32_t sd_card_block_size = sd_get_block_size();
+	uint32_t sd_card_size = scsi_get_sd_capacity();
+	uint32_t sd_card_block_size = scsi_get_sd_block_size();
 	assert(sd_card_block_size && sd_card_block_size);
 
 	if (read == 10) {
-		response[0] = to_big32(sd_card_size / sd_card_block_size);
+		response[0] = to_big32(sd_card_size);
 		response[1] = to_big32(sd_card_block_size);
 		usb_bbb_send((uint8_t *)response, sizeof(response), 2);
 	} else if (read == 16) {
