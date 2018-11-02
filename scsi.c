@@ -16,7 +16,7 @@
 
 #define SCSI_DEBUG 0
 
-uint32_t BLOCK_SIZE  = 512;
+uint32_t scsi_block_size  = 0;
 
 #define MAX_SCSI_CMD_QUEUE_SIZE 10
 struct queue *scsi_cmd_queue = NULL;
@@ -185,8 +185,8 @@ void mockup_scsi_write10_data(void){
     struct dataplane_command dataplane_command_wr = { 0 };
     struct dataplane_command dataplane_command_ack = { 0 };
     dataplane_command_wr.magic = DATA_WR_DMA_REQ;
-    dataplane_command_wr.sector_address = current_cmd->rw_addr / BLOCK_SIZE;
-    dataplane_command_wr.num_sectors = sz / BLOCK_SIZE;
+    dataplane_command_wr.sector_address = current_cmd->rw_addr / scsi_block_size;
+    dataplane_command_wr.num_sectors = sz / scsi_block_size;
     uint8_t sinker = id_data_sink;
     logsize_t ipcsize = sizeof(struct dataplane_command);
 
@@ -212,7 +212,7 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
           printf("dma request to sinker didn't received acknowledge\n");
         }
 
-        dataplane_command_wr.sector_address += sz / BLOCK_SIZE;
+        dataplane_command_wr.sector_address += sz / scsi_block_size;
 
 	}
     /* Fractional residue */
@@ -228,7 +228,7 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
             continue;
         }
 
-        dataplane_command_wr.num_sectors = (size - i + buflen) / BLOCK_SIZE;
+        dataplane_command_wr.num_sectors = (size - i + buflen) / scsi_block_size;
         // ipc_dma_request to cryp (residual content)
         sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
         //do {
@@ -241,6 +241,9 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
         }
 
     }
+#if SCSI_DEBUG
+    printf("mockup_scsi_write10_data ended\n");
+#endif
 }
 
 void mockup_scsi_read10_data(void){
@@ -253,8 +256,8 @@ void mockup_scsi_read10_data(void){
     struct dataplane_command dataplane_command_rd = { 0 };
     struct dataplane_command dataplane_command_ack = { 0 };
     dataplane_command_rd.magic = DATA_RD_DMA_REQ;
-    dataplane_command_rd.sector_address = current_cmd->rw_addr / BLOCK_SIZE;
-    dataplane_command_rd.num_sectors = sz / BLOCK_SIZE;
+    dataplane_command_rd.sector_address = current_cmd->rw_addr / scsi_block_size;
+    dataplane_command_rd.num_sectors = sz / scsi_block_size;
     uint8_t sinker = id_data_sink;
     logsize_t ipcsize = sizeof(struct dataplane_command);
 
@@ -275,8 +278,7 @@ printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_addr
           printf("dma request to sinker didn't received acknowledge\n");
         }
 
-        dataplane_command_rd.sector_address += sz / BLOCK_SIZE;
-
+        dataplane_command_rd.sector_address += sz / scsi_block_size;
 		scsi_send_data(global_buff, sz);
 	}
     /* Fractional residue */
@@ -284,7 +286,7 @@ printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_addr
 #if SCSI_DEBUG
         printf("==> Fractional residue = %d\n", size - i + buflen);
 #endif
-        dataplane_command_rd.num_sectors = (size - i + buflen) / BLOCK_SIZE;
+        dataplane_command_rd.num_sectors = (size - i + buflen) / scsi_block_size;
         // ipc_dma_request to cryp (residual content)
         sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_rd);
         //do {
@@ -298,6 +300,10 @@ printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_addr
 
         scsi_send_data(global_buff, size - i + buflen);
     }
+#if SCSI_DEBUG
+    printf("mockup_scsi_read10_data ended\n");
+#endif
+
 }
 
 void scsi_send_status(void)
@@ -382,8 +388,10 @@ static uint32_t scsi_get_sd_capacity(void){
         block_size = ipc_sync_cmd_data.data.u32[0];
         block_num = ipc_sync_cmd_data.data.u32[1];
     } else {
-    // defaulting...
-	  block_num = (19531000); // 10MB with block size of 512
+        printf("[USB SCSI] Error: got no block size from lower layers ...\n");
+	while(1){
+		sys_yield();
+	}
     }
     return block_num;
 }
@@ -392,7 +400,6 @@ static uint32_t scsi_get_sd_block_size(void){
     uint8_t sinker = id_data_sink;
     logsize_t size = sizeof(struct sync_command_data);
     e_syscall_ret ret;
-    uint32_t value;
     
     struct sync_command_data ipc_sync_cmd_data = { 0 };
     ipc_sync_cmd_data.magic = MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD;
@@ -400,14 +407,16 @@ static uint32_t scsi_get_sd_block_size(void){
 
     ret = sys_ipc(IPC_RECV_SYNC, &sinker, &size, (char*)&ipc_sync_cmd_data);
     if (ipc_sync_cmd_data.magic == MAGIC_STORAGE_SCSI_BLOCK_SIZE_RESP) {
-        BLOCK_SIZE = ipc_sync_cmd_data.data.u32[0];
+        scsi_block_size = ipc_sync_cmd_data.data.u32[0];
         //printf("received block size is %d\n", ipc_sync_cmd_data.data.u32[0]);
-        value = ipc_sync_cmd_data.data.u32[0];
-        return value;
+        return scsi_block_size;
     }
-    
-    // defaulting...
-	return BLOCK_SIZE;
+    else{
+        printf("[USB SCSI] Error: got no block size from lower layers ...\n");
+	while(1){
+		sys_yield();
+	}
+    }    
 }
 
 static void scsi_cmd_read_capacity(uint8_t read)
@@ -513,72 +522,72 @@ static void scsi_parse_cmd(uint8_t cmd[], uint8_t cmd_len)
 	switch (cmd[0]) {
 	case SCSI_CMD_INQUIRY:
 #if 0
-		debug_log("[SCSI] inquiry\n");
+		printf("[SCSI] inquiry\n");
 #endif
 		break;
 	case SCSI_CMD_MODE_SENSE_6:
 		/* TODO */
 #if 0
-		debug_log("[SCSI] Mode sense 6 not implemented\n");
+		printf("[SCSI] Mode sense 6 not implemented\n");
 #endif
 		last_error = SCSI_ERROR_INVALID_COMMAND;
 		break;
 	case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
 		/* TODO */
 #if 0
-		debug_log("[SCSI] prevent/allow medium removal not implemented\n");
+		printf("[SCSI] prevent/allow medium removal not implemented\n");
 #endif
 		last_error = SCSI_ERROR_INVALID_COMMAND;
 		break;
 	case SCSI_CMD_READ_CAPACITY_10:
 		assert(cmd_len == 10);
 #if 0
-		debug_log("[SCSI] read capacity 10\n");
+		printf("[SCSI] read capacity 10\n");
 #endif
 		break;
 	case SCSI_CMD_REQUEST_SENSE:
 #if 0
-		debug_log("[SCSI] request sense\n");
+		printf("[SCSI] request sense\n");
 #endif
 		break;
 	case SCSI_CMD_TEST_UNIT_READY:
 #if 0
-		debug_log("[SCSI] test unit ready\n");
+		printf("[SCSI] test unit ready\n");
 #endif
 		break;
 	case SCSI_CMD_READ_10:
 		assert(cmd_len == 10);
 #if 0
-		debug_log("[SCSI] read 10\n");
+		printf("[SCSI] read 10\n");
 #endif
 		rw_lba = from_big32(*(uint32_t *)(&cmd[2]));
 		rw_size = from_big16(*(uint16_t *)(&cmd[7]));
-		scsi_c->rw_addr  = BLOCK_SIZE * rw_lba;
-		scsi_c->rw_count = BLOCK_SIZE * rw_size;
+		scsi_c->rw_addr  = scsi_block_size * rw_lba;
+		scsi_c->rw_count = scsi_block_size * rw_size;
 #if 0
 		debug_log("[SCSI] Reading %x bytes (%x * %d) at %x (%x * %d)\n",
-		    scsi_c->rw_count, rw_size, BLOCK_SIZE,
-		    scsi_c->rw_addr, rw_lba, BLOCK_SIZE);
+		    scsi_c->rw_count, rw_size, scsi_block_size,
+		    scsi_c->rw_addr, rw_lba, scsi_block_size);
 #endif
 		break;
 	case SCSI_CMD_WRITE_10:
 		assert(cmd_len == 10);
 #if 0
-		debug_log("[SCSI] write 10\n");
+		printf("[SCSI] write 10\n");
 #endif
 		rw_lba = from_big32(*(uint32_t *)(&cmd[2]));
 		rw_size = from_big16(*(uint16_t *)(&cmd[7]));
-		scsi_c->rw_addr  = BLOCK_SIZE * rw_lba;
-		scsi_c->rw_count = BLOCK_SIZE * rw_size;
+		scsi_c->rw_addr  = scsi_block_size * rw_lba;
+		scsi_c->rw_count = scsi_block_size * rw_size;
 #if 0
 		debug_log("[SCSI] Writing %x bytes (%x * %d) at %x (%x * %d)\n",
-		    scsi_c->rw_count, rw_size, BLOCK_SIZE,
-		    scsi_c->rw_addr, rw_lba, BLOCK_SIZE);
+		    scsi_c->rw_count, rw_size, scsi_block_size,
+		    scsi_c->rw_addr, rw_lba, scsi_block_size);
 #endif
 		break;
 	default:
 #if 0
-		debug_log("[SCSI] Unsupported command %x\n", cmd[0]);
+		printf("[SCSI] Unsupported command %x\n", cmd[0]);
 #endif
 		last_error = SCSI_ERROR_INVALID_COMMAND;
 		ret = wfree((void**)&scsi_c);
@@ -621,32 +630,57 @@ static void scsi_execute_cmd(void)
 #endif
 	switch (current_cmd->cmd) {
 	case SCSI_CMD_INQUIRY:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_INQUIRY\n");
+#endif
 		scsi_cmd_inquiry();
 		break;
+
 	case SCSI_CMD_MODE_SENSE_6:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_MODE_SENSE_6\n");
+#endif
 		scsi_cmd_mode_sense();
 		break;
 	case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL\n");
+#endif
 		scsi_cmd_prevent_allow_medium_removal();
 		break;
 	case SCSI_CMD_READ_CAPACITY_10:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_READ_CAPACITY_10\n");
+#endif
 		scsi_cmd_read_capacity(10);
 		break;
 	case SCSI_CMD_REQUEST_SENSE:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_REQUEST_SENSE\n");
+#endif
 		scsi_cmd_request_sense();
 		break;
 	case SCSI_CMD_TEST_UNIT_READY:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_TEST_UNIT_READY\n");
+#endif
 		scsi_cmd_test_unit_ready();
 		break;
 	case SCSI_CMD_READ_10:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_READ_10\n");
+#endif
 		mockup_scsi_read10_data();
 		break;
 	case SCSI_CMD_WRITE_10:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_WRITE_10\n");
+#endif
 		mockup_scsi_write10_data();
 		break;
 	default:
-#if 0
-		debug_log("[SCSI] Unsupported command %x\n", current_cmd->cmd);
+#if SCSI_DEBUG
+		printf("[SCSI] Unsupported command %x\n", current_cmd->cmd);
 #endif
 		last_error = SCSI_ERROR_INVALID_COMMAND;
 		usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
