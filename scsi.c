@@ -429,8 +429,11 @@ static void scsi_cmd_read_capacity(uint8_t read)
 	assert(sd_card_block_size && sd_card_block_size);
 
 	if (read == 10) {
-		response[0] = to_big32(sd_card_size);
+		response[0] = to_big32(sd_card_size-1);
 		response[1] = to_big32(sd_card_block_size);
+                //what is expected is the _LAST_ LBA address ....
+                // See Working draft SCSI block cmd  5.10.2 READ CAPACITY (10)
+                //
 		usb_bbb_send((uint8_t *)response, sizeof(response), 2);
 	} else if (read == 16) {
 		/* TODO */
