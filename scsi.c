@@ -10,7 +10,7 @@
 #include "queue.h"
 #include "debug.h"
 #include "api/syscall.h"
-#include "ipc_proto.h"
+#include "api/wookey_ipc.h"
 
 #define assert(val) if (!(val)) { while (1) ; };
 
