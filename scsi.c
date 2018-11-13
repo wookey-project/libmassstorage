@@ -184,7 +184,7 @@ void mockup_scsi_write10_data(void){
 
     struct dataplane_command dataplane_command_wr = { 0 };
     struct dataplane_command dataplane_command_ack = { 0 };
-    dataplane_command_wr.magic = DATA_WR_DMA_REQ;
+    dataplane_command_wr.magic = MAGIC_DATA_WR_DMA_REQ;
     dataplane_command_wr.sector_address = current_cmd->rw_addr / scsi_block_size;
     dataplane_command_wr.num_sectors = sz / scsi_block_size;
     uint8_t sinker = id_data_sink;
@@ -208,7 +208,7 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
            ipcsize = sizeof(struct dataplane_command);
            sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
         //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
-        if (dataplane_command_ack.magic != DATA_WR_DMA_ACK) {
+        if (dataplane_command_ack.magic != MAGIC_DATA_WR_DMA_ACK) {
           printf("dma request to sinker didn't received acknowledge\n");
         }
 
@@ -236,7 +236,7 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
         ipcsize = sizeof(struct dataplane_command);
         sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
         //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
-        if (dataplane_command_ack.magic != DATA_WR_DMA_ACK) {
+        if (dataplane_command_ack.magic != MAGIC_DATA_WR_DMA_ACK) {
             printf("dma request to sinker didn't received acknowledge\n");
         }
 
@@ -255,7 +255,7 @@ void mockup_scsi_read10_data(void){
 	unsigned int sz = (size < buflen) ? size : buflen;
     struct dataplane_command dataplane_command_rd = { 0 };
     struct dataplane_command dataplane_command_ack = { 0 };
-    dataplane_command_rd.magic = DATA_RD_DMA_REQ;
+    dataplane_command_rd.magic = MAGIC_DATA_RD_DMA_REQ;
     dataplane_command_rd.sector_address = current_cmd->rw_addr / scsi_block_size;
     dataplane_command_rd.num_sectors = sz / scsi_block_size;
     uint8_t sinker = id_data_sink;
@@ -274,7 +274,7 @@ printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_addr
            ipcsize = sizeof(struct dataplane_command);
            sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
         //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
-        if (dataplane_command_ack.magic != DATA_RD_DMA_ACK) {
+        if (dataplane_command_ack.magic != MAGIC_DATA_RD_DMA_ACK) {
           printf("dma request to sinker didn't received acknowledge\n");
         }
 
@@ -294,7 +294,7 @@ printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_addr
         ipcsize = sizeof(struct dataplane_command);
         sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack);
         //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
-        if (dataplane_command_ack.magic != DATA_RD_DMA_ACK) {
+        if (dataplane_command_ack.magic != MAGIC_DATA_RD_DMA_ACK) {
             printf("dma request to sinker didn't received acknowledge\n");
         }
 
