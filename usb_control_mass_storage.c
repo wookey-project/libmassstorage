@@ -26,12 +26,12 @@ void mass_storage_class_rqst_handler(struct usb_setup_packet *packet)
 	switch (packet->bRequest) {
 	case USB_RQST_GET_MAX_LUN:
 #ifdef CONFIG_USR_DRV_USB_FS
-		usb_driver_send(&max_lun, sizeof(max_lun), USB_FS_DXEPCTL_EP0);
-		usb_driver_read(NULL, 0, USB_FS_DXEPCTL_EP0); //FIXME why this here ?
+		usb_driver_setup_send(&max_lun, sizeof(max_lun), USB_FS_DXEPCTL_EP0);
+		usb_driver_setup_read(NULL, 0, USB_FS_DXEPCTL_EP0); //FIXME why this here ?
 #endif
 #ifdef CONFIG_USR_DRV_USB_HS
-		usb_driver_send(&max_lun, sizeof(max_lun), USB_HS_DXEPCTL_EP0);
-		usb_driver_read(NULL, 0, USB_HS_DXEPCTL_EP0); //FIXME why this here ?
+		usb_driver_setup_send(&max_lun, sizeof(max_lun), USB_HS_DXEPCTL_EP0);
+		usb_driver_setup_read(NULL, 0, USB_HS_DXEPCTL_EP0); //FIXME why this here ?
 #endif
 
 		break;
@@ -45,6 +45,36 @@ void mass_storage_class_rqst_handler(struct usb_setup_packet *packet)
 	}
 }
 
+
+static void mass_storage_mft_string_desc_rqst_handler(uint16_t wLength){
+    uint32_t i;
+    uint32_t len;
+     printf("MFT String, wLength:\n", wLength);
+    usb_string_descriptor_t string_desc;
+
+    if ( wLength == 0 ){
+        usb_driver_setup_send_status(0);
+        usb_driver_setup_read_status();
+        return;
+    }
+
+    string_desc.bDescriptorType = USB_DESC_STRING;
+    len = MSFT100_SIG_SIZE + 4;
+    string_desc.bLength = 0x12;
+    string_desc.bDescriptorType = 0x03;
+    for (i = 0; i < MSFT100_SIG_SIZE; i++)
+        string_desc.wString[i] = MSFT100_SIG[i];
+    string_desc.wString[MSFT100_SIG_SIZE] = 0x05;
+    string_desc.wString[MSFT100_SIG_SIZE + 1] = 0x00;
+
+    if ( wLength > string_desc.bLength){
+        usb_driver_setup_send((uint8_t *)&string_desc, string_desc.bLength, EP0);
+    }else{
+        usb_driver_setup_send((uint8_t *)&string_desc, wLength, EP0);
+    }
+    usb_driver_setup_read_status();
+}
+
 /**
  * \brief Set callback for class_rqst in usb_control
  */
@@ -56,6 +86,8 @@ void mass_storage_init(void)
         	.set_configuration_rqst_handler = NULL,
         	.set_interface_rqst_handler     = NULL,
         	.functional_rqst_handler        = NULL,
+            .mft_string_rqst_handler        = mass_storage_mft_string_desc_rqst_handler,
+
     	};
 
 	usb_ctrl_init(usbmass_usb_ctrl_callbacks, usbmass_device_desc , usbmass_configuration_desc );

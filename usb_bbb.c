@@ -46,7 +46,7 @@ static void read_next_cmd(void)
 {
 	//printf("[USB BBB] Reading a command\n");
 	bbb_state = READY;
-	usb_driver_read(&cbw, sizeof(cbw), 1);
+	usb_driver_setup_read(&cbw, sizeof(cbw), 1);
 }
 
 static void usb_bbb_cmd_received(uint32_t size)
@@ -147,17 +147,17 @@ void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
 	bbb_state = STATUS;
 
 	//printf("[USB BBB] Sending CSW (%x, %x, %x, %x)\n", csw.sig, csw.tag, csw.data_residue, csw.status);
-	usb_driver_send((uint8_t *)&csw, sizeof(csw), 2);
+	usb_driver_setup_send((uint8_t *)&csw, sizeof(csw), 2);
 }
 
 void usb_bbb_send(const uint8_t *src, uint32_t size, uint8_t ep)
 {
 	bbb_state = DATA;
-	usb_driver_send(src, size, ep);
+	usb_driver_setup_send(src, size, ep);
 }
 
 void usb_bbb_read(void *dst, uint32_t size, uint8_t ep)
 {
 	bbb_state = DATA;
-	usb_driver_read(dst, size, ep);
+	usb_driver_setup_read(dst, size, ep);
 }

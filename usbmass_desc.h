@@ -17,6 +17,12 @@
 #define USB_PROTOCOL_BBB          0x50 /* Bulk only */
 
 
+/* Microsoft Vendor Code used for OS Descriptor request */
+static uint8_t MSFT100_SIG[MSFT100_SIG_SIZE] = {
+            0x4D, 0x00, 0x53, 0x00, 0x46, 0x00, 0x54, 0x00,
+            0x31, 0x00, 0x30, 0x00, 0x30, 0x00
+};
+
 
 /**
  * \brief Device descriptor
