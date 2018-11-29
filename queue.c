@@ -1,7 +1,6 @@
 #include "api/malloc.h"
 #include "queue.h"
-//#define assert(val) if (!(val)) { while (1) ; };
-#define assert(val) if (!(val)) { asm("bkpt"); };
+#define assert(val) if (!(val)) { while (1) ; };
 
 static volatile int queue_mutex = 0;
 

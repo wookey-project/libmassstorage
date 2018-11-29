@@ -182,8 +182,16 @@ void mockup_scsi_write10_data(void){
 	unsigned int sz = (size < buflen) ? size : buflen;
 	//unsigned int num = size / sz;
 
-    struct dataplane_command dataplane_command_wr = { 0 };
-    struct dataplane_command dataplane_command_ack = { 0 };
+    struct dataplane_command dataplane_command_wr = {
+        .magic = MAGIC_INVALID,
+        .sector_address = 0,
+        .num_sectors = 0
+    };
+    struct dataplane_command dataplane_command_ack = {
+        .magic = MAGIC_INVALID,
+        .sector_address = 0,
+        .num_sectors = 0
+    };
     dataplane_command_wr.magic = MAGIC_DATA_WR_DMA_REQ;
     dataplane_command_wr.sector_address = current_cmd->rw_addr / scsi_block_size;
     dataplane_command_wr.num_sectors = sz / scsi_block_size;
@@ -253,8 +261,12 @@ void mockup_scsi_read10_data(void){
 	uint32_t size = current_cmd->rw_count;
 	unsigned int i;
 	unsigned int sz = (size < buflen) ? size : buflen;
-    struct dataplane_command dataplane_command_rd = { 0 };
-    struct dataplane_command dataplane_command_ack = { 0 };
+    struct dataplane_command dataplane_command_rd;
+    struct dataplane_command dataplane_command_ack = {
+        .magic = MAGIC_INVALID,
+        .sector_address = 0,
+        .num_sectors = 0
+    };
     dataplane_command_rd.magic = MAGIC_DATA_RD_DMA_REQ;
     dataplane_command_rd.sector_address = current_cmd->rw_addr / scsi_block_size;
     dataplane_command_rd.num_sectors = sz / scsi_block_size;
@@ -379,7 +391,12 @@ static uint32_t scsi_get_sd_capacity(void){
     uint32_t block_num = 0;
     uint32_t block_size = 0;
     
-    struct sync_command_data ipc_sync_cmd_data = { 0 };
+    struct sync_command_data ipc_sync_cmd_data = {
+        .magic = MAGIC_INVALID,
+        .state = SYNC_FAILURE,
+        .data_size = 0,
+        .data.u8 = { 0 }
+    };
     ipc_sync_cmd_data.magic = MAGIC_STORAGE_SCSI_BLOCK_NUM_CMD;
     sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
 
@@ -401,7 +418,12 @@ static uint32_t scsi_get_sd_block_size(void){
     logsize_t size = sizeof(struct sync_command_data);
     e_syscall_ret ret;
     
-    struct sync_command_data ipc_sync_cmd_data = { 0 };
+    struct sync_command_data ipc_sync_cmd_data = {
+        .magic = MAGIC_INVALID,
+        .state = SYNC_FAILURE,
+        .data_size = 0,
+        .data.u8 = { 0 }
+    };
     ipc_sync_cmd_data.magic = MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD;
     sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
 
