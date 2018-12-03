@@ -80,6 +80,7 @@ const usb_ctrl_full_configuration_descriptor_t usbmass_configuration_desc = {
     	.bInterfaceProtocol = USB_PROTOCOL_BBB,
     	.iInterface = 1,
     },
+    .ep = {
 	.ep_in = {
         .bLength = sizeof(usb_ctrl_endpoint_descriptor_t),
         .bDescriptorType = USB_DESC_EP,
@@ -96,6 +97,7 @@ const usb_ctrl_full_configuration_descriptor_t usbmass_configuration_desc = {
         .wMaxPacketSize = MAX_DATA_PACKET_SIZE,
         .bInterval = 0x00,
         },
+    },
 };
 
 
