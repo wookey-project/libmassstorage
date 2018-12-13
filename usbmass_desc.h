@@ -86,7 +86,7 @@ const usb_ctrl_full_configuration_descriptor_t usbmass_configuration_desc = {
         .bDescriptorType = USB_DESC_EP,
         .bEndpointAddress = 0x82,
         .bmAttributes = (USB_EP_TYPE_BULK | USB_EP_ATTR_NO_SYNC | USB_EP_USAGE_DATA),
-        .wMaxPacketSize = MAX_DATA_PACKET_SIZE,
+        .wMaxPacketSize = MAX_DATA_PACKET_SIZE(2),
         .bInterval = 0x00,
         },
 	.ep_out = {
@@ -94,7 +94,7 @@ const usb_ctrl_full_configuration_descriptor_t usbmass_configuration_desc = {
         .bDescriptorType = USB_DESC_EP,
         .bEndpointAddress = 0x1,
         .bmAttributes = (USB_EP_TYPE_BULK | USB_EP_ATTR_NO_SYNC | USB_EP_USAGE_DATA),
-        .wMaxPacketSize = MAX_DATA_PACKET_SIZE,
+        .wMaxPacketSize = MAX_DATA_PACKET_SIZE(1),
         .bInterval = 0x00,
         },
     },
