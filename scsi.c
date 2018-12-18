@@ -27,9 +27,10 @@ extern uint32_t called;
 volatile uint8_t id_data_source = 0;
 volatile uint8_t id_data_sink = 0;
 
-typedef struct {
-	uint32_t rw_count;
-	uint32_t rw_addr;
+typedef struct __attribute__((packed)) {
+    uint16_t garbage; /* FIXME 64bytes aligned due to gcc bug in strd usage */
+	uint64_t rw_count;
+	uint64_t rw_addr;
 	uint8_t cmd;
 } scsi_cmd;
 
@@ -181,11 +182,14 @@ void mockup_scsi_write10_data(void){
 	unsigned int i;
 	unsigned int sz = (size < buflen) ? size : buflen;
 	//unsigned int num = size / sz;
-
     struct dataplane_command dataplane_command_wr = { 0 };
     struct dataplane_command dataplane_command_ack = { 0 };
     dataplane_command_wr.magic = MAGIC_DATA_WR_DMA_REQ;
-    dataplane_command_wr.sector_address = current_cmd->rw_addr / scsi_block_size;
+    uint64_t tmp = current_cmd->rw_addr / (uint64_t)scsi_block_size;
+    if (tmp > 0xffffffff) {
+        printf("PANIC! requested sector address generate int overflow !\n");
+    }
+    dataplane_command_wr.sector_address = (uint32_t)tmp; /* can support up to block size * 2^32 device size */
     dataplane_command_wr.num_sectors = sz / scsi_block_size;
     uint8_t sinker = id_data_sink;
     logsize_t ipcsize = sizeof(struct dataplane_command);
@@ -256,7 +260,13 @@ void mockup_scsi_read10_data(void){
     struct dataplane_command dataplane_command_rd = { 0 };
     struct dataplane_command dataplane_command_ack = { 0 };
     dataplane_command_rd.magic = MAGIC_DATA_RD_DMA_REQ;
-    dataplane_command_rd.sector_address = current_cmd->rw_addr / scsi_block_size;
+
+    uint64_t tmp = current_cmd->rw_addr / (uint64_t)scsi_block_size;
+    if (tmp > 0xffffffff) {
+        printf("PANIC! requested sector address generate int overflow !\n");
+    }
+    dataplane_command_rd.sector_address = (uint32_t)tmp;
+
     dataplane_command_rd.num_sectors = sz / scsi_block_size;
     uint8_t sinker = id_data_sink;
     logsize_t ipcsize = sizeof(struct dataplane_command);
@@ -565,7 +575,7 @@ static void scsi_parse_cmd(uint8_t cmd[], uint8_t cmd_len)
 #endif
 		rw_lba = from_big32(*(uint32_t *)(&cmd[2]));
 		rw_size = from_big16(*(uint16_t *)(&cmd[7]));
-		scsi_c->rw_addr  = scsi_block_size * rw_lba;
+		scsi_c->rw_addr  = (uint64_t)scsi_block_size * (uint64_t)rw_lba;
 		scsi_c->rw_count = scsi_block_size * rw_size;
 #if 0
 		debug_log("[SCSI] Reading %x bytes (%x * %d) at %x (%x * %d)\n",
@@ -580,7 +590,7 @@ static void scsi_parse_cmd(uint8_t cmd[], uint8_t cmd_len)
 #endif
 		rw_lba = from_big32(*(uint32_t *)(&cmd[2]));
 		rw_size = from_big16(*(uint16_t *)(&cmd[7]));
-		scsi_c->rw_addr  = scsi_block_size * rw_lba;
+		scsi_c->rw_addr  = (uint64_t)scsi_block_size * (uint64_t)rw_lba;
 		scsi_c->rw_count = scsi_block_size * rw_size;
 #if 0
 		debug_log("[SCSI] Writing %x bytes (%x * %d) at %x (%x * %d)\n",

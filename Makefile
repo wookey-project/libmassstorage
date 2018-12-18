@@ -19,7 +19,7 @@ CFLAGS += -I$(PROJ_FILES)/libs/debug/api
 CFLAGS += -I$(PROJ_FILES)/libs/wookey # FIXME: scsi.c should not invoke IPC but callbacks instead
 CFLAGS += -I$(PROJ_FILES)/libs/std
 CFLAGS += -I$(PROJ_FILES)/drivers/socs/$(CONFIG_SOCNAME)/usb
-CFLAGS += -MMD -MP -nostdlib -O3
+CFLAGS += -MMD -MP -nostdlib -O0
 
 LDFLAGS += -fno-builtin -nostdlib -nostartfiles
 LD_LIBS += -lg
