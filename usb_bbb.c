@@ -1,6 +1,6 @@
 #include "api/print.h"
 #include "api/regutils.h"
-#include "api/usb.h"
+#include "usb.h"
 #include "usb_bbb.h"
 
 enum bbb_state {

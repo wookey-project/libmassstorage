@@ -4,7 +4,7 @@
 #ifndef _USB_CONTROL_MASS_STORAGE_H
 #define _USB_CONTROL_MASS_STORAGE_H
 
-#include "api/usb_control.h"
+#include "usb_control.h"
 
 void mass_storage_class_rqst_handler(struct usb_setup_packet *packet);
 

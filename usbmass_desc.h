@@ -5,7 +5,7 @@
 #define _USBMASS_DESC_H
 
 #include "autoconf.h"
-#include "api/usb_control.h"
+#include "usb_control.h"
 //#include "usb_device.h"
 
 #define USB_NB_INTERFACE        1

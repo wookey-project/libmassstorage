@@ -5,12 +5,12 @@
 //#include "manager.h"
 #include "api/scsi.h"
 //#include "sd.h"
-#include "api/usb.h"
+#include "usb.h"
 #include "usb_bbb.h"
 #include "queue.h"
 #include "debug.h"
 #include "api/syscall.h"
-#include "api/wookey_ipc.h"
+#include "wookey_ipc.h"
 
 #define assert(val) if (!(val)) { while (1) ; };
 
@@ -37,7 +37,7 @@ typedef struct __attribute__((packed)) {
 static volatile scsi_cmd *current_cmd = NULL;
 
 static volatile uint32_t last_error;
-static volatile int ready_for_data_send = 1; 
+static volatile int ready_for_data_send = 1;
 static volatile int ready_for_data_receive = 1;
 
 uint8_t *global_buff = 0; // FIXME should be the READ buffer
@@ -210,7 +210,7 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
         //do {
            sinker = id_data_sink;
            ipcsize = sizeof(struct dataplane_command);
-           sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
+           sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack);
         //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
         if (dataplane_command_ack.magic != MAGIC_DATA_WR_DMA_ACK) {
           printf("dma request to sinker didn't received acknowledge\n");
@@ -238,7 +238,7 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
         //do {
         sinker = id_data_sink;
         ipcsize = sizeof(struct dataplane_command);
-        sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
+        sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack);
         //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
         if (dataplane_command_ack.magic != MAGIC_DATA_WR_DMA_ACK) {
             printf("dma request to sinker didn't received acknowledge\n");
@@ -282,7 +282,7 @@ printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_addr
         //do {
            sinker = id_data_sink;
            ipcsize = sizeof(struct dataplane_command);
-           sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack); 
+           sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack);
         //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
         if (dataplane_command_ack.magic != MAGIC_DATA_RD_DMA_ACK) {
           printf("dma request to sinker didn't received acknowledge\n");
@@ -388,7 +388,7 @@ static uint32_t scsi_get_sd_capacity(void){
     e_syscall_ret ret;
     uint32_t block_num = 0;
     uint32_t block_size = 0;
-    
+
     struct sync_command_data ipc_sync_cmd_data = { 0 };
     ipc_sync_cmd_data.magic = MAGIC_STORAGE_SCSI_BLOCK_NUM_CMD;
     sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
@@ -410,7 +410,7 @@ static uint32_t scsi_get_sd_block_size(void){
     uint8_t sinker = id_data_sink;
     logsize_t size = sizeof(struct sync_command_data);
     e_syscall_ret ret;
-    
+
     struct sync_command_data ipc_sync_cmd_data = { 0 };
     ipc_sync_cmd_data.magic = MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD;
     sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
@@ -426,7 +426,7 @@ static uint32_t scsi_get_sd_block_size(void){
 	while(1){
 		sys_yield();
 	}
-    }    
+    }
 }
 
 static void scsi_cmd_read_capacity(uint8_t read)
