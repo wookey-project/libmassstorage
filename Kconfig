@@ -5,8 +5,4 @@ config USR_LIB_MASSSTORAGE
   select USR_DRV_USB
   ---help---
   Support for Mass-Storage class feature for USB stack.
-config USR_LIB_MASSSTORAGE_CFLAGS
-  string
-  default " -I../../libs/massstorage/api " if USR_LIB_MASSSTORAGE
-
 
