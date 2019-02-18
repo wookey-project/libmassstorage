@@ -40,6 +40,9 @@ static volatile uint32_t last_error;
 static volatile int ready_for_data_send = 1;
 static volatile int ready_for_data_receive = 1;
 
+static scsi_read_cb  cb_read  = NULL;
+static scsi_write_cb cb_write = NULL;
+
 uint8_t *global_buff = 0; // FIXME should be the READ buffer
 uint16_t buflen = 0;
 //uint8_t global_buff[4096]  = { 0xaa };
@@ -181,22 +184,15 @@ void mockup_scsi_write10_data(void){
 	uint32_t size = current_cmd->rw_count;
 	unsigned int i;
 	unsigned int sz = (size < buflen) ? size : buflen;
-	//unsigned int num = size / sz;
-    struct dataplane_command dataplane_command_wr = { 0 };
-    struct dataplane_command dataplane_command_ack = { 0 };
-    dataplane_command_wr.magic = MAGIC_DATA_WR_DMA_REQ;
+    uint32_t num_sectors;
     uint64_t tmp = current_cmd->rw_addr / (uint64_t)scsi_block_size;
     if (tmp > 0xffffffff) {
         printf("PANIC! requested sector address generate int overflow !\n");
     }
-    dataplane_command_wr.sector_address = (uint32_t)tmp; /* can support up to block size * 2^32 device size */
-    dataplane_command_wr.num_sectors = sz / scsi_block_size;
-    uint8_t sinker = id_data_sink;
-    logsize_t ipcsize = sizeof(struct dataplane_command);
+    num_sectors = sz / scsi_block_size;
 
 #if SCSI_DEBUG
 printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw_addr, size);
-//printf("!!!!!!!!!!!!!!! ==> num = %d, sz = %d\n", num, sz);
 #endif
 	for(i = buflen; i <= size; i+= buflen) {
 		scsi_get_data(global_buff, sz);
@@ -204,20 +200,10 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
         while(!scsi_is_ready_for_data_receive()){
             continue;
         }
-
-        // ipc_dma_request to cryp
-        sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
-        //do {
-           sinker = id_data_sink;
-           ipcsize = sizeof(struct dataplane_command);
-           sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack);
-        //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
-        if (dataplane_command_ack.magic != MAGIC_DATA_WR_DMA_ACK) {
-          printf("dma request to sinker didn't received acknowledge\n");
+        if (cb_write) {
+            cb_write((uint32_t)tmp, num_sectors);
         }
-
-        dataplane_command_wr.sector_address += sz / scsi_block_size;
-
+        tmp += sz / scsi_block_size;
 	}
     /* Fractional residue */
     if ((i - buflen) < size) {
@@ -231,19 +217,10 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
         while(!scsi_is_ready_for_data_receive()){
             continue;
         }
-
-        dataplane_command_wr.num_sectors = (size - i + buflen) / scsi_block_size;
-        // ipc_dma_request to cryp (residual content)
-        sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_wr);
-        //do {
-        sinker = id_data_sink;
-        ipcsize = sizeof(struct dataplane_command);
-        sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack);
-        //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
-        if (dataplane_command_ack.magic != MAGIC_DATA_WR_DMA_ACK) {
-            printf("dma request to sinker didn't received acknowledge\n");
+        num_sectors = (size - i + buflen) / scsi_block_size;
+        if (cb_write) {
+            cb_write((uint32_t)tmp, num_sectors);
         }
-
     }
 #if SCSI_DEBUG
     printf("mockup_scsi_write10_data ended\n");
@@ -257,38 +234,23 @@ void mockup_scsi_read10_data(void){
 	uint32_t size = current_cmd->rw_count;
 	unsigned int i;
 	unsigned int sz = (size < buflen) ? size : buflen;
-    struct dataplane_command dataplane_command_rd = { 0 };
-    struct dataplane_command dataplane_command_ack = { 0 };
-    dataplane_command_rd.magic = MAGIC_DATA_RD_DMA_REQ;
+    uint32_t num_sectors;
 
     uint64_t tmp = current_cmd->rw_addr / (uint64_t)scsi_block_size;
     if (tmp > 0xffffffff) {
         printf("PANIC! requested sector address generate int overflow !\n");
     }
-    dataplane_command_rd.sector_address = (uint32_t)tmp;
-
-    dataplane_command_rd.num_sectors = sz / scsi_block_size;
-    uint8_t sinker = id_data_sink;
-    logsize_t ipcsize = sizeof(struct dataplane_command);
-
+    num_sectors = sz / scsi_block_size;
 
 #if SCSI_DEBUG
 printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_address, size);
 #endif
 	for(i = buflen; i <= size; i+= buflen) {
 
-        // asking for READ request
-        sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_rd);
-        //do {
-           sinker = id_data_sink;
-           ipcsize = sizeof(struct dataplane_command);
-           sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack);
-        //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
-        if (dataplane_command_ack.magic != MAGIC_DATA_RD_DMA_ACK) {
-          printf("dma request to sinker didn't received acknowledge\n");
+        if (cb_read) {
+            cb_read((uint32_t)tmp, num_sectors);
         }
-
-        dataplane_command_rd.sector_address += sz / scsi_block_size;
+        tmp += sz / scsi_block_size;
 		scsi_send_data(global_buff, sz);
 	}
     /* Fractional residue */
@@ -296,18 +258,10 @@ printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_addr
 #if SCSI_DEBUG
         printf("==> Fractional residue = %d\n", size - i + buflen);
 #endif
-        dataplane_command_rd.num_sectors = (size - i + buflen) / scsi_block_size;
-        // ipc_dma_request to cryp (residual content)
-        sys_ipc(IPC_SEND_SYNC, id_data_sink, sizeof(struct dataplane_command), (const char*)&dataplane_command_rd);
-        //do {
-        sinker = id_data_sink;
-        ipcsize = sizeof(struct dataplane_command);
-        sys_ipc(IPC_RECV_SYNC, &sinker, &ipcsize, (char*)&dataplane_command_ack);
-        //} while ((sinker != id_data_sink) || (ipcsize != sizeof(struct dataplane_command)));
-        if (dataplane_command_ack.magic != MAGIC_DATA_RD_DMA_ACK) {
-            printf("dma request to sinker didn't received acknowledge\n");
+        num_sectors = (size - i + buflen) / scsi_block_size;
+        if (cb_read) {
+            cb_read((uint32_t)tmp, num_sectors);
         }
-
         scsi_send_data(global_buff, size - i + buflen);
     }
 #if SCSI_DEBUG
@@ -702,11 +656,19 @@ static void scsi_execute_cmd(void)
 }
 
 
-void scsi_early_init(uint8_t *buf, uint16_t len)
+uint8_t scsi_early_init(uint8_t *buf, uint16_t len, scsi_read_cb read_cb, scsi_write_cb write_cb)
 {
+    if (!read_cb || !write_cb||!buf||len == 0) {
+        return 1;
+    }
     global_buff = buf;
     buflen = len;
+
+    cb_read = read_cb;
+    cb_write = write_cb;
+
 	usb_bbb_early_init(scsi_parse_cmd, scsi_write_data, scsi_data_sent);
+    return 0;
 }
 
 /*

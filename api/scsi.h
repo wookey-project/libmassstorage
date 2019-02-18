@@ -22,10 +22,20 @@
 /**
  * scsi_init - Initialize the USB stack (SCSI, BBB, USB)
  */
+
+/*!
+ * Callbacks that handle upper layer effective read or write request to
+ * local (or remote application) storage access request. This callbacks
+ * must be blocking callbacks while the transaction is not finished yet
+ * (i.e. the data read or data write is not effective).
+ */
+typedef uint8_t (*scsi_read_cb)(uint32_t sector_addr, uint32_t num_sectors);
+typedef uint8_t (*scsi_write_cb)(uint32_t sector_addr, uint32_t num_sectors);
+
 /*
  * Should be two 4096 preallocated sized buffer by now.
  */
-void scsi_early_init(uint8_t*buf, uint16_t buflen);
+uint8_t scsi_early_init(uint8_t*buf, uint16_t buflen, scsi_read_cb read_cb, scsi_write_cb write_cb);
 void scsi_init(void);
 
 void scsi_send_data(void *data, uint32_t size);
