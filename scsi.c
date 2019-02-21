@@ -11,17 +11,20 @@
 #include "usb_bbb.h"
 #include "queue.h"
 #include "debug.h"
+#include "autoconf.h"
 #include "api/syscall.h"
 #include "wookey_ipc.h"
 
 #define assert(val) if (!(val)) { while (1) ; };
 
-#define SCSI_DEBUG 0
+#define SCSI_DEBUG 1
 
 uint32_t scsi_block_size  = 0;
 
 #define MAX_SCSI_CMD_QUEUE_SIZE 10
 struct queue *scsi_cmd_queue = NULL;
+
+
 
 // FIXME
 extern uint32_t called;
@@ -29,12 +32,20 @@ extern uint32_t called;
 volatile uint8_t id_data_source = 0;
 volatile uint8_t id_data_sink = 0;
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed)) { // FIXME Rendre générique pour toute les commande
     uint16_t garbage; /* FIXME 64bytes aligned due to gcc bug in strd usage */
 	uint64_t rw_count;
 	uint64_t rw_addr;
 	uint8_t cmd;
 } scsi_cmd;
+
+typedef struct __attribute__((packed)) {
+    uint16_t garbage; /* FIXME 64bytes aligned due to gcc bug in strd usage */
+	uint64_t rw_count;
+	uint64_t rw_addr;
+	uint8_t cmd;
+} scsi_cdb;
+
 
 static volatile scsi_cmd *current_cmd = NULL;
 
@@ -177,11 +188,11 @@ debug_log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX scsi_write_data %d\n", s
 
 
 
-void mockup_scsi_write10_data(void){
+void mockup_scsi_write_data(uint16_t mode ){
 	if(current_cmd == NULL){
 		return;
 	}
-
+    aprintf("mockup_scsi_write_data: %x\n", mode);
 	//uint32_t addr = current_cmd->rw_addr;
 	uint32_t size = current_cmd->rw_count;
 	unsigned int i;
@@ -229,7 +240,8 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
 #endif
 }
 
-void mockup_scsi_read10_data(void){
+void mockup_scsi_read_data(uint16_t mode){
+    aprintf("mockup_scsi_read_data: %x\n", mode);
 	if(current_cmd == NULL){
 		return;
 	}
@@ -248,7 +260,6 @@ void mockup_scsi_read10_data(void){
 printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_address, size);
 #endif
 	for(i = buflen; i <= size; i+= buflen) {
-
         if (cb_read) {
             cb_read((uint32_t)tmp, num_sectors);
         }
@@ -328,12 +339,12 @@ static void scsi_cmd_inquiry(void)
 	 * standard
 	 */
 	memset((void *)&data, 0, sizeof(data));
-	data.rmb = 1;
-	data.data_format = 2; /* < 2 obsoletes, > 2 reserved */
-	data.additional_len = sizeof(data) - 5;/* (36 - 5) bytes after this one remain */
-	strncpy(data.vendor_info, "ANSSI", sizeof(data.vendor_info));
-	strncpy(data.product_identification, "WooKey", sizeof(data.product_identification));
-	strncpy(data.product_revision, "0.1", sizeof(data.product_revision));
+	data.rmb = 1;                           /* Removable media */
+	data.data_format = 2;                   /* < 2 obsoletes, > 2 reserved */
+	data.additional_len = sizeof(data) - 5; /* (36 - 5) bytes after this one remain */
+	strncpy(data.vendor_info, CONFIG_USB_DEV_MANUFACTURER, sizeof(data.vendor_info));
+	strncpy(data.product_identification, CONFIG_USB_DEV_PRODNAME, sizeof(data.product_identification));
+	strncpy(data.product_revision, CONFIG_USB_DEV_REVISION, sizeof(data.product_revision));
 	usb_bbb_send((uint8_t *)&data, sizeof(data), 2);
 }
 
@@ -407,6 +418,15 @@ static void scsi_cmd_read_capacity(uint8_t read)
 	}
 }
 
+struct  __packed request_sense_cmd {
+    uint8_t operation_code;
+    uint8_t reserved1:7;
+	uint8_t desc:1;
+    uint16_t reserved2;
+    uint8_t allocation_length;
+    uint8_t control;
+};
+
 struct __packed request_sense_data {
 	uint8_t error_code:7;
 	uint8_t info_valid:1;
@@ -425,26 +445,22 @@ struct __packed request_sense_data {
 	uint8_t sense_key_specific[3];
 };
 
-static void scsi_cmd_request_sense(void)
+static void scsi_cmd_request_sense(struct request_sense_cmd cmd __attribute__((unused)))
 {
 
-	struct request_sense_data data;
+    struct request_sense_data data;
 	memset((void *)&data, 0, sizeof(data));
+    //FIXME test the desc bit
 
 	data.error_code = 0x70;
 	data.sense_key = SCSI_ERROR_GET_SENSE_KEY(last_error);
-	//data.additional_sense_length = 0x0a;
+	data.additional_sense_length = 0x0a;
 	data.asc = SCSI_ERROR_GET_ASC(last_error);
 	data.ascq = SCSI_ERROR_GET_ASCQ(last_error);
-
+    //uint8_t data[] = '\x70\x00\xFF\x00\x00\x00\x00\x0A\x00\x00\x00\x00\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x00';
 	usb_bbb_send((uint8_t *)&data, sizeof(data), 2);
 }
 
-static void scsi_cmd_mode_sense(void){
-	last_error = SCSI_ERROR_INVALID_COMMAND;
-	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
-	scsi_release_current_cmd();
-}
 
 static void scsi_cmd_prevent_allow_medium_removal(void){
 	last_error = SCSI_ERROR_INVALID_COMMAND;
@@ -452,7 +468,7 @@ static void scsi_cmd_prevent_allow_medium_removal(void){
 	scsi_release_current_cmd();
 }
 
-static void scsi_cmd_test_unit_ready(){
+static void scsi_cmd_test_unit_ready(void){
 #if 0
 	if (sd_is_ready()) {
 		usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
@@ -469,94 +485,286 @@ static void scsi_cmd_test_unit_ready(){
 
 
 
+/*
+ * The SCSI FORMAT UNIT Command divides the storage media into logical blocks that applications can access.
+ * If the host previously sent a MODE SELECT command, the device should use the number of
+ * blocks and block length specified in that command.
+ * Otherwise the device should use its current number of blocks and block length.
+ */
+static void scsi_cmd_format_unit(void){
+   // FIXME
+}
+
+
+/*
+ * The MODE SELECT (10) Command provides a means for the Host to specify medium or Logical Unit parameters to the
+ * Logical Unit. Hosts should issue a MODE SENSE (10) Command prior to each MODE SELECT (10) Command to
+ * determine supported Pages, Page Lengths, and other parameters.
+ */
+static void scsi_cmd_mode_select(uint16_t mode){
+   //FIXME
+    aprintf("scsi_cmd_mode_select: %d", mode);
+    last_error = SCSI_ERROR_INVALID_COMMAND;
+	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
+	scsi_release_current_cmd();
+}
+
+
+
+static void scsi_cmd_read_format_capacities(void){
+   //FIXME
+    aprintf("scsi_cmd_read_format_capacities: %x\n");
+    last_error = SCSI_ERROR_INVALID_COMMAND;
+	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
+	scsi_release_current_cmd();
+}
+
+
+
+static void scsi_cmd_report_luns(void){
+   //FIXME
+    aprintf("scsi_cmd_report_luns\n");
+    last_error = SCSI_ERROR_INVALID_COMMAND;
+	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
+	scsi_release_current_cmd();
+}
+
+static void scsi_cmd_send_diagnostic(void){
+   //FIXME
+    aprintf("scsi_cmd_send_diagnostic");
+    last_error = SCSI_ERROR_INVALID_COMMAND;
+	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
+	scsi_release_current_cmd();
+}
+
+
+static void scsi_cmd_start_stop_unit(void){
+   //FIXME
+    aprintf("scsi_cmd_start_stop_unit\n");
+    last_error = SCSI_ERROR_INVALID_COMMAND;
+	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
+	scsi_release_current_cmd();
+}
+
+
+static void scsi_cmd_verify_10(void){
+   //FIXME
+    aprintf("scsi_cmd_verify_10\n");
+    last_error = SCSI_ERROR_INVALID_COMMAND;
+	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
+	scsi_release_current_cmd();
+}
+
+
+static void scsi_cmd_synchronize_cache(void){
+   //FIXME
+    aprintf("scsi_cmd_synchronize_cache\n");
+    last_error = SCSI_ERROR_INVALID_COMMAND;
+	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
+	scsi_release_current_cmd();
+}
+
+
+static void scsi_cmd_read_toc(void){
+   //FIXME
+    aprintf("scsi_cmd_read_toc\n");
+    last_error = SCSI_ERROR_INVALID_COMMAND;
+	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
+	scsi_release_current_cmd();
+}
+
+
+/*
+ * The MODE SENSE (10) Command provides a means for a Logical Unit to report parameters to the Host. It is a
+ * complementary Command to the MODE SELECT (10) Command.
+ */
+static void scsi_cmd_mode_sense(uint16_t mode){
+   //FIXME
+    aprintf("scsi_cmd_mode_sense: %x\n", mode);
+	last_error = SCSI_ERROR_INVALID_COMMAND;
+	usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
+	scsi_release_current_cmd();
+}
+
 static volatile unsigned int scsi_cmd_queue_empty = 1;
 /* NB: this function is executed in a handler context when a
  * command comes from USB.
  */
-static void scsi_parse_cmd(uint8_t cmd[], uint8_t cmd_len)
+static void scsi_parse_cmd(uint8_t cdb[], uint8_t cdb_len)
 {
 	uint32_t rw_lba;
 	uint16_t rw_size;
 	scsi_cmd *scsi_c;
+	    struct request_sense_cmd sense_cmd;
 	int ret;
+
+    // FIXME We must handle CDB6 CDB10 CDB12 CDB16
+
+
     // FIXME malloc return to check
     ret = wmalloc((void**)&scsi_c, sizeof(scsi_cmd), ALLOC_NORMAL);
     if(ret){
         while(1){};
     }
 
-	scsi_c->cmd = cmd[0];
+	scsi_c->cmd = cdb[0];
 	scsi_c->rw_addr = scsi_c->rw_count = 0;
 
-	switch (cmd[0]) {
+	switch (cdb[0]) {
+    case SCSI_CMD_FORMAT_UNIT:
+        break;
 	case SCSI_CMD_INQUIRY:
-#if 0
-		printf("[SCSI] inquiry\n");
-#endif
 		break;
-	case SCSI_CMD_MODE_SENSE_6:
-		/* TODO */
-#if 0
-		printf("[SCSI] Mode sense 6 not implemented\n");
-#endif
+    case SCSI_CMD_MODE_SELECT_6:                //FIXME
+        last_error = SCSI_ERROR_INVALID_COMMAND;
+        break;
+    case SCSI_CMD_MODE_SELECT_10:               //FIXME
+        last_error = SCSI_ERROR_INVALID_COMMAND;
+        break;
+	case SCSI_CMD_MODE_SENSE_6:                 //FIXME
 		last_error = SCSI_ERROR_INVALID_COMMAND;
 		break;
-	case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
-		/* TODO */
-#if 0
-		printf("[SCSI] prevent/allow medium removal not implemented\n");
-#endif
+	case SCSI_CMD_MODE_SENSE_10:                //FIXME
 		last_error = SCSI_ERROR_INVALID_COMMAND;
 		break;
-	case SCSI_CMD_READ_CAPACITY_10:
-		assert(cmd_len == 10);
-#if 0
-		printf("[SCSI] read capacity 10\n");
-#endif
+	case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL: //FIXME
+		last_error = SCSI_ERROR_INVALID_COMMAND;
 		break;
-	case SCSI_CMD_REQUEST_SENSE:
-#if 0
-		printf("[SCSI] request sense\n");
-#endif
-		break;
-	case SCSI_CMD_TEST_UNIT_READY:
-#if 0
-		printf("[SCSI] test unit ready\n");
-#endif
-		break;
-	case SCSI_CMD_READ_10:
-		assert(cmd_len == 10);
-#if 0
-		printf("[SCSI] read 10\n");
-#endif
-		rw_lba = from_big32(*(uint32_t *)(&cmd[2]));
-		rw_size = from_big16(*(uint16_t *)(&cmd[7]));
+	case SCSI_CMD_READ_6:
+		assert(cdb_len == 6);
+		rw_lba = from_big32(*(uint32_t *)(&cdb[2]));
+		rw_size = from_big16(*(uint16_t *)(&cdb[7]));
 		scsi_c->rw_addr  = (uint64_t)scsi_block_size * (uint64_t)rw_lba;
 		scsi_c->rw_count = scsi_block_size * rw_size;
 #if 0
-		debug_log("[SCSI] Reading %x bytes (%x * %d) at %x (%x * %d)\n",
+		aprintf("[SCSI] Reading %x bytes (%x * %d) at %x (%x * %d)\n",
+		    scsi_c->rw_count, rw_size, scsi_block_size,
+		    scsi_c->rw_addr, rw_lba, scsi_block_size);
+#endif
+        break;
+	case SCSI_CMD_READ_10:
+		assert(cdb_len == 10);
+#if 0
+		aprintf("[SCSI] read 10\n");
+#endif
+		rw_lba = from_big32(*(uint32_t *)(&cdb[2]));
+		rw_size = from_big16(*(uint16_t *)(&cdb[7]));
+		scsi_c->rw_addr  = (uint64_t)scsi_block_size * (uint64_t)rw_lba;
+		scsi_c->rw_count = scsi_block_size * rw_size;
+#if 0
+		aprintf("[SCSI] Reading %x bytes (%x * %d) at %x (%x * %d)\n",
+		    scsi_c->rw_count, rw_size, scsi_block_size,
+		    scsi_c->rw_addr, rw_lba, scsi_block_size);
+#endif
+        break;
+	case SCSI_CMD_READ_12:
+		assert(cdb_len == 12);
+#if 0
+		aprintf("[SCSI] read 10\n");
+#endif
+		rw_lba = from_big32(*(uint32_t *)(&cdb[2]));
+		rw_size = from_big16(*(uint16_t *)(&cdb[7]));
+		scsi_c->rw_addr  = (uint64_t)scsi_block_size * (uint64_t)rw_lba;
+		scsi_c->rw_count = scsi_block_size * rw_size;
+#if 0
+		aprintf("[SCSI] Reading %x bytes (%x * %d) at %x (%x * %d)\n",
+		    scsi_c->rw_count, rw_size, scsi_block_size,
+		    scsi_c->rw_addr, rw_lba, scsi_block_size);
+#endif
+        break;
+	case SCSI_CMD_READ_CAPACITY_10:
+		assert(cdb_len == 10);
+		break;
+    case  SCSI_CMD_READ_FORMAT_CAPACITIES:  //FIXME
+		last_error = SCSI_ERROR_INVALID_COMMAND;
+        break;
+    case  SCSI_CMD_READ_TOC:                //FIXME
+		last_error = SCSI_ERROR_INVALID_COMMAND;
+        break;
+    case  SCSI_CMD_REPORT_LUNS:             //FIXME
+		last_error = SCSI_ERROR_INVALID_COMMAND;
+        break;
+
+	case SCSI_CMD_REQUEST_SENSE:            //FIXME
+        if ((cdb_len-1) == sizeof(sense_cmd)){
+	        memcpy((void *)&sense_cmd, (void *)&cdb[1], sizeof(sense_cmd));
+            //print_request_sense(&sense_cmd);
+        }
+        else{
+		    last_error = SCSI_ERROR_INVALID_COMMAND;
+        }
+        break;
+
+    case  SCSI_CMD_START_STOP_UNIT:         //FIXME
+		last_error = SCSI_ERROR_INVALID_COMMAND;
+        break;
+
+    case  SCSI_CMD_SYNCHRONIZE_CACHE_10:    //FIXME
+		last_error = SCSI_ERROR_INVALID_COMMAND;
+        break;
+
+    case SCSI_CMD_VERIFY_10:                //FIXME
+		last_error = SCSI_ERROR_INVALID_COMMAND;
+        break;
+
+    case  SCSI_CMD_SEND_DIAGNOSTIC:         //FIXME
+		last_error = SCSI_ERROR_INVALID_COMMAND;
+        break;
+
+
+	case SCSI_CMD_TEST_UNIT_READY:
+		break;
+
+	case SCSI_CMD_WRITE_6:
+		assert(cdb_len == 6);
+#if 0
+		aprintf("[SCSI] write 10\n");
+#endif
+		rw_lba = from_big32(*(uint32_t *)(&cdb[2]));
+		rw_size = from_big16(*(uint16_t *)(&cdb[7]));
+		scsi_c->rw_addr  = (uint64_t)scsi_block_size * (uint64_t)rw_lba;
+		scsi_c->rw_count = scsi_block_size * rw_size;
+#if 0
+		aprintf("[SCSI] Writing %x bytes (%x * %d) at %x (%x * %d)\n",
 		    scsi_c->rw_count, rw_size, scsi_block_size,
 		    scsi_c->rw_addr, rw_lba, scsi_block_size);
 #endif
 		break;
 	case SCSI_CMD_WRITE_10:
-		assert(cmd_len == 10);
+		assert(cdb_len == 10);
 #if 0
-		printf("[SCSI] write 10\n");
+		aprintf("[SCSI] write 10\n");
 #endif
-		rw_lba = from_big32(*(uint32_t *)(&cmd[2]));
-		rw_size = from_big16(*(uint16_t *)(&cmd[7]));
+		rw_lba = from_big32(*(uint32_t *)(&cdb[2]));
+		rw_size = from_big16(*(uint16_t *)(&cdb[7]));
 		scsi_c->rw_addr  = (uint64_t)scsi_block_size * (uint64_t)rw_lba;
 		scsi_c->rw_count = scsi_block_size * rw_size;
 #if 0
-		debug_log("[SCSI] Writing %x bytes (%x * %d) at %x (%x * %d)\n",
+		aprintf("[SCSI] Writing %x bytes (%x * %d) at %x (%x * %d)\n",
 		    scsi_c->rw_count, rw_size, scsi_block_size,
 		    scsi_c->rw_addr, rw_lba, scsi_block_size);
 #endif
 		break;
-	default:
+	case SCSI_CMD_WRITE_12:
+		assert(cdb_len == 12);
 #if 0
-		printf("[SCSI] Unsupported command %x\n", cmd[0]);
+		aprintf("[SCSI] write 10\n");
+#endif
+		rw_lba = from_big32(*(uint32_t *)(&cdb[2]));
+		rw_size = from_big16(*(uint16_t *)(&cdb[7]));
+		scsi_c->rw_addr  = (uint64_t)scsi_block_size * (uint64_t)rw_lba;
+		scsi_c->rw_count = scsi_block_size * rw_size;
+#if 0
+		aprintf("[SCSI] Writing %x bytes (%x * %d) at %x (%x * %d)\n",
+		    scsi_c->rw_count, rw_size, scsi_block_size,
+		    scsi_c->rw_addr, rw_lba, scsi_block_size);
+#endif
+		break;
+
+
+	default:
+#if 1
+		aprintf("\033[31m[SCSI] Unsupported command %x\n\033[0m", cdb[0]);
 #endif
 		last_error = SCSI_ERROR_INVALID_COMMAND;
 		ret = wfree((void**)&scsi_c);
@@ -573,6 +781,7 @@ static void scsi_parse_cmd(uint8_t cmd[], uint8_t cmd_len)
 /* TODO: get an additionnal parameter (direction) to add asserts on it */
 static void scsi_execute_cmd(void)
 {
+    struct request_sense_cmd rq_cmd;
 #if 1
 	e_syscall_ret ret = 0;
 #endif
@@ -597,56 +806,167 @@ static void scsi_execute_cmd(void)
 		printf("Error: failed exiting critical section!\n");
 	}
 #endif
+
 	switch (current_cmd->cmd) {
+	case SCSI_CMD_FORMAT_UNIT:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_FORMAT_UNIT\n");
+#endif
+        scsi_cmd_format_unit();
+        break;
 	case SCSI_CMD_INQUIRY:
 #if SCSI_DEBUG
 		printf("[SCSI] SCSI_CMD_INQUIRY\n");
 #endif
 		scsi_cmd_inquiry();
 		break;
+	case SCSI_CMD_MODE_SELECT_6:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_MODE_SELECT_6\n");
+#endif
+		scsi_cmd_mode_select(SCSI_CMD_MODE_SELECT_6);
+		break;
+	case SCSI_CMD_MODE_SELECT_10:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_MODE_SELECT_10\n");
+#endif
+		scsi_cmd_mode_select(SCSI_CMD_MODE_SELECT_10);
+		break;
 
 	case SCSI_CMD_MODE_SENSE_6:
 #if SCSI_DEBUG
 		printf("[SCSI] SCSI_CMD_MODE_SENSE_6\n");
 #endif
-		scsi_cmd_mode_sense();
+		scsi_cmd_mode_sense(SCSI_CMD_MODE_SENSE_6);
 		break;
+	case SCSI_CMD_MODE_SENSE_10:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_MODE_SENSE_10\n");
+#endif
+		scsi_cmd_mode_sense(SCSI_CMD_MODE_SENSE_10);
+		break;
+
 	case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
 #if SCSI_DEBUG
 		printf("[SCSI] SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL\n");
 #endif
 		scsi_cmd_prevent_allow_medium_removal();
 		break;
+
+	case SCSI_CMD_READ_6:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_READ_6\n");
+#endif
+		mockup_scsi_read_data(SCSI_CMD_READ_6);
+		break;
+
+	case SCSI_CMD_READ_10:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_READ_10\n");
+#endif
+		mockup_scsi_read_data(SCSI_CMD_READ_10);
+		break;
+
+	case SCSI_CMD_READ_12:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_READ_12\n");
+#endif
+		mockup_scsi_read_data(SCSI_CMD_READ_12);
+		break;
+
+
 	case SCSI_CMD_READ_CAPACITY_10:
 #if SCSI_DEBUG
 		printf("[SCSI] SCSI_CMD_READ_CAPACITY_10\n");
 #endif
 		scsi_cmd_read_capacity(10);
 		break;
+
+	case SCSI_CMD_READ_FORMAT_CAPACITIES:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_READ_FORMAT_CAPACITIES\n");
+#endif
+		scsi_cmd_read_format_capacities();
+		break;
+
+	case SCSI_CMD_READ_TOC:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_READ_TOC\n");
+#endif
+		scsi_cmd_read_toc();
+		break;
+
+	case SCSI_CMD_REPORT_LUNS:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_REPORT_LUNS\n");
+#endif
+		scsi_cmd_report_luns();
+		break;
+
 	case SCSI_CMD_REQUEST_SENSE:
 #if SCSI_DEBUG
 		printf("[SCSI] SCSI_CMD_REQUEST_SENSE\n");
 #endif
-		scsi_cmd_request_sense();
+		scsi_cmd_request_sense(rq_cmd); //FIXME
 		break;
+
+	case SCSI_CMD_SEND_DIAGNOSTIC:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_SEND_DIAGNOSTIC\n");
+#endif
+		scsi_cmd_send_diagnostic();
+		break;
+
+	case SCSI_CMD_START_STOP_UNIT:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_START_STOP_UNIT\n");
+#endif
+		scsi_cmd_start_stop_unit();
+		break;
+
+	case SCSI_CMD_SYNCHRONIZE_CACHE_10:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_SYNCHRONIZE_CACHE_10\n");
+#endif
+		scsi_cmd_synchronize_cache();
+		break;
+
+
 	case SCSI_CMD_TEST_UNIT_READY:
 #if SCSI_DEBUG
 		printf("[SCSI] SCSI_CMD_TEST_UNIT_READY\n");
 #endif
 		scsi_cmd_test_unit_ready();
 		break;
-	case SCSI_CMD_READ_10:
+
+	case SCSI_CMD_VERIFY_10:
 #if SCSI_DEBUG
-		printf("[SCSI] SCSI_CMD_READ_10\n");
+		printf("[SCSI] SCSI_CMD_VERIFY_10\n");
 #endif
-		mockup_scsi_read10_data();
+		scsi_cmd_verify_10();
 		break;
+
+	case SCSI_CMD_WRITE_6:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_WRITE_6\n");
+#endif
+		mockup_scsi_write_data(SCSI_CMD_WRITE_6);
+		break;
+
 	case SCSI_CMD_WRITE_10:
 #if SCSI_DEBUG
 		printf("[SCSI] SCSI_CMD_WRITE_10\n");
 #endif
-		mockup_scsi_write10_data();
+		mockup_scsi_write_data(SCSI_CMD_WRITE_10);
 		break;
+
+	case SCSI_CMD_WRITE_12:
+#if SCSI_DEBUG
+		printf("[SCSI] SCSI_CMD_WRITE_12\n");
+#endif
+		mockup_scsi_write_data(SCSI_CMD_WRITE_12);
+		break;
+
 	default:
 #if SCSI_DEBUG
 		printf("[SCSI] Unsupported command %x\n", current_cmd->cmd);
@@ -654,6 +974,17 @@ static void scsi_execute_cmd(void)
 		last_error = SCSI_ERROR_INVALID_COMMAND;
 		usb_bbb_send_csw(CSW_STATUS_FAILED, current_cmd->rw_count);
 		scsi_release_current_cmd();
+
+/*
+ResetSenseData();
+ gblSenseData.SenseKey=S_ILLEGAL_REQUEST;
+ gblSenseData.ASC=ASC_INVALID_COMMAND_OPCODE;
+ gblSenseData.ASCQ=ASCQ_INVALID_COMMAND_OPCODE;
+ msd_csw.bCSWStatus=0x01;
+ msd_csw.dCSWDataResidue=0x00;
+*/
+
+
 	};
 }
 
