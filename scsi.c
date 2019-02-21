@@ -16,7 +16,7 @@
 
 #define SCSI_DEBUG 1
 
-#define MAX_SCSI_CMD_QUEUE_SIZE 10
+
 
 static scsi_calbacks_t scsi_cb = {
    .read = NULL,
@@ -199,7 +199,6 @@ static const struct {
 /**********************************************
  * SCSI getters and setters
  *********************************************/
-
 
 static inline scsi_state_t scsi_get_state() {
     return scsi_ctx.state;
@@ -443,8 +442,6 @@ static void scsi_data_sent()
 }
 
 
-
-
 /* NB: this function is executed in a handler context when a
  * command comes from USB.
  */static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)))
@@ -549,6 +546,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
     #if SCSI_DEBUG
         printf("%s: %s\n",__func__, data.product_revision);
     #endif
+
 
 	usb_bbb_send((uint8_t *)&data, sizeof(data), 2);
     return;
@@ -742,7 +740,6 @@ invalid_transition:
     scsi_error(SCSI_ERROR_INVALID_COMMAND);
     return;
 }
-
 
 // FIXME SCSI_CMD_REPORT_LUNS
 static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cdb)
@@ -1016,7 +1013,6 @@ void scsi_exec_automaton(void)
 {
     cdb_t * current_cdb = NULL;
 
-
     enter_critical_section();
 	if(scsi_ctx.queue_empty == 1){
 		return;
@@ -1033,15 +1029,6 @@ void scsi_exec_automaton(void)
 	case SCSI_CMD_INQUIRY:
 		scsi_cmd_inquiry(current_state, current_cdb);
 		break;
-#if 0
-	case SCSI_CMD_MODE_SELECT_10:
-		scsi_cmd_mode_select(current_state, current_cdb);
-		break;
-
-	case SCSI_CMD_MODE_SENSE_10:
-		scsi_cmd_mode_sense(current_state, current_cdb);
-		break;
-#endif
 	case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
 		scsi_cmd_prevent_allow_medium_removal(current_state, current_cdb);
 		break;

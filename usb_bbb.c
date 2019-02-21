@@ -41,7 +41,7 @@ struct __packed scsi_cbw {
 		uint8_t cdb_len:5;
 		uint8_t reserved:3;
 	} cdb_len;
-	uint8_t cdb[16];
+	uint8_t cdb[16]; // FIXME We must handle CDB6 CDB10 CDB12 CDB16 ?
 };
 static struct scsi_cbw cbw;
 # define USB_BBB_CBW_SIG		0x43425355 /* "USBC" */
