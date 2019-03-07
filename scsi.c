@@ -256,9 +256,6 @@ void mockup_scsi_read_data(uint16_t mode){
     }
     num_sectors = sz / scsi_block_size;
 
-#if SCSI_DEBUG
-printf("==> mockup_scsi_read10_data 0x%x %d\n", dataplane_command_rd.sector_address, size);
-#endif
 	for(i = buflen; i <= size; i+= buflen) {
         if (cb_read) {
             cb_read((uint32_t)tmp, num_sectors);
