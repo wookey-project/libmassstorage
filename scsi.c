@@ -241,7 +241,9 @@ printf("!!!!!!!!!!!!!!! ==> mockup_scsi_write10_data 0x%x %d\n", current_cmd->rw
 }
 
 void mockup_scsi_read_data(uint16_t mode){
+#if 1
     aprintf("mockup_scsi_read_data: %x\n", mode);
+#endif
 	if(current_cmd == NULL){
 		return;
 	}
@@ -339,9 +341,13 @@ static void scsi_cmd_inquiry(void)
 	data.rmb = 1;                           /* Removable media */
 	data.data_format = 2;                   /* < 2 obsoletes, > 2 reserved */
 	data.additional_len = sizeof(data) - 5; /* (36 - 5) bytes after this one remain */
-	strncpy(data.vendor_info, CONFIG_USB_DEV_MANUFACTURER, sizeof(data.vendor_info));
-	strncpy(data.product_identification, CONFIG_USB_DEV_PRODNAME, sizeof(data.product_identification));
-	strncpy(data.product_revision, CONFIG_USB_DEV_REVISION, sizeof(data.product_revision));
+    data.additional_len = sizeof(data) - 5;/* (36 - 5) bytes after this one remain */
+    strncpy(data.vendor_info, CONFIG_USB_DEV_MANUFACTURER, sizeof(data.vendor_info));
+    strncpy(data.product_identification, CONFIG_USB_DEV_PRODNAME, sizeof(data.product_identification));
+    strncpy(data.product_revision, CONFIG_USB_DEV_REVISION, sizeof(data.product_revision));
+#if 1
+    aprintf("scsi_cmd_inquiry: %s\n",data.product_revision);
+#endif
 	usb_bbb_send((uint8_t *)&data, sizeof(data), 2);
 }
 
@@ -587,7 +593,7 @@ static volatile unsigned int scsi_cmd_queue_empty = 1;
 /* NB: this function is executed in a handler context when a
  * command comes from USB.
  */
-static void scsi_parse_cmd(uint8_t cdb[], uint8_t cdb_len)
+static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
 {
 	uint32_t rw_lba;
 	uint16_t rw_size;
@@ -997,7 +1003,7 @@ uint8_t scsi_early_init(uint8_t *buf, uint16_t len, scsi_read_cb read_cb, scsi_w
     cb_read = read_cb;
     cb_write = write_cb;
 
-	usb_bbb_early_init(scsi_parse_cmd, scsi_write_data, scsi_data_sent);
+	usb_bbb_early_init(scsi_parse_cdb, scsi_write_data, scsi_data_sent);
     return 0;
 }
 
