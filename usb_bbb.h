@@ -13,9 +13,10 @@
  */
 void usb_bbb_init(void);
 
-void usb_bbb_early_init(void (*cmd_received)(uint8_t cdb[], uint8_t cdb_len),
-		  void (*data_received)(uint32_t),
-		  void (*data_sent)(void));
+void usb_bbb_early_init(void (*cmd_received)(uint8_t cdb[],
+                        uint8_t cdb_len),
+		                void (*data_received)(uint32_t),
+		                void (*data_sent)(void));
 
 
 enum csw_status {

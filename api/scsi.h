@@ -2,30 +2,24 @@
 # define SCSI_H
 
 /* SCSI commands */
-/* SCSI commands */
-# define SCSI_CMD_FORMAT_UNIT                   0x04 // Mandatory
-# define SCSI_CMD_INQUIRY			            0x12 // Mandatory
-# define SCSI_CMD_MODE_SELECT_6                 0x15
-# define SCSI_CMD_MODE_SELECT_10                0x55
-# define SCSI_CMD_MODE_SENSE_6			        0x1a
-# define SCSI_CMD_MODE_SENSE_10	                0x5a // Requiered for some bootable devices
-# define SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL	0x1e
-# define SCSI_CMD_READ_6			            0x08 // Mandatory
-# define SCSI_CMD_READ_10			            0x28 // Mandatory
-# define SCSI_CMD_READ_12			            0xa8
-# define SCSI_CMD_READ_CAPACITY_10		        0x25 // Mandatory
-# define SCSI_CMD_READ_FORMAT_CAPACITIES        0x23
-# define SCSI_CMD_READ_TOC                      0x43
-# define SCSI_CMD_REPORT_LUNS                   0xa0 // Mandatory
-# define SCSI_CMD_REQUEST_SENSE			        0x03 // Mandatory
-# define SCSI_CMD_SEND_DIAGNOSTIC               0x1d // Mandatory
-# define SCSI_CMD_START_STOP_UNIT               0x1b
-# define SCSI_CMD_SYNCHRONIZE_CACHE_10          0x35
-# define SCSI_CMD_TEST_UNIT_READY		        0x00 // Mandatory
-# define SCSI_CMD_VERIFY_10                     0x2f
-# define SCSI_CMD_WRITE_6			            0x0a // Mandatory
-# define SCSI_CMD_WRITE_10			            0x2a // Mandatory
-# define SCSI_CMD_WRITE_12                      0xaa
+typedef enum {
+    SCSI_CMD_FORMAT_UNIT                   = 0x04, // Mandatory
+    SCSI_CMD_INQUIRY			            = 0x12, // Mandatory
+    SCSI_CMD_MODE_SELECT_10                = 0x55,
+    SCSI_CMD_MODE_SENSE_10	                = 0x5a, // Requiered for some bootable devices
+    SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL	= 0x1e,
+    SCSI_CMD_READ_10			            = 0x28, // Mandatory
+    SCSI_CMD_READ_CAPACITY_10		        = 0x25, // Mandatory
+    SCSI_CMD_READ_FORMAT_CAPACITIES        = 0x23,
+    SCSI_CMD_REPORT_LUNS                   = 0xa0, // Mandatory
+    SCSI_CMD_REQUEST_SENSE			        = 0x03, // Mandatory
+    SCSI_CMD_SEND_DIAGNOSTIC               = 0x1d, // Mandatory
+    SCSI_CMD_START_STOP_UNIT               = 0x1b,
+    SCSI_CMD_SYNCHRONIZE_CACHE_10          = 0x35,
+    SCSI_CMD_TEST_UNIT_READY		        = 0x00, // Mandatory
+    SCSI_CMD_VERIFY_10                     = 0x2f,
+    SCSI_CMD_WRITE_10			            = 0x2a, // Mandatory
+} scsi_operation_code_t;
 
 /* SCSI Sense codes */
 # define S_NO_SENSE                 0x00
@@ -61,7 +55,9 @@
 # define SCSI_ERROR_GET_SENSE_KEY(error)	((error & 0xf0000) >> 16)
 # define SCSI_ERROR_GET_ASC(error)		((error & 0xff00) >> 8)
 # define SCSI_ERROR_GET_ASCQ(error)		(error & 0xff)
-# define SCSI_ERROR_INVALID_COMMAND		0x52000
+
+
+//# define SCSI_ERROR_INVALID_COMMAND		0x52000
 # define SCSI_ERROR_UNIT_BECOMING_READY		((0x2 << 16) | (0x04 << 8) | 0x01)
 
 
@@ -75,25 +71,33 @@
  * must be blocking callbacks while the transaction is not finished yet
  * (i.e. the data read or data write is not effective).
  */
-typedef uint8_t (*scsi_read_cb)(uint32_t sector_addr, uint32_t num_sectors);
-typedef uint8_t (*scsi_write_cb)(uint32_t sector_addr, uint32_t num_sectors);
+typedef uint8_t (*scsi_read_cb_t)(uint32_t sector_addr, uint32_t num_sectors);
+typedef uint8_t (*scsi_write_cb_t)(uint32_t sector_addr, uint32_t num_sectors);
+
+typedef uint32_t (*scsi_get_storage_capacity_cb_t)(void);
+typedef uint32_t (*scsi_get_storage_block_size_cb_t)(void);
 
 /*
  * Should be two 4096 preallocated sized buffer by now.
  */
-uint8_t scsi_early_init(uint8_t*buf, uint16_t buflen, scsi_read_cb read_cb, scsi_write_cb write_cb);
+
+typedef struct scsi_calbacks {
+    scsi_read_cb_t read;
+    scsi_write_cb_t write;
+    scsi_get_storage_capacity_cb_t get_storage_capacity;
+    scsi_get_storage_block_size_cb_t get_storage_block_size;
+} scsi_calbacks_t;
+
+uint8_t scsi_early_init(uint8_t*buf, uint16_t buflen, scsi_calbacks_t * init_cb);
+
 void scsi_init(void);
 
 void scsi_send_data(void *data, uint32_t size);
 void scsi_get_data(void *buffer, uint32_t size);
 
-/*
- * id_data_sink: the target task of the usb data content (write mode)
- * id_data_source: the source of the usb data content (read mode)
- */
-void scsi_state_machine(uint8_t id_data_sink, uint8_t id_data_source);
-
 int scsi_is_ready_for_data(void);
 void scsi_send_status(void);
+
+void scsi_exec_automaton(void);
 
 #endif /* SCSI_H */

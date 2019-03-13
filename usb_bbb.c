@@ -56,7 +56,6 @@ static void usb_bbb_cmd_received(uint32_t size)
 		printf("[USB BBB] CBW not valid\n");
 		return;
 	}
-
 	if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved || cbw.lun.lun) {
 		/* XXX: the only valid LUN for our device is 0 */
 		/* TODO: check that cbw.cdb_len and cbw.cdb are in accordance
@@ -65,7 +64,6 @@ static void usb_bbb_cmd_received(uint32_t size)
 		printf("[USB BBB] CBW not meaningful\n");
 		return;
 	}
-
 	current_tag = cbw.tag;
 	bbb_state = CMD;
 
