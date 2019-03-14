@@ -2,6 +2,7 @@
 //#include "debug.h"
 #include "api/malloc.h"
 #include "api/print.h"
+#include "api/string.h"
 //#include "manager.h"
 #include "api/scsi.h"
 //#include "sd.h"
