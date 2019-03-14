@@ -2,7 +2,6 @@
 #include "api/stdio.h"
 #include "api/nostd.h"
 #include "api/string.h"
-//#include "manager.h"
 #include "api/scsi.h"
 
 #include "usb.h"
