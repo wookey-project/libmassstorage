@@ -4,6 +4,9 @@
 #include "usb.h"
 #include "usb_bbb.h"
 
+
+#define BBB_DEBUG 0
+
 enum bbb_state {
 	READY,
 	CMD,
@@ -38,14 +41,16 @@ struct __packed scsi_cbw {
 		uint8_t cdb_len:5;
 		uint8_t reserved:3;
 	} cdb_len;
-	uint8_t cdb[16]; // FIXME We must handle CDB6 CDB10 CDB12 CDB16 ?
+	uint8_t cdb[16];
 };
 static struct scsi_cbw cbw;
 # define USB_BBB_CBW_SIG		0x43425355 /* "USBC" */
 
 static void read_next_cmd(void)
 {
-	//printf("[USB BBB] Reading a command\n");
+#if BBB_DEBUG
+	printf("[USB BBB] %s: Reading a command\n",  __func__ );
+#endif
 	bbb_state = READY;
 	usb_driver_setup_read(&cbw, sizeof(cbw), 1);
 }
@@ -53,7 +58,7 @@ static void read_next_cmd(void)
 static void usb_bbb_cmd_received(uint32_t size)
 {
 	if (size != sizeof(struct scsi_cbw) || cbw.sig != USB_BBB_CBW_SIG) {
-		printf("[USB BBB] CBW not valid\n");
+		printf("[USB BBB] %s: CBW not valid\n", __func__ );
 		return;
 	}
 	if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved || cbw.lun.lun) {
@@ -61,26 +66,34 @@ static void usb_bbb_cmd_received(uint32_t size)
 		/* TODO: check that cbw.cdb_len and cbw.cdb are in accordance
 		 * with InferfaceSubClass
 		 */
-		printf("[USB BBB] CBW not meaningful\n");
+#if BBB_DEBUG
+		printf("[USB BBB] %s: CBW not meaningful\n", __func__ );
+#endif
 		return;
 	}
 	current_tag = cbw.tag;
 	bbb_state = CMD;
-
-	//printf("[USB BBB] Command received\n");
+#if BBB_DEBUG
+	printf("[USB BBB] %s: Command received\n", __func__ );
+#endif
 	callback_cmd_received(cbw.cdb, cbw.cdb_len.cdb_len);
 }
 
 static void usb_bbb_data_received(uint32_t size)
 {
-	if (bbb_state == READY){
-		usb_bbb_cmd_received(size);
-	}
-	else if (bbb_state == STATUS){
-		bbb_state = READY;
-	}
-	else if (bbb_state == DATA){
-		callback_data_received(size);
+    printf("[USB BBB] %s bbb_state: %x ... \n", __func__, bbb_state);
+    switch(bbb_state) {
+        case READY:
+		    usb_bbb_cmd_received(size);
+            break;
+        case STATUS:
+		    bbb_state = READY;
+            break;
+        case DATA:
+		    callback_data_received(size);
+            break;
+        default:
+		    printf("[USB BBB] %s: ERROR usb_bbb_data_received ... \n", __func__ );
 	}
 }
 
@@ -88,19 +101,29 @@ static void usb_bbb_data_sent(void)
 {
 	switch (bbb_state) {
 	case STATUS:
+#if BBB_DEBUG
+		printf("[USB BBB] %s: data sent while in STATUS state\n", __func__ );
+#endif
 		read_next_cmd();
 		break;
 	case DATA:
+#if BBB_DEBUG
+		printf("[USB BBB] %s: data sent while in DATA state\n", __func__ );
+#endif
 		callback_data_sent();
 		break;
 	case READY:
-		printf("[USB BBB] data sent while in CMD state\n");
+#if BBB_DEBUG
+		printf("[USB BBB] %s: data sent while in READY state\n", __func__ );
+#endif
 		break;
 	case CMD:
-		printf("[USB BBB] data sent while in CMD state\n");
+#if BBB_DEBUG
+		printf("[USB BBB] %s: data sent while in CMD state\n", __func__ );
+#endif
 		break;
 	default:
-		printf("[USB BBB] Unknown bbb_state\n");
+		printf("[USB BBB] %s: Unknown bbb_state\n", __func__ );
 	}
 }
 
@@ -108,6 +131,9 @@ void usb_bbb_early_init(void (*cmd_received)(uint8_t cdb[], uint8_t cdb_len),
 		  void (*data_received)(uint32_t),
 		  void (*data_sent)(void))
 {
+#if BBB_DEBUG
+		printf("[USB BBB] %s\n", __func__ );
+#endif
 	callback_cmd_received = cmd_received;
 	callback_data_received = data_received;
 	callback_data_sent = data_sent;
@@ -144,19 +170,26 @@ void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
 	};
 
 	bbb_state = STATUS;
-
-	//printf("[USB BBB] Sending CSW (%x, %x, %x, %x)\n", csw.sig, csw.tag, csw.data_residue, csw.status);
+#if BBB_DEBUG
+	printf("[USB BBB] %s: Sending CSW (%x, %x, %x, %x)\n", __func__, csw.sig, csw.tag, csw.data_residue, csw.status);
+#endif
 	usb_driver_setup_send((uint8_t *)&csw, sizeof(csw), 2);
 }
 
 void usb_bbb_send(const uint8_t *src, uint32_t size, uint8_t ep)
 {
+#if BBB_DEBUG
+		printf("[USB BBB] %s\n", __func__ );
+#endif
 	bbb_state = DATA;
 	usb_driver_setup_send(src, size, ep);
 }
 
 void usb_bbb_read(void *dst, uint32_t size, uint8_t ep)
 {
+#if BBB_DEBUG
+		printf("[USB BBB] %s\n", __func__ );
+#endif
 	bbb_state = DATA;
 	usb_driver_setup_read(dst, size, ep);
 }
