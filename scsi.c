@@ -3,7 +3,7 @@
 #include "api/nostd.h"
 #include "api/string.h"
 #include "api/scsi.h"
-
+#include "api/string.h"
 #include "usb.h"
 #include "usb_bbb.h"
 #include "queue.h"
@@ -322,6 +322,35 @@ static inline void leave_critical_section(void)
 
 /****************** END OF AUTOMATON *********************/
 
+typedef struct  __attribute__((packed)){
+     uint8_t reserved1:3;
+     uint8_t LLBAA:2;
+     uint8_t DBD:2;
+     uint8_t reserved2:1;
+     uint8_t PC:2;
+     uint8_t page_code:6;
+     uint8_t sub_page_code;
+     uint16_t reserved3;
+     uint16_t allocation_length;
+     uint8_t control;
+} cdb10_mode_sense_t;
+
+typedef struct  __attribute__((packed)){
+     uint16_t reserved1;
+     uint8_t reserved2:6;
+     uint8_t prevent:2;
+     uint8_t control;
+} cdb10_prevent_allow_removal_t;
+
+typedef struct  __attribute__((packed)){
+     uint8_t reserved1:7;
+     uint8_t desc:1;
+     uint16_t reserved;
+     uint8_t allocation_length;
+} cdb10_request_sense_t;
+
+
+
 
 
 typedef struct  __attribute__((packed)){
@@ -335,8 +364,10 @@ typedef struct  __attribute__((packed)){
 
 
 typedef union {
-   cdb10_t cdb10;
-   uint32_t junk;
+    cdb10_t cdb10;
+    cdb10_mode_sense_t cdb10_mode_sense;
+    cdb10_prevent_allow_removal_t cdb10_prevent_allow_removal;
+    cdb10_request_sense_t cdb10_request_sense;
 } u_cdb_payload;
 
 typedef  struct  __attribute__((packed)){
@@ -345,11 +376,37 @@ typedef  struct  __attribute__((packed)){
 } cdb_t;
 
 
+typedef struct  __attribute__((packed)) {
+    uint16_t mode_data_length;
+    uint8_t medium_type;
+    uint8_t device_specific_param;
+    uint8_t reserved1:7;
+    uint8_t longLBA:1;
+    uint8_t reserved2;
+    uint16_t block_descriptor_length;
+} mode_parameter_header_t;
+
+typedef struct __packed request_sense_parameter_data {
+   uint8_t error_code:7;
+   uint8_t info_valid:1;
+   uint8_t reserved1;
+   uint8_t sense_key:4;
+   uint8_t reserved:1;
+   uint8_t ili:1;
+   uint8_t eom:1;
+   uint8_t filemark:1;
+   uint8_t information[4];
+   uint8_t additional_sense_length;
+   uint32_t reserved8;
+   uint8_t asc;
+   uint8_t ascq;
+   uint8_t field_replaceable_unit_code;
+   uint8_t sense_key_specific[3];
+} request_sense_parameter_data_t;
+
+
 static void scsi_release_cdb(cdb_t * current_cdb){
 
-	/* TODO: detect if we are in main thread or ISR mode: no need to use critical
-	 * section when we are in ISR mode!
-	 */
 	if(current_cdb != NULL){
         enter_critical_section();
 		if(wfree((void**)&current_cdb)){
@@ -370,11 +427,12 @@ static inline bool scsi_is_ready_for_data_receive(void)
 void scsi_get_data(void *buffer, uint32_t size)
 {
 #ifdef SCSI_DEBUG
-		printf("%s: size: %d \n", __func__, size );
+	printf("%s: size: %d \n", __func__, size );
 #endif
 	while(!scsi_is_ready_for_data_receive()){
 		continue;
 	}
+
 	scsi_ctx.direction = SCSI_DIRECTION_RECV;
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 	scsi_ctx.size_to_process = size;
@@ -388,19 +446,21 @@ void scsi_get_data(void *buffer, uint32_t size)
 void scsi_send_data(void *data, uint32_t size)
 {
 #ifdef SCSI_DEBUG
-		printf("%s: size: %d \n", __func__, size );
+	printf("%s: size: %d \n", __func__, size );
 #endif
+
 	scsi_ctx.direction = SCSI_DIRECTION_SEND;
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 	scsi_ctx.size_to_process = size;
     scsi_ctx.addr = 0;
+
 	usb_bbb_send(data, size, 2); // FIXME HARCODED ENDPOINT
 }
 
 void scsi_send_status(void)
 {
 #ifdef SCSI_DEBUG
-		printf("%s:\n", __func__ );
+	printf("%s:\n", __func__ );
 #endif
 	usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
 }
@@ -408,7 +468,6 @@ void scsi_send_status(void)
 
 static void scsi_data_available(uint32_t size)
 {
-
 #if SCSI_DEBUG
     printf("%s: %d\n", __func__, size);
 #endif
@@ -426,7 +485,6 @@ static void scsi_data_available(uint32_t size)
 
 static void scsi_data_sent()
 {
-
 #if SCSI_DEBUG
     printf("%s: %d\n", __func__);
 #endif
@@ -444,7 +502,8 @@ static void scsi_data_sent()
 
 /* NB: this function is executed in a handler context when a
  * command comes from USB.
- */static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)))
+ */
+static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)))
 {
     cdb_t *current_cdb;
 	int ret;
@@ -472,7 +531,7 @@ static void scsi_data_sent()
 /*
  * Commands
  */
-struct __packed inquiry_data {
+typedef struct __packed inquiry_data {
 	uint8_t device_type:5;
 	uint8_t qualifier:3;
 	uint8_t reserved1:7;
@@ -504,13 +563,13 @@ struct __packed inquiry_data {
 	char vendor_info[8];
 	char product_identification[16];
 	char product_revision[4];
-};
+} inquiry_data_t;
 
 
 
 static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 {
-	struct inquiry_data data;
+	inquiry_data_t data;
 #ifdef SCSI_DEBUG
 		printf("%s:\n", __func__ );
 #endif
@@ -577,8 +636,11 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t  current_state, c
         goto invalid_transition;
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
-
-    usb_bbb_send_csw(CSW_STATUS_FAILED, 0); //FIXME
+#if SCSI_DEBUG
+    printf("%s: Prevent allow medium removal: %x\n",__func__, current_cdb->payload.cdb10_prevent_allow_removal.prevent);
+#endif
+    // FIXME Add callback ?
+    usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
     return;
     /* effective transition execution (if needed) */
 
@@ -767,8 +829,17 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
     } else {
         goto invalid_transition;
     }
-    return;
-    /* effective transition execution (if needed) */
+    // FIXME We only support 1 LUN
+
+
+    /* XXX
+     * If the logical unit inventory changes for any reason
+     * (e.g., completion of initialization, removal of a logical unit, or creation of a logical unit),
+     * then the device server shall establish a unit attention condition (see SAM-3) for the
+     * initiator port associated with every I_T nexus, with the additional sense code set
+     * to REPORTED LUNS DATA HAS CHANGED.
+     */
+
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
@@ -776,30 +847,9 @@ invalid_transition:
     return;
 }
 
-
-// FIXME SCSI_CMD_REQUEST_SENSE
-typedef struct __packed request_sense_data {
-   uint8_t error_code:7;
-   uint8_t info_valid:1;
-   uint8_t reserved1;
-   uint8_t sense_key:4;
-   uint8_t reserved:1;
-   uint8_t ili:1;
-   uint8_t eom:1;
-   uint8_t filemark:1;
-   uint8_t information[4];
-   uint8_t additional_sense_length;
-   uint32_t reserved8;
-   uint8_t asc;
-   uint8_t ascq;
-   uint8_t field_replaceable_unit_code;
-   uint8_t sense_key_specific[3];
-} request_sense_data_t;
-
-
 static void scsi_cmd_request_sense(scsi_state_t  current_state, cdb_t * current_cdb)
 {
-    request_sense_data_t data;
+    request_sense_parameter_data_t data;
 
     #if SCSI_DEBUG
         printf("%s\n", __func__);
@@ -819,16 +869,16 @@ static void scsi_cmd_request_sense(scsi_state_t  current_state, cdb_t * current_
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-    if (next_state != 0xff) {
-        scsi_set_state(next_state);
-    } else {
-        goto invalid_transition;
-    }
+#if SCSI_DEBUG
+    printf( "%s: desc: %x, allocation_length: %x\n",
+            current_cdb->payload.cdb10_request_sense.desc,
+            current_cdb->payload.cdb10_request_sense.allocation_length);
+#endif
 
-    /* effective transition execution (if needed) */
+    // TODO If desc is set to 1 and descriptor format sense data is supported
+    // descriptor format sense data shall be returned.
+
 	memset((void *)&data, 0, sizeof(data));
-    //FIXME test the desc bit
-
 	data.error_code = 0x70;
 	data.sense_key = SCSI_ERROR_GET_SENSE_KEY(scsi_ctx.error);
 	data.additional_sense_length = 0x0a;
@@ -844,8 +894,7 @@ invalid_transition:
     return;
 }
 
-// FIXME SCSI_CMD_SEND_DIAGNOSTIC
-static void scsi_cmd_send_diagnostic(scsi_state_t  current_state, cdb_t * current_cdb)
+static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     #if SCSI_DEBUG
         printf("%s\n", __func__);
@@ -853,6 +902,7 @@ static void scsi_cmd_send_diagnostic(scsi_state_t  current_state, cdb_t * curren
 
     /* Sanity check */
     if(current_cdb == NULL){
+        printf("%s: current_cdb == NULL\n", __func__);
         goto invalid_transition;
     }
 
@@ -865,13 +915,77 @@ static void scsi_cmd_send_diagnostic(scsi_state_t  current_state, cdb_t * curren
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-    if (next_state != 0xff) {
-        scsi_set_state(next_state);
-    } else {
+    printf("%s:\n", __func__);
+    printf("\treserved1          : %x\n",current_cdb->payload.cdb10_mode_sense.LLBAA);
+    printf("\tLLBAA              : %x\n",current_cdb->payload.cdb10_mode_sense.LLBAA);
+    printf("\tDBD                : %x\n",current_cdb->payload.cdb10_mode_sense.DBD);
+    printf("\treserved2          : %x\n",current_cdb->payload.cdb10_mode_sense.reserved2);
+    printf("\tPC                 : %x\n",current_cdb->payload.cdb10_mode_sense.PC);
+    printf("\tpage_code          : %x\n",current_cdb->payload.cdb10_mode_sense.page_code);
+    printf("\tsub_page_code      : %x\n",current_cdb->payload.cdb10_mode_sense.sub_page_code);
+    printf("\treserved3          : %x\n",current_cdb->payload.cdb10_mode_sense.reserved3);
+    printf("\tallocation_length  : %x\n",current_cdb->payload.cdb10_mode_sense.allocation_length);
+    printf("\tcontrol            : %x\n", current_cdb->payload.cdb10_mode_sense.control);
+
+    /* Sending Mode Sense 10 answer */
+    /* We only send back the mode parameter header with no data */
+    mode_parameter_header_t mode_sens_header = {
+        .mode_data_length = 3,        // The number of bytes that follow.
+        .medium_type = 0,             // The media type SBC.
+        .device_specific_param = 0,   // Not write proectected (bit:7), no cache control-bit support (bit:4).
+        .reserved1 = 0,
+        .longLBA = 0,
+        .reserved2  = 0,
+        .block_descriptor_length = 0, // A block descriptor length of zero indicates that no block descriptors
+                                      // are included in the mode parameter list.
+    };
+
+    //usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t));
+    usb_bbb_send((uint8_t *)&mode_sens_header, sizeof(mode_parameter_header_t), 2);
+    return;
+
+invalid_transition:
+    printf("%s: invalid_transition\n", __func__);
+    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    return;
+}
+
+static void scsi_cmd_mode_select10(scsi_state_t  current_state, cdb_t * current_cdb)
+{
+    #if SCSI_DEBUG
+        printf("%s\n", __func__);
+    #endif
+
+    /* Sanity check */
+    if(current_cdb == NULL){
+        printf("%s: current_cdb == NULL\n", __func__);
         goto invalid_transition;
     }
-    return;
+
+    /* Sanity check and next state detection */
+    uint8_t next_state;
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        goto invalid_transition;
+    }
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
     /* effective transition execution (if needed) */
+    #if 0
+	if (sd_is_ready()) {
+		usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
+	} else {
+		usb_bbb_send_csw(CSW_STATUS_FAILED, 0);
+		scsi_ctx.error = SCSI_ERROR_UNIT_BECOMING_READY;
+        scsi_error(ERRUNKNOWN);
+	}
+    #else
+	    //usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
+        scsi_error(SCSI_ERROR_INVALID_COMMAND);
+        return;
+    #endif
+
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_ERROR_INVALID_COMMAND);
@@ -924,13 +1038,6 @@ invalid_transition:
 // FIXME SCSI_CMD_WRITE_10
 static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
-
-	if(current_cdb == NULL){
-		return;
-	}
-#if SCSI_DEBUG
-    printf("%s:\n",__func__);
-#endif
 	unsigned int i;
     uint32_t num_sectors;
     unsigned int sz;
@@ -939,6 +1046,14 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     uint16_t rw_size;
     uint64_t size;
     uint64_t rw_addr;
+
+#if SCSI_DEBUG
+    printf("%s:\n",__func__);
+#endif
+
+	if(current_cdb == NULL){
+		return;
+	}
 
     /* Sanity check */
     if(current_cdb == NULL){
@@ -1029,6 +1144,7 @@ void scsi_exec_automaton(void)
 	case SCSI_CMD_INQUIRY:
 		scsi_cmd_inquiry(current_state, current_cdb);
 		break;
+
 	case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
 		scsi_cmd_prevent_allow_medium_removal(current_state, current_cdb);
 		break;
@@ -1044,15 +1160,11 @@ void scsi_exec_automaton(void)
 	case SCSI_CMD_REPORT_LUNS:
 		scsi_cmd_report_luns(current_state, current_cdb);
 		break;
-
-	case SCSI_CMD_REQUEST_SENSE:
-		scsi_cmd_request_sense(current_state, current_cdb);
-		break;
-
+#if 0
 	case SCSI_CMD_SEND_DIAGNOSTIC:
 		scsi_cmd_send_diagnostic(current_state, current_cdb);
 		break;
-
+#endif
 	case SCSI_CMD_TEST_UNIT_READY:
 		scsi_cmd_test_unit_ready(current_state, current_cdb);
 		break;
