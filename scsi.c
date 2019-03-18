@@ -1,7 +1,8 @@
 //#include "params.h
 //#include "debug.h"
 #include "api/malloc.h"
-#include "api/print.h"
+#include "api/stdio.h"
+#include "api/nostd.h"
 #include "api/string.h"
 //#include "manager.h"
 #include "api/scsi.h"

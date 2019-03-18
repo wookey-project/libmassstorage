@@ -2,7 +2,8 @@
  *
  */
 #include "autoconf.h"
-#include "api/print.h"
+#include "api/stdio.h"
+#include "api/nostd.h"
 #include "api/regutils.h"
 #include "usb.h"
 #include "usb_control_mass_storage.h"
