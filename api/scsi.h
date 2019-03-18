@@ -74,8 +74,8 @@ typedef enum {
 typedef uint8_t (*scsi_read_cb_t)(uint32_t sector_addr, uint32_t num_sectors);
 typedef uint8_t (*scsi_write_cb_t)(uint32_t sector_addr, uint32_t num_sectors);
 
-typedef uint32_t (*scsi_get_storage_capacity_cb_t)(void);
-typedef uint32_t (*scsi_get_storage_block_size_cb_t)(void);
+typedef uint8_t (*scsi_get_storage_capacity_cb_t)(uint32_t *);
+typedef uint8_t (*scsi_get_storage_block_size_cb_t)(uint32_t *);
 
 /*
  * Should be two 4096 preallocated sized buffer by now.
@@ -84,13 +84,11 @@ typedef uint32_t (*scsi_get_storage_block_size_cb_t)(void);
 typedef struct scsi_calbacks {
     scsi_read_cb_t read;
     scsi_write_cb_t write;
-    scsi_get_storage_capacity_cb_t get_storage_capacity;
-    scsi_get_storage_block_size_cb_t get_storage_block_size;
 } scsi_calbacks_t;
 
 uint8_t scsi_early_init(uint8_t*buf, uint16_t buflen, scsi_calbacks_t * init_cb);
 
-void scsi_init(void);
+void scsi_init(uint32_t storage_size, uint32_t block_size);
 
 void scsi_send_data(void *data, uint32_t size);
 void scsi_get_data(void *buffer, uint32_t size);

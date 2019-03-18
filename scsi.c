@@ -21,8 +21,6 @@
 static scsi_calbacks_t scsi_cb = {
    .read = NULL,
    .write = NULL,
-   .get_storage_capacity = NULL,
-   .get_storage_block_size = NULL
 };
 
 
@@ -70,7 +68,8 @@ typedef  struct {
     uint8_t *global_buf;
     uint16_t global_buf_len;
     scsi_state_t state;
-    uint32_t scsi_block_size;
+    uint32_t block_size;
+    uint32_t storage_size;
 } scsi_context_t;
 
 
@@ -85,7 +84,8 @@ scsi_context_t scsi_ctx = {
     .global_buf = NULL,
     .state = SCSI_IDLE,
     .global_buf_len = 0,
-    .scsi_block_size = 0,
+    .block_size = 0,
+    .storage_size = 0,
 };
 
 
@@ -663,7 +663,6 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     uint64_t size;
     uint64_t rw_addr;
 
-
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -682,32 +681,31 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-    /* effective transition execution (if needed) */
     rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
     rw_size = from_big16(current_cdb->payload.cdb10.transfer_blocks);
-    rw_addr  = (uint64_t)scsi_ctx.scsi_block_size * (uint64_t)rw_lba;
-    size = scsi_ctx.scsi_block_size * rw_size;
+    rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
+    size = scsi_ctx.block_size * rw_size;
 
 	sz = (size < scsi_ctx.global_buf_len) ? size : scsi_ctx.global_buf_len;
 
-    uint64_t tmp = rw_addr / (uint64_t)scsi_ctx.scsi_block_size;
+    uint64_t tmp = rw_addr / (uint64_t)scsi_ctx.block_size;
 
     if (tmp > 0xffffffff) {
         printf("%s: PANIC! requested sector address generate int overflow !\n", __func__);
     }
 
-    num_sectors = sz / scsi_ctx.scsi_block_size;
+    num_sectors = sz / scsi_ctx.block_size;
     #if SCSI_DEBUG
-        printf("%s: sz %u, scsi_ctx.scsi_block_size: %u | sz / scsi_ctx.scsi_block_size = num_sectors to read: %u\n", __func__, sz, scsi_ctx.scsi_block_size, num_sectors);
+        printf("%s: sz %u, scsi_ctx.block_size: %u | sz / scsi_ctx.block_size = num_sectors to read: %u\n", __func__, sz, scsi_ctx.block_size, num_sectors);
     #endif
 	for(i = scsi_ctx.global_buf_len; i <= size; i+= scsi_ctx.global_buf_len) {
         if (scsi_cb.read) {
             #if SCSI_DEBUG
-                printf("%s: asking num_sectors: %u to storage app: / (%u) \n", __func__, num_sectors, (sz / scsi_ctx.scsi_block_size));
+                printf("%s: asking num_sectors: %u to storage app: / (%u) \n", __func__, num_sectors, (sz / scsi_ctx.block_size));
             #endif
             scsi_cb.read((uint32_t)tmp, num_sectors);
         }
-        tmp += sz / scsi_ctx.scsi_block_size;
+        tmp += sz / scsi_ctx.block_size;
         #if SCSI_DEBUG
             printf("%s: sending data to host.\n", __func__);
         #endif
@@ -720,7 +718,7 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
         #if SCSI_DEBUG
             printf("%s: sending data residue to host.\n", __func__);
         #endif
-        num_sectors = (size - i + scsi_ctx.global_buf_len) / scsi_ctx.scsi_block_size;
+        num_sectors = (size - i + scsi_ctx.global_buf_len) / scsi_ctx.block_size;
         if (scsi_cb.read) {
             scsi_cb.read((uint32_t)tmp, num_sectors);
         }
@@ -743,9 +741,6 @@ invalid_transition:
 // FIXME SCSI_CMD_READ_CAPACITY_10
 static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
-    uint32_t storage_block_size = 0;
-    uint32_t storage_size = 0;
-
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -765,29 +760,14 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
     uint32_t response[2];
-    if (scsi_cb.get_storage_capacity) {
-	    storage_size = scsi_cb.get_storage_capacity();
-    #if SCSI_DEBUG
-        printf("%s: storage_size: %d\n", __func__, storage_size);
-    #endif
 
-	}
-
-    if (scsi_cb.get_storage_block_size) {
-        storage_block_size = scsi_cb.get_storage_block_size();
-    #if SCSI_DEBUG
-        printf("%s: storage_block_size: %d\n", __func__, storage_block_size);
-    #endif
-
-    }
-
-    assert(storage_block_size && storage_block_size); // FIXME
+    assert(scsi_ctx.storage_size && scsi_ctx.block_size); // FIXME
 
     //what is expected is the _LAST_ LBA address ....
     // See Working draft SCSI block cmd  5.10.2 READ CAPACITY (10)
 
-	response[0] = to_big32(storage_size-1);
-	response[1] = to_big32(storage_block_size);
+	response[0] = to_big32(scsi_ctx.storage_size-1);
+	response[1] = to_big32(scsi_ctx.block_size);
 
     #if SCSI_DEBUG
         printf("%s: response[0]: %d response[1]: %d\n", __func__, response[0], response[1]);
@@ -916,15 +896,15 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
     printf("%s:\n", __func__);
-    printf("\treserved1          : %x\n",current_cdb->payload.cdb10_mode_sense.LLBAA);
-    printf("\tLLBAA              : %x\n",current_cdb->payload.cdb10_mode_sense.LLBAA);
-    printf("\tDBD                : %x\n",current_cdb->payload.cdb10_mode_sense.DBD);
-    printf("\treserved2          : %x\n",current_cdb->payload.cdb10_mode_sense.reserved2);
-    printf("\tPC                 : %x\n",current_cdb->payload.cdb10_mode_sense.PC);
-    printf("\tpage_code          : %x\n",current_cdb->payload.cdb10_mode_sense.page_code);
-    printf("\tsub_page_code      : %x\n",current_cdb->payload.cdb10_mode_sense.sub_page_code);
-    printf("\treserved3          : %x\n",current_cdb->payload.cdb10_mode_sense.reserved3);
-    printf("\tallocation_length  : %x\n",current_cdb->payload.cdb10_mode_sense.allocation_length);
+    printf("\treserved1          : %x\n", current_cdb->payload.cdb10_mode_sense.LLBAA);
+    printf("\tLLBAA              : %x\n", current_cdb->payload.cdb10_mode_sense.LLBAA);
+    printf("\tDBD                : %x\n", current_cdb->payload.cdb10_mode_sense.DBD);
+    printf("\treserved2          : %x\n", current_cdb->payload.cdb10_mode_sense.reserved2);
+    printf("\tPC                 : %x\n", current_cdb->payload.cdb10_mode_sense.PC);
+    printf("\tpage_code          : %x\n", current_cdb->payload.cdb10_mode_sense.page_code);
+    printf("\tsub_page_code      : %x\n", current_cdb->payload.cdb10_mode_sense.sub_page_code);
+    printf("\treserved3          : %x\n", current_cdb->payload.cdb10_mode_sense.reserved3);
+    printf("\tallocation_length  : %x\n", current_cdb->payload.cdb10_mode_sense.allocation_length);
     printf("\tcontrol            : %x\n", current_cdb->payload.cdb10_mode_sense.control);
 
     /* Sending Mode Sense 10 answer */
@@ -1077,17 +1057,17 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
 
     rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
     rw_size = from_big16(current_cdb->payload.cdb10.transfer_blocks);
-    rw_addr  = (uint64_t)scsi_ctx.scsi_block_size * (uint64_t)rw_lba;
-    size = scsi_ctx.scsi_block_size * rw_size;
+    rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
+    size = scsi_ctx.block_size * rw_size;
 
 	sz = (size < scsi_ctx.global_buf_len) ? size : scsi_ctx.global_buf_len;
 
-    uint64_t tmp = rw_addr / (uint64_t)scsi_ctx.scsi_block_size;
+    uint64_t tmp = rw_addr / (uint64_t)scsi_ctx.block_size;
 
     if (tmp > 0xffffffff) {
         printf("PANIC! requested sector address generate int overflow !\n");
     }
-    num_sectors = sz / scsi_ctx.scsi_block_size;
+    num_sectors = sz / scsi_ctx.block_size;
 
 	for(i = scsi_ctx.global_buf_len; i <= size; i+= scsi_ctx.global_buf_len) {
 		scsi_get_data(scsi_ctx.global_buf, sz);
@@ -1098,7 +1078,7 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
         if (scsi_cb.write) {
             scsi_cb.write((uint32_t)tmp, num_sectors);
         }
-        tmp += sz / scsi_ctx.scsi_block_size;
+        tmp += sz / scsi_ctx.block_size;
 	}
     /* Fractional residue */
     if ((i - scsi_ctx.global_buf_len) < size) {
@@ -1109,7 +1089,7 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
         while(!scsi_is_ready_for_data_receive()){
             continue;
         }
-        num_sectors = (size - i + scsi_ctx.global_buf_len) / scsi_ctx.scsi_block_size;
+        num_sectors = (size - i + scsi_ctx.global_buf_len) / scsi_ctx.block_size;
         if (scsi_cb.write) {
             scsi_cb.write((uint32_t)tmp, num_sectors);
         }
@@ -1219,16 +1199,6 @@ uint8_t scsi_early_init(uint8_t *buf, uint16_t len, scsi_calbacks_t * init_cb){
         goto init_error;
     }
 
-    if (! init_cb->get_storage_capacity ) {
-        error = SCSI_INIT_CALLBACK_ERROR;
-        goto init_error;
-    }
-
-    if (! init_cb->get_storage_block_size ) {
-        error = SCSI_INIT_CALLBACK_ERROR;
-        goto init_error;
-    }
-
     if ( !buf ) {
         error = SCSI_INIT_BUFFER_ERROR;
         goto init_error;
@@ -1241,22 +1211,8 @@ uint8_t scsi_early_init(uint8_t *buf, uint16_t len, scsi_calbacks_t * init_cb){
 
     scsi_cb.read = init_cb->read;
     scsi_cb.write = init_cb->write;
-    scsi_cb.get_storage_capacity = init_cb->get_storage_capacity;
-    scsi_cb.get_storage_block_size = init_cb->get_storage_block_size;
     scsi_ctx.global_buf = buf;
     scsi_ctx.global_buf_len = len;
-
-    if (scsi_cb.get_storage_block_size) {
-        scsi_ctx.scsi_block_size = scsi_cb.get_storage_block_size();
-        if (scsi_ctx.scsi_block_size > 0 ) {
-            #if SCSI_DEBUG
-                printf("%s: Asking storage block size: %u\n", __func__, scsi_ctx.scsi_block_size);
-            #endif
-        } else {
-            printf("%s: ERROR asking storage block size: %u\n", __func__, scsi_ctx.scsi_block_size);
-            goto init_error;
-        }
-    }
 
 	usb_bbb_early_init(scsi_parse_cdb, scsi_data_available, scsi_data_sent);
     return 0;
@@ -1273,7 +1229,7 @@ init_error:
  */
 #define MAX_SCSI_CMD_QUEUE_SIZE 10
 
-void scsi_init(void)
+void scsi_init(uint32_t storage_size, uint32_t block_size)
 {
     #if SCSI_DEBUG
         printf("%s\n", __func__);
@@ -1284,6 +1240,9 @@ void scsi_init(void)
 
 	unsigned int i;
 
+    scsi_ctx.storage_size = storage_size;
+    scsi_ctx.block_size = block_size;
+
 	scsi_ctx.queue = queue_create(MAX_SCSI_CMD_QUEUE_SIZE);
 
 	for(i = 0; i < scsi_ctx.global_buf_len; i++){
@@ -1292,6 +1251,7 @@ void scsi_init(void)
 
 	/* Register our callbacks on the lower layer */
 	usb_bbb_init();
+
     scsi_set_state(SCSI_IDLE);
 }
 
