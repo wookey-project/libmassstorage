@@ -1140,6 +1140,18 @@ void scsi_exec_automaton(void)
 	case SCSI_CMD_REPORT_LUNS:
 		scsi_cmd_report_luns(current_state, current_cdb);
 		break;
+
+    case SCSI_CMD_MODE_SELECT_10:
+           scsi_cmd_mode_select10(current_state, current_cdb);
+           break;
+
+    case SCSI_CMD_MODE_SENSE_10:
+           scsi_cmd_mode_sense10(current_state, current_cdb);
+           break;
+
+    case SCSI_CMD_REQUEST_SENSE:
+           scsi_cmd_request_sense(current_state, current_cdb);
+           break;
 #if 0
 	case SCSI_CMD_SEND_DIAGNOSTIC:
 		scsi_cmd_send_diagnostic(current_state, current_cdb);
