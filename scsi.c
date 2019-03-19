@@ -417,6 +417,15 @@ typedef struct __packed request_sense_parameter_data {
 } request_sense_parameter_data_t;
 
 
+typedef struct  __attribute__((packed)) {
+    uint16_t lun_list_length;
+    uint16_t reserved1;
+    uint16_t  luns[];
+} report_luns_data_t;
+
+
+
+
 static void scsi_release_cdb(cdb_t * current_cdb){
 
 	if(current_cdb != NULL){
@@ -834,7 +843,14 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
         goto invalid_transition;
     }
     // FIXME We only support 1 LUN
+    report_luns_data_t report_lun_data = {
+        .lun_list_length = 1,
+        .reserved = 0,
+        .luns = 0
+    };
 
+	usb_bbb_send((uint8_t *)report_lun_data, sizeof(report_lun_data), 2);
+    return;
 
     /* XXX
      * If the logical unit inventory changes for any reason
