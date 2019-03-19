@@ -110,7 +110,7 @@ scsi_context_t scsi_ctx = {
  * the transition handler has to handle this manually.
  */
 
-# define MAX_TRANSITION_STATE 12
+# define MAX_TRANSITION_STATE 13
 
 /*
  * Association between a request and a transition to a next state. This couple
@@ -130,6 +130,7 @@ static const struct {
                                 {SCSI_CMD_INQUIRY,SCSI_IDLE},
                                 {SCSI_CMD_MODE_SELECT_10,SCSI_IDLE},
                                 {SCSI_CMD_MODE_SENSE_10,SCSI_IDLE},
+                                {SCSI_CMD_MODE_SENSE_6,SCSI_IDLE},
                                 {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL,SCSI_IDLE},
                                 {SCSI_CMD_READ_10,SCSI_IDLE},
                                 {SCSI_CMD_READ_CAPACITY_10,SCSI_IDLE},
@@ -143,6 +144,7 @@ static const struct {
     },
     { SCSI_READ,     {
                                  {SCSI_CMD_READ_10,0xff},
+                                 {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
@@ -171,10 +173,12 @@ static const struct {
                                  {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
+                                 {0xff,0xff},
                              }
     },
     { SCSI_ERROR,     {
                                  {SCSI_CMD_MODE_SENSE_10, SCSI_IDLE},
+                                 {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
