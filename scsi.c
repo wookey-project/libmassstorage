@@ -330,6 +330,7 @@ typedef struct  __attribute__((packed)){
      uint8_t control;
 } cdb10_mode_sense_t;
 
+
 typedef struct  __attribute__((packed)){
      uint16_t reserved1;
      uint8_t reserved2:6;
@@ -344,10 +345,6 @@ typedef struct  __attribute__((packed)){
      uint8_t allocation_length;
 } cdb10_request_sense_t;
 
-
-
-
-
 typedef struct  __attribute__((packed)){
      uint8_t misc1:3;
      uint8_t service_action:5;
@@ -357,12 +354,28 @@ typedef struct  __attribute__((packed)){
      uint8_t control;
 } cdb10_t;
 
+typedef struct  __attribute__((packed)){
+     uint8_t LUN:3;
+     uint8_t reserved4:1;
+     uint8_t DBD:1;
+     uint8_t reserved3:3;
+     uint8_t PC:2;
+     uint8_t page_code:6;
+     uint8_t reserved2;
+     uint8_t allocation_length;
+     uint8_t vendor_specific:2;
+     uint8_t reserved1:4;
+     uint8_t flag:1;
+     uint8_t link:1;
+} cdb6_mode_sense_t;
+
 
 typedef union {
     cdb10_t cdb10;
     cdb10_mode_sense_t cdb10_mode_sense;
     cdb10_prevent_allow_removal_t cdb10_prevent_allow_removal;
     cdb10_request_sense_t cdb10_request_sense;
+    cdb6_mode_sense_t  cdb6_mode_sense;
 } u_cdb_payload;
 
 typedef  struct  __attribute__((packed)){
@@ -938,6 +951,67 @@ invalid_transition:
     return;
 }
 
+
+static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cdb)
+{
+    #if SCSI_DEBUG
+        printf("%s\n", __func__);
+    #endif
+
+    /* Sanity check */
+    if(current_cdb == NULL){
+        printf("%s: current_cdb == NULL\n", __func__);
+        goto invalid_transition;
+    }
+
+    /* Sanity check and next state detection */
+    uint8_t next_state;
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        goto invalid_transition;
+    }
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    printf("%s:\n", __func__);
+    printf("\tLUN                : %x\n", current_cdb->payload.cdb6_mode_sense.LUN);
+    printf("\treserved4          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved4);
+    printf("\tDBD                : %x\n", current_cdb->payload.cdb6_mode_sense.DBD);
+    printf("\treserved3          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved3);
+    printf("\tPC                 : %x\n", current_cdb->payload.cdb6_mode_sense.PC);
+    printf("\tpage_code          : %x\n", current_cdb->payload.cdb6_mode_sense.page_code);
+    printf("\treserved2          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved2);
+    printf("\tallocation_length  : %x\n", current_cdb->payload.cdb6_mode_sense.allocation_length);
+    printf("\tvendor_specific    : %x\n", current_cdb->payload.cdb6_mode_sense.vendor_specific);
+    printf("\treserved1          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved1);
+    printf("\tflag               : %x\n", current_cdb->payload.cdb6_mode_sense.flag);
+    printf("\tlink               : %x\n", current_cdb->payload.cdb6_mode_sense.link);
+
+    /* Sending Mode Sense 10 answer */
+    /* We only send back the mode parameter header with no data */
+    mode_parameter_header_t mode_sens_header = {
+        .mode_data_length = 3,        // The number of bytes that follow.
+        .medium_type = 0,             // The media type SBC.
+        .device_specific_param = 0,   // Not write proectected (bit:7), no cache control-bit support (bit:4).
+        .reserved1 = 0,
+        .longLBA = 0,
+        .reserved2  = 0,
+        .block_descriptor_length = 0, // A block descriptor length of zero indicates that no block descriptors
+                                      // are included in the mode parameter list.
+    };
+
+    //usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t));
+    usb_bbb_send((uint8_t *)&mode_sens_header, sizeof(mode_parameter_header_t), 2);
+    return;
+
+invalid_transition:
+    printf("%s: invalid_transition\n", __func__);
+    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    return;
+}
+
+
+
 static void scsi_cmd_mode_select10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     #if SCSI_DEBUG
@@ -1161,6 +1235,11 @@ void scsi_exec_automaton(void)
     case SCSI_CMD_MODE_SENSE_10:
            scsi_cmd_mode_sense10(current_state, current_cdb);
            break;
+
+    case SCSI_CMD_MODE_SENSE_6:
+           scsi_cmd_mode_sense6(current_state, current_cdb);
+           break;
+
 
     case SCSI_CMD_REQUEST_SENSE:
            scsi_cmd_request_sense(current_state, current_cdb);
