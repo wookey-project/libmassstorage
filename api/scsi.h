@@ -7,6 +7,7 @@ typedef enum {
     SCSI_CMD_INQUIRY			            = 0x12, // Mandatory
     SCSI_CMD_MODE_SELECT_10                = 0x55,
     SCSI_CMD_MODE_SENSE_10	                = 0x5a, // Requiered for some bootable devices
+    SCSI_CMD_MODE_SENSE_6                  = 0x1a, // Requiered for some bootable devices
     SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL	= 0x1e,
     SCSI_CMD_READ_10			            = 0x28, // Mandatory
     SCSI_CMD_READ_CAPACITY_10		        = 0x25, // Mandatory
@@ -57,38 +58,80 @@ typedef enum {
 # define SCSI_ERROR_GET_ASCQ(error)		(error & 0xff)
 
 
-//# define SCSI_ERROR_INVALID_COMMAND		0x52000
-# define SCSI_ERROR_UNIT_BECOMING_READY		((0x2 << 16) | (0x04 << 8) | 0x01)
-
 
 /**
  * scsi_init - Initialize the USB stack (SCSI, BBB, USB)
  */
 
-/*!
- * Callbacks that handle upper layer effective read or write request to
- * local (or remote application) storage access request. This callbacks
- * must be blocking callbacks while the transaction is not finished yet
- * (i.e. the data read or data write is not effective).
- */
-typedef uint8_t (*scsi_read_cb_t)(uint32_t sector_addr, uint32_t num_sectors);
-typedef uint8_t (*scsi_write_cb_t)(uint32_t sector_addr, uint32_t num_sectors);
+/*****************************************************
+ * externally supplied implementations prototypes
+ *
+ * WARNING: these functions MUST be defined in the binary
+ * which include the libSCSI. These functions implement
+ * the backend storage access, which may vary depending on
+ * the overall system implementation and which is not, as a
+ * consequence, a SCSI specific implementation.
+ *****************************************************/
 
-typedef uint8_t (*scsi_get_storage_capacity_cb_t)(uint32_t *);
-typedef uint8_t (*scsi_get_storage_block_size_cb_t)(uint32_t *);
+/*
+ * Why using symbol resolution instead of callbacks ?
+ *
+ * Symbol resolution is made at link time, instead of requiring
+ * function pointers that need to be registered in a writable
+ * area of the application memory.
+ *
+ * A lot of security vulnerabilities are based on function pointers
+ * corruption using overflows on stack contexts, making ROP or
+ * any other uncontrolled execution flows possible.
+ *
+ * Moreover, linking directly to the symbol avoid a resolution of
+ * the callback address and help the compiler at optimization time.
+ */
+
+
+/*
+ * \brief Read data from the storage backend
+ *
+ * \param sector_addr SCSI sector address where the data must be read
+ * \param num_sectors number of sectors to read
+ *
+ * \return 0 on success
+ */
+uint8_t scsi_storage_backend_read(uint32_t sector_addr, uint32_t num_sectors);
+
+/*
+ * \brief Write data to the storage backend
+ *
+ * \param sector_addr SCSI sector address where the data must be written
+ * \param num_sectors number of sectors to write
+ *
+ * \return 0 on success
+ */
+uint8_t scsi_storage_backend_write(uint32_t sector_addr, uint32_t num_sectors);
+
+/*
+ * \brief get back the backend storage capacity
+ *
+ * \param numblock number of SCSI blocks
+ * \param blocksize size of one SCSI block
+ *
+ * \return 0 on success
+ */
+uint8_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize);
+
+
+/***********************************************************
+ * libDFU API
+ ***********************************************************/
+
 
 /*
  * Should be two 4096 preallocated sized buffer by now.
  */
 
-typedef struct scsi_calbacks {
-    scsi_read_cb_t read;
-    scsi_write_cb_t write;
-} scsi_calbacks_t;
+uint8_t scsi_early_init(uint8_t*buf, uint16_t buflen);
 
-uint8_t scsi_early_init(uint8_t*buf, uint16_t buflen, scsi_calbacks_t * init_cb);
-
-void scsi_init(uint32_t storage_size, uint32_t block_size);
+void scsi_init(void);
 
 void scsi_send_data(void *data, uint32_t size);
 void scsi_get_data(void *buffer, uint32_t size);

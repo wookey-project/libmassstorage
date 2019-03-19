@@ -18,12 +18,6 @@
 
 
 
-static scsi_calbacks_t scsi_cb = {
-   .read = NULL,
-   .write = NULL,
-};
-
-
 
 typedef enum scsi_state {
     SCSI_IDLE = 0x00,
@@ -51,7 +45,8 @@ typedef enum {
 } transmission_direction_t;
 
 typedef enum {
-    TOTO,
+    SCSI_ERROR_NONE = 0,
+    SCSI_ERROR_UNIT_BECOMING_READY = 0x20401,
     SCSI_ERROR_INVALID_COMMAND = 0x52000,
 
 } scsi_error_t;
@@ -679,6 +674,15 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
+
+    /* SCSI standard says that the host should not request READ10 cmd
+     * before requesting GET_CAPACITY cmd. In this very case, we have to
+     * send back INVALID to the host */
+    if (scsi_ctx.storage_size == 0) {
+        scsi_error(SCSI_ERROR_INVALID_COMMAND);
+        return;
+    }
+
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
     rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
@@ -699,12 +703,10 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
         printf("%s: sz %u, scsi_ctx.block_size: %u | sz / scsi_ctx.block_size = num_sectors to read: %u\n", __func__, sz, scsi_ctx.block_size, num_sectors);
     #endif
 	for(i = scsi_ctx.global_buf_len; i <= size; i+= scsi_ctx.global_buf_len) {
-        if (scsi_cb.read) {
-            #if SCSI_DEBUG
-                printf("%s: asking num_sectors: %u to storage app: / (%u) \n", __func__, num_sectors, (sz / scsi_ctx.block_size));
-            #endif
-            scsi_cb.read((uint32_t)tmp, num_sectors);
-        }
+#if SCSI_DEBUG
+        printf("%s: asking num_sectors: %u to storage app: / (%u) \n", __func__, num_sectors, (sz / scsi_ctx.block_size));
+#endif
+        scsi_storage_backend_read((uint32_t)tmp, num_sectors);
         tmp += sz / scsi_ctx.block_size;
         #if SCSI_DEBUG
             printf("%s: sending data to host.\n", __func__);
@@ -715,15 +717,13 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
 
     /* Fractional residue */
     if ((i - scsi_ctx.global_buf_len) < size) {
-        #if SCSI_DEBUG
-            printf("%s: sending data residue to host.\n", __func__);
-        #endif
+#if SCSI_DEBUG
+        printf("%s: sending data residue to host.\n", __func__);
+#endif
         num_sectors = (size - i + scsi_ctx.global_buf_len) / scsi_ctx.block_size;
-        if (scsi_cb.read) {
-            scsi_cb.read((uint32_t)tmp, num_sectors);
-        }
+        scsi_storage_backend_read((uint32_t)tmp, num_sectors);
         scsi_send_data(scsi_ctx.global_buf, size - i + scsi_ctx.global_buf_len);
-        #if SCSI_DEBUG
+#if SCSI_DEBUG
             printf("%s: sending data residue to host: DONE\n", __func__);
         #endif
 
@@ -741,6 +741,10 @@ invalid_transition:
 // FIXME SCSI_CMD_READ_CAPACITY_10
 static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
+    uint32_t response[2];
+    uint8_t ret;
+
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -751,7 +755,6 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
@@ -759,9 +762,14 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-    uint32_t response[2];
 
-    assert(scsi_ctx.storage_size && scsi_ctx.block_size); // FIXME
+    /* let's get capacity from upper layer */
+    ret = scsi_storage_backend_capacity(&(scsi_ctx.storage_size), &(scsi_ctx.block_size));
+    if (ret != 0) {
+        /* unable to get back capacity from backend... */
+        scsi_error(SCSI_ERROR_UNIT_BECOMING_READY);
+        return;
+    }
 
     //what is expected is the _LAST_ LBA address ....
     // See Working draft SCSI block cmd  5.10.2 READ CAPACITY (10)
@@ -1055,6 +1063,15 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
         goto invalid_transition;
     }
 
+    /* SCSI standard says that the host should not request WRITE10 cmd
+     * before requesting GET_CAPACITY cmd. In this very case, we have to
+     * send back INVALID to the host */
+    if (scsi_ctx.storage_size == 0) {
+        scsi_error(SCSI_ERROR_INVALID_COMMAND);
+        return;
+    }
+
+
     rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
     rw_size = from_big16(current_cdb->payload.cdb10.transfer_blocks);
     rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
@@ -1075,9 +1092,7 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
         while(!scsi_is_ready_for_data_receive()){
             continue;
         }
-        if (scsi_cb.write) {
-            scsi_cb.write((uint32_t)tmp, num_sectors);
-        }
+        scsi_storage_backend_write((uint32_t)tmp, num_sectors);
         tmp += sz / scsi_ctx.block_size;
 	}
     /* Fractional residue */
@@ -1090,9 +1105,7 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
             continue;
         }
         num_sectors = (size - i + scsi_ctx.global_buf_len) / scsi_ctx.block_size;
-        if (scsi_cb.write) {
-            scsi_cb.write((uint32_t)tmp, num_sectors);
-        }
+        scsi_storage_backend_write((uint32_t)tmp, num_sectors);
     }
     return;
         /* effective transition execution (if needed) */
@@ -1188,28 +1201,13 @@ typedef enum scsi_init_error {
 } scsi_init_error_t;
 
 
-uint8_t scsi_early_init(uint8_t *buf, uint16_t len, scsi_calbacks_t * init_cb){
+uint8_t scsi_early_init(uint8_t *buf, uint16_t len)
+{
 
     scsi_init_error_t error = -1;
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
-    if (! init_cb ) {
-        error = SCSI_INIT_CALLBACK_ERROR;
-        goto init_error;
-    }
-
-
-    if (! init_cb->read ) {
-        error = SCSI_INIT_CALLBACK_ERROR;
-        goto init_error;
-    }
-
-
-    if (! init_cb->write ) {
-        error = SCSI_INIT_CALLBACK_ERROR;
-        goto init_error;
-    }
 
     if ( !buf ) {
         error = SCSI_INIT_BUFFER_ERROR;
@@ -1221,8 +1219,6 @@ uint8_t scsi_early_init(uint8_t *buf, uint16_t len, scsi_calbacks_t * init_cb){
         goto init_error;
     }
 
-    scsi_cb.read = init_cb->read;
-    scsi_cb.write = init_cb->write;
     scsi_ctx.global_buf = buf;
     scsi_ctx.global_buf_len = len;
 
@@ -1241,7 +1237,7 @@ init_error:
  */
 #define MAX_SCSI_CMD_QUEUE_SIZE 10
 
-void scsi_init(uint32_t storage_size, uint32_t block_size)
+void scsi_init(void)
 {
     #if SCSI_DEBUG
         printf("%s\n", __func__);
@@ -1252,8 +1248,8 @@ void scsi_init(uint32_t storage_size, uint32_t block_size)
 
 	unsigned int i;
 
-    scsi_ctx.storage_size = storage_size;
-    scsi_ctx.block_size = block_size;
+    scsi_ctx.storage_size = 0;
+    scsi_ctx.block_size = 4096; /* default */
 
 	scsi_ctx.queue = queue_create(MAX_SCSI_CMD_QUEUE_SIZE);
 
