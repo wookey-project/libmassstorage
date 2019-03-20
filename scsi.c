@@ -500,7 +500,11 @@ static void scsi_data_available(uint32_t size)
     aprintf("%s: %d\n", __func__, size);
 #endif
 
-    scsi_ctx.size_to_process -= size;
+    if (size >= scsi_ctx.size_to_process) {
+        scsi_ctx.size_to_process = 0;
+    } else {
+        scsi_ctx.size_to_process -= size;
+    }
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 
     if (scsi_ctx.size_to_process == 0){
@@ -522,9 +526,7 @@ static void scsi_data_sent(void)
 
     if (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_ctx.size_to_process -= scsi_ctx.global_buf_len;
-        aprintf("[ISR] sent intermediary chunk\n");
     } else {
-        aprintf("[ISR] sent last chunk\n");
         scsi_ctx.size_to_process = 0;
     }
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
@@ -765,28 +767,6 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
         aprintf_flush();
         printf("%s: sending data chunk to host: DONE\n", __func__);
     }
-#if 0
-	for (i = scsi_ctx.global_buf_len; i <= size; i+= scsi_ctx.global_buf_len) {
-
-        num_sectors = sz / scsi_ctx.block_size;
-#if SCSI_DEBUG
-//        printf("%s: asking num_sectors: %u to storage app: / (%u) \n", __func__, num_sectors, (sz / scsi_ctx.block_size));
-#endif
-        scsi_storage_backend_read((uint32_t)tmp, num_sectors);
-        tmp += sz / scsi_ctx.block_size;
-#if SCSI_DEBUG
- //       printf("%s: sending data to host.\n", __func__);
-#endif
-
-		scsi_send_data(scsi_ctx.global_buf, sz);
-        /* active wait for data to be sent */
-        while(!scsi_is_ready_for_data_send()){
-            continue;
-        }
-        aprintf_flush();
-        printf("%s: sending data chunk to host: DONE\n", __func__);
-	}
-#endif
 
     /* Fractional residue */
     if (scsi_ctx.size_to_process > 0) {
@@ -1172,13 +1152,10 @@ invalid_transition:
 // FIXME SCSI_CMD_WRITE_10
 static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
-	unsigned int i;
     uint32_t num_sectors;
-    unsigned int sz;
 
     uint32_t rw_lba;
     uint16_t rw_size;
-    uint64_t size;
     uint64_t rw_addr;
 
 #if SCSI_DEBUG
@@ -1221,36 +1198,35 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
     rw_size = from_big16(current_cdb->payload.cdb10.transfer_blocks);
     rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
-    size = scsi_ctx.block_size * rw_size;
+    scsi_ctx.size_to_process = scsi_ctx.block_size * rw_size;
+    //size = scsi_ctx.block_size * rw_size;
 
-	sz = (size < scsi_ctx.global_buf_len) ? size : scsi_ctx.global_buf_len;
 
     uint64_t tmp = rw_addr / (uint64_t)scsi_ctx.block_size;
 
     if (tmp > 0xffffffff) {
         printf("PANIC! requested sector address generate int overflow !\n");
     }
-    num_sectors = sz / scsi_ctx.block_size;
 
-	for(i = scsi_ctx.global_buf_len; i <= size; i+= scsi_ctx.global_buf_len) {
-		scsi_get_data(scsi_ctx.global_buf, sz);
-
+    while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
+        scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         while(!scsi_is_ready_for_data_receive()){
             continue;
         }
+        num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
         scsi_storage_backend_write((uint32_t)tmp, num_sectors);
-        tmp += sz / scsi_ctx.block_size;
-	}
-    /* Fractional residue */
-    if ((i - scsi_ctx.global_buf_len) < size) {
+        tmp += scsi_ctx.global_buf_len / scsi_ctx.block_size;
+    }
 
-        // TODO: assert that size - (num * sz) *must* be a sector multiple
-        scsi_get_data(scsi_ctx.global_buf, size - i + scsi_ctx.global_buf_len);
+    /* Fractional residue */
+    if (scsi_ctx.size_to_process > 0) {
+
+        scsi_get_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
 
         while(!scsi_is_ready_for_data_receive()){
             continue;
         }
-        num_sectors = (size - i + scsi_ctx.global_buf_len) / scsi_ctx.block_size;
+        num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
         scsi_storage_backend_write((uint32_t)tmp, num_sectors);
     }
     return;
