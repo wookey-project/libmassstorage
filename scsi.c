@@ -143,7 +143,7 @@ static const struct {
                              }
     },
     { SCSI_READ,     {
-                                 {SCSI_CMD_READ_10,0xff},
+                                 {SCSI_CMD_READ_10,SCSI_IDLE},
                                  {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
@@ -161,7 +161,7 @@ static const struct {
                              }
     },
     { SCSI_WRITE,     {
-                                 {SCSI_CMD_WRITE_10,0xff},
+                                 {SCSI_CMD_WRITE_10,SCSI_IDLE},
                                  {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
@@ -469,43 +469,40 @@ void scsi_send_data(void *data, uint32_t size)
 	usb_bbb_send(data, size, 2); // FIXME HARCODED ENDPOINT
 }
 
-void scsi_send_status(void)
-{
-#ifdef SCSI_DEBUG
-	printf("%s:\n", __func__ );
-#endif
-	usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
-}
-
-
+/*
+ * Trigger on input data available
+ */
 static void scsi_data_available(uint32_t size)
 {
 #if SCSI_DEBUG
-    printf("%s: %d\n", __func__, size);
+    aprintf("%s: %d\n", __func__, size);
 #endif
 
     scsi_ctx.size_to_process -= size;
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 
     if (scsi_ctx.size_to_process == 0){
-	    scsi_send_status();
+        usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
         scsi_ctx.direction = SCSI_DIRECTION_IDLE;
         scsi_set_state(SCSI_IDLE);
     }
 }
 
 
-static void scsi_data_sent()
+/*
+ * Trigger on data sent by IP
+ */
+static void scsi_data_sent(void)
 {
 #if SCSI_DEBUG
-    printf("%s: %d\n", __func__);
+    aprintf("%s: %d\n", __func__);
 #endif
 
     scsi_ctx.size_to_process = 0;
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 
     if (scsi_ctx.size_to_process == 0){
-	    scsi_send_status();
+        usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
         scsi_ctx.direction = SCSI_DIRECTION_IDLE;
         scsi_set_state(SCSI_IDLE);
     }
@@ -745,6 +742,8 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
         #endif
 
     }
+    scsi_set_state(next_state);
+	//FIXME: to add or not ? usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
     return;
 
 invalid_transition:
@@ -798,7 +797,7 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
         printf("%s: response[0]: %d response[1]: %d\n", __func__, response[0], response[1]);
     #endif
 
-	usb_bbb_send((uint8_t *)response, sizeof(response), 2);
+    usb_bbb_send((uint8_t *)response, sizeof(response), 2);
     return;
 
 
