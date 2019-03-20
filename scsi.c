@@ -53,9 +53,9 @@ typedef enum {
 
 
 typedef  struct {
-    transmission_direction_t direction;
-    transmition_line_state_t line_state;
-    uint32_t size_to_process;
+    volatile transmission_direction_t direction;
+    volatile transmition_line_state_t line_state;
+    volatile uint32_t size_to_process;
     uint32_t addr;
     scsi_error_t error;
     struct queue *queue;
@@ -204,23 +204,28 @@ static inline scsi_state_t scsi_get_state() {
 }
 
 
+/*
+ * This function is eligible in both main thread and ISR
+ * mode (through trigger execution). Please use aprintf only
+ * here.
+ */
 static inline void scsi_set_state(const scsi_state_t new_state)
 {
     if (new_state == 0xff) {
-        printf("%s: PANIC! this should never arise !", __func__);
+        aprintf("%s: PANIC! this should never arise !", __func__);
         while (1) {}; //FIXME
         return;
     }
 #if SCSI_DEBUG
-    printf("state: %x => %x\n", scsi_ctx.state, new_state);
+    aprintf("%s: state: %x => %x\n", __func__, scsi_ctx.state, new_state);
 #endif
     scsi_ctx.state = new_state;
 }
 
 void scsi_error(scsi_error_t reason){
 #if SCSI_DEBUG
-    printf("%s: %s: status=%d\n", __func__, __func__, reason);
-    printf("%s: state -> Error\n",__func__);
+    aprintf("%s: %s: status=%d\n", __func__, __func__, reason);
+    aprintf("%s: state -> Error\n",__func__);
 #endif
     scsi_ctx.error = reason;
     usb_bbb_send_csw(CSW_STATUS_FAILED, 0);
@@ -419,7 +424,7 @@ typedef struct __packed request_sense_parameter_data {
 
 typedef struct  __attribute__((packed)) {
     uint16_t lun_list_length;
-    uint16_t reserved1;
+    uint16_t reserved;
     uint16_t  luns[];
 } report_luns_data_t;
 
@@ -440,9 +445,18 @@ static void scsi_release_cdb(cdb_t * current_cdb){
 
 static inline bool scsi_is_ready_for_data_receive(void)
 {
-    return (   scsi_ctx.direction == SCSI_DIRECTION_RECV
+    return (   (   scsi_ctx.direction == SCSI_DIRECTION_RECV
+                || scsi_ctx.direction == SCSI_DIRECTION_IDLE)
             && scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY );
 }
+
+static inline bool scsi_is_ready_for_data_send(void)
+{
+    return (   (   scsi_ctx.direction == SCSI_DIRECTION_SEND
+                || scsi_ctx.direction == SCSI_DIRECTION_IDLE)
+            && scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY );
+}
+
 
 
 void scsi_get_data(void *buffer, uint32_t size)
@@ -455,7 +469,7 @@ void scsi_get_data(void *buffer, uint32_t size)
 	}
 
 	scsi_ctx.direction = SCSI_DIRECTION_RECV;
-    scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
+    scsi_ctx.line_state = SCSI_TRANSMIT_LINE_BUSY;
 	scsi_ctx.size_to_process = size;
     scsi_ctx.addr = 0;
 
@@ -471,8 +485,7 @@ void scsi_send_data(void *data, uint32_t size)
 #endif
 
 	scsi_ctx.direction = SCSI_DIRECTION_SEND;
-    scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
-	scsi_ctx.size_to_process = size;
+    scsi_ctx.line_state = SCSI_TRANSMIT_LINE_BUSY;
     scsi_ctx.addr = 0;
 
 	usb_bbb_send(data, size, 2); // FIXME HARCODED ENDPOINT
@@ -504,13 +517,19 @@ static void scsi_data_available(uint32_t size)
 static void scsi_data_sent(void)
 {
 #if SCSI_DEBUG
-    aprintf("%s: %d\n", __func__);
+    aprintf("%s\n", __func__);
 #endif
 
-    scsi_ctx.size_to_process = 0;
+    if (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
+        scsi_ctx.size_to_process -= scsi_ctx.global_buf_len;
+        aprintf("[ISR] sent intermediary chunk\n");
+    } else {
+        aprintf("[ISR] sent last chunk\n");
+        scsi_ctx.size_to_process = 0;
+    }
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 
-    if (scsi_ctx.size_to_process == 0){
+    if (scsi_ctx.size_to_process == 0) {
         usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
         scsi_ctx.direction = SCSI_DIRECTION_IDLE;
         scsi_set_state(SCSI_IDLE);
@@ -529,7 +548,7 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
     // Only 10 byte commands are supported, bigger sized commands are trunccated
     ret = wmalloc((void**)&current_cdb, sizeof(cdb_t), ALLOC_NORMAL);
     if(ret){
-        while(1){}; // FIXME
+        scsi_set_state(SCSI_ERROR);
     }
 
     memcpy((void *)current_cdb, (void *)cdb, sizeof(cdb_t));
@@ -672,13 +691,11 @@ invalid_transition:
 // SCSI_CMD_READ_10
 static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
-    unsigned int i;
-    unsigned int sz;
     uint32_t num_sectors;
+    uint32_t total_num_sectors;
 
     uint32_t rw_lba;
     uint16_t rw_size;
-    uint64_t size;
     uint64_t rw_addr;
 
     #if SCSI_DEBUG
@@ -706,53 +723,89 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
         return;
     }
 
+    /* entering READ state... */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    scsi_set_state(next_state);
 
     rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
     rw_size = from_big16(current_cdb->payload.cdb10.transfer_blocks);
     rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
-    size = scsi_ctx.block_size * rw_size;
-
-	sz = (size < scsi_ctx.global_buf_len) ? size : scsi_ctx.global_buf_len;
+    scsi_ctx.size_to_process = scsi_ctx.block_size * rw_size;
 
     uint64_t tmp = rw_addr / (uint64_t)scsi_ctx.block_size;
 
     if (tmp > 0xffffffff) {
         printf("%s: PANIC! requested sector address generate int overflow !\n", __func__);
+        /* TODO react properly */
     }
 
-    num_sectors = sz / scsi_ctx.block_size;
+    total_num_sectors = scsi_ctx.size_to_process / scsi_ctx.block_size;
     #if SCSI_DEBUG
-        printf("%s: sz %u, scsi_ctx.block_size: %u | sz / scsi_ctx.block_size = num_sectors to read: %u\n", __func__, sz, scsi_ctx.block_size, num_sectors);
+    printf("%s: sz %u, block_size: %u | num_sectors: %u\n", __func__, scsi_ctx.size_to_process, scsi_ctx.block_size, total_num_sectors);
     #endif
-	for(i = scsi_ctx.global_buf_len; i <= size; i+= scsi_ctx.global_buf_len) {
+
+
+    while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
+        /* There is more data to send that the buffer is able to process,
+         * data are sent in multiple chunks of buf_len size... */
+
+        /* INFO: num_sectors may be defined out of the loop */
+        num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        scsi_storage_backend_read((uint32_t)tmp, num_sectors);
+        /* send data we have just read */
+		scsi_send_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
+        /* increment read pointer */
+        tmp += scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        /* active wait for data to be sent */
+        while(!scsi_is_ready_for_data_send()){
+            continue;
+        }
+        /* here, scsi_data_sent() has been executed, updating
+         * size_to_process accordingly */
+        aprintf_flush();
+        printf("%s: sending data chunk to host: DONE\n", __func__);
+    }
+#if 0
+	for (i = scsi_ctx.global_buf_len; i <= size; i+= scsi_ctx.global_buf_len) {
+
+        num_sectors = sz / scsi_ctx.block_size;
 #if SCSI_DEBUG
-        printf("%s: asking num_sectors: %u to storage app: / (%u) \n", __func__, num_sectors, (sz / scsi_ctx.block_size));
+//        printf("%s: asking num_sectors: %u to storage app: / (%u) \n", __func__, num_sectors, (sz / scsi_ctx.block_size));
 #endif
         scsi_storage_backend_read((uint32_t)tmp, num_sectors);
         tmp += sz / scsi_ctx.block_size;
-        #if SCSI_DEBUG
-            printf("%s: sending data to host.\n", __func__);
-        #endif
+#if SCSI_DEBUG
+ //       printf("%s: sending data to host.\n", __func__);
+#endif
 
 		scsi_send_data(scsi_ctx.global_buf, sz);
+        /* active wait for data to be sent */
+        while(!scsi_is_ready_for_data_send()){
+            continue;
+        }
+        aprintf_flush();
+        printf("%s: sending data chunk to host: DONE\n", __func__);
 	}
+#endif
 
     /* Fractional residue */
-    if ((i - scsi_ctx.global_buf_len) < size) {
+    if (scsi_ctx.size_to_process > 0) {
 #if SCSI_DEBUG
         printf("%s: sending data residue to host.\n", __func__);
 #endif
-        num_sectors = (size - i + scsi_ctx.global_buf_len) / scsi_ctx.block_size;
+        num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
         scsi_storage_backend_read((uint32_t)tmp, num_sectors);
-        scsi_send_data(scsi_ctx.global_buf, size - i + scsi_ctx.global_buf_len);
+        scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
 #if SCSI_DEBUG
-            printf("%s: sending data residue to host: DONE\n", __func__);
         #endif
-
+        /* active wait for data to be sent */
+        while(!scsi_is_ready_for_data_send()){
+            continue;
+        }
+        aprintf_flush();
+        printf("%s: sending data residue to host: DONE\n", __func__);
     }
-    scsi_set_state(next_state);
-	//FIXME: to add or not ? usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
+
     return;
 
 invalid_transition:
@@ -842,14 +895,14 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
     } else {
         goto invalid_transition;
     }
-    // FIXME We only support 1 LUN
+    // TODO We only support 1 LUN
     report_luns_data_t report_lun_data = {
         .lun_list_length = 1,
         .reserved = 0,
-        .luns = 0
     };
+    report_lun_data.luns[0] = 0;
 
-	usb_bbb_send((uint8_t *)report_lun_data, sizeof(report_lun_data), 2);
+	usb_bbb_send((uint8_t *)&report_lun_data, sizeof(report_lun_data), 2);
     return;
 
     /* XXX
@@ -1201,7 +1254,6 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
         scsi_storage_backend_write((uint32_t)tmp, num_sectors);
     }
     return;
-        /* effective transition execution (if needed) */
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);

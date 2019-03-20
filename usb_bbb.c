@@ -58,7 +58,7 @@ static void read_next_cmd(void)
 static void usb_bbb_cmd_received(uint32_t size)
 {
 	if (size != sizeof(struct scsi_cbw) || cbw.sig != USB_BBB_CBW_SIG) {
-		printf("[USB BBB] %s: CBW not valid\n", __func__ );
+		aprintf("[USB BBB] %s: CBW not valid\n", __func__ );
 		return;
 	}
 	if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved || cbw.lun.lun) {
@@ -67,21 +67,21 @@ static void usb_bbb_cmd_received(uint32_t size)
 		 * with InferfaceSubClass
 		 */
 #if BBB_DEBUG
-		printf("[USB BBB] %s: CBW not meaningful\n", __func__ );
+		aprintf("[USB BBB] %s: CBW not meaningful\n", __func__ );
 #endif
 		return;
 	}
 	current_tag = cbw.tag;
 	bbb_state = CMD;
 #if BBB_DEBUG
-	printf("[USB BBB] %s: Command received\n", __func__ );
+	aprintf("[USB BBB] %s: Command received\n", __func__ );
 #endif
 	callback_cmd_received(cbw.cdb, cbw.cdb_len.cdb_len);
 }
 
 static void usb_bbb_data_received(uint32_t size)
 {
-    printf("[USB BBB] %s bbb_state: %x ... \n", __func__, bbb_state);
+    aprintf("[USB BBB] %s bbb_state: %x ... \n", __func__, bbb_state);
     switch(bbb_state) {
         case READY:
 		    usb_bbb_cmd_received(size);
@@ -93,7 +93,7 @@ static void usb_bbb_data_received(uint32_t size)
 		    callback_data_received(size);
             break;
         default:
-		    printf("[USB BBB] %s: ERROR usb_bbb_data_received ... \n", __func__ );
+		    aprintf("[USB BBB] %s: ERROR usb_bbb_data_received ... \n", __func__ );
 	}
 }
 
@@ -102,28 +102,28 @@ static void usb_bbb_data_sent(void)
 	switch (bbb_state) {
 	case STATUS:
 #if BBB_DEBUG
-		printf("[USB BBB] %s: data sent while in STATUS state\n", __func__ );
+		aprintf("[USB BBB] %s: data sent while in STATUS state\n", __func__ );
 #endif
 		read_next_cmd();
 		break;
 	case DATA:
 #if BBB_DEBUG
-		printf("[USB BBB] %s: data sent while in DATA state\n", __func__ );
+		aprintf("[USB BBB] %s: data sent while in DATA state\n", __func__ );
 #endif
 		callback_data_sent();
 		break;
 	case READY:
 #if BBB_DEBUG
-		printf("[USB BBB] %s: data sent while in READY state\n", __func__ );
+		aprintf("[USB BBB] %s: data sent while in READY state\n", __func__ );
 #endif
 		break;
 	case CMD:
 #if BBB_DEBUG
-		printf("[USB BBB] %s: data sent while in CMD state\n", __func__ );
+		aprintf("[USB BBB] %s: data sent while in CMD state\n", __func__ );
 #endif
 		break;
 	default:
-		printf("[USB BBB] %s: Unknown bbb_state\n", __func__ );
+		aprintf("[USB BBB] %s: Unknown bbb_state\n", __func__ );
 	}
 }
 
@@ -171,7 +171,7 @@ void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
 
 	bbb_state = STATUS;
 #if BBB_DEBUG
-	printf("[USB BBB] %s: Sending CSW (%x, %x, %x, %x)\n", __func__, csw.sig, csw.tag, csw.data_residue, csw.status);
+	aprintf("[USB BBB] %s: Sending CSW (%x, %x, %x, %x)\n", __func__, csw.sig, csw.tag, csw.data_residue, csw.status);
 #endif
 	usb_driver_setup_send((uint8_t *)&csw, sizeof(csw), 2);
 }
@@ -179,7 +179,7 @@ void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
 void usb_bbb_send(const uint8_t *src, uint32_t size, uint8_t ep)
 {
 #if BBB_DEBUG
-		printf("[USB BBB] %s\n", __func__ );
+		aprintf("[USB BBB] %s\n", __func__ );
 #endif
 	bbb_state = DATA;
 	usb_driver_setup_send(src, size, ep);
@@ -188,7 +188,7 @@ void usb_bbb_send(const uint8_t *src, uint32_t size, uint8_t ep)
 void usb_bbb_read(void *dst, uint32_t size, uint8_t ep)
 {
 #if BBB_DEBUG
-		printf("[USB BBB] %s\n", __func__ );
+		aprintf("[USB BBB] %s\n", __func__ );
 #endif
 	bbb_state = DATA;
 	usb_driver_setup_read(dst, size, ep);
