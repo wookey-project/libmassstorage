@@ -399,6 +399,16 @@ typedef struct __attribute__((packed)) {
     uint8_t  control;
 } cdb6_mode_select_t;
 
+
+typedef struct __attribute__((packed)) {
+    uint8_t  reserved:6;
+    uint8_t  CMDDT:1; /* obsolete */
+    uint8_t  EVPD:1;
+    uint8_t  page_code;
+    uint16_t allocation_length;
+    uint8_t  control;
+} cdb6_inquiry_t;
+
 typedef struct __attribute__((packed)) {
     uint8_t  reserved3:3;
     uint8_t  PF:1;
@@ -424,6 +434,7 @@ typedef union {
     /* CDB 6 bytes length */
     cdb6_mode_sense_t              cdb6_mode_sense;
     cdb6_mode_select_t             cdb6_mode_select;
+    cdb6_inquiry_t                 cdb6_inquiry;
     /* CDB 10 bytes length */
     cdb10_t                        cdb10; /* read and write */
     cdb10_mode_sense_t             cdb10_mode_sense;
@@ -500,6 +511,44 @@ typedef struct  __attribute__((packed)) {
     uint16_t reserved;
     uint16_t  luns[];
 } report_luns_data_t;
+
+typedef struct __packed inquiry_data {
+	uint8_t   periph_qualifier:3;
+	uint8_t   periph_device_type:5;
+	uint8_t   RMB:1;
+	uint8_t   reserved3:7;
+	uint8_t   version;
+	uint8_t   obsolete4:2;
+	uint8_t   NORMACA:1;
+	uint8_t   HISUP:1;
+	uint8_t   data_format:4;
+	uint8_t   additional_len;
+	uint8_t   SCCS:1;
+	uint8_t   ACC:1;
+	uint8_t   TPGS:2;
+	uint8_t   TPC:1;
+	uint8_t   reserved2:2;
+	uint8_t   PROTECT:1;
+	uint8_t   obsolete3:1;
+	uint8_t   ENCSERV:1;
+	uint8_t   VS2:1;
+	uint8_t   multip:1;
+	uint8_t   obsolete2:4;
+	uint8_t   obsolete1:6;
+	uint8_t   CMDQUE:1;
+	uint8_t   VS1:1;
+	char      vendor_info[8];
+	char      product_identification[16];
+	char      product_revision[4];
+    uint64_t  drive_serial_number;
+    uint8_t   vendor_unique[12];
+    uint8_t   reserved1;
+    uint16_t  version_descriptor[8];
+    /*reserved: bytes 74->95 */
+    /* copyright notice: 96->n */
+
+} inquiry_data_t;
+
 
 
 
@@ -642,45 +691,12 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
 /*
  * Commands
  */
-typedef struct __packed inquiry_data {
-	uint8_t device_type:5;
-	uint8_t qualifier:3;
-	uint8_t reserved1:7;
-	uint8_t rmb:1;
-	uint8_t version;
-	uint8_t data_format:4;
-	uint8_t hi_sup:1;
-	uint8_t norm_aca:1;
-	uint8_t reserved3:2;
-	uint8_t additional_len;
-	uint8_t prot:1;
-	uint8_t reserved5:2;
-	uint8_t pc:1;
-	uint8_t tpgs:2;
-	uint8_t acc:1;
-	uint8_t sccs:1;
-	uint8_t addr16:1;
-	uint8_t reserved6_1:3;
-	uint8_t multip:1;
-	uint8_t vs6:1;
-	uint8_t env_serv:1;
-	uint8_t reserved6_7:1;
-	uint8_t vs7:1;
-	uint8_t cmd_que:1;
-	uint8_t reserved7_2:2;
-	uint8_t sync:1;
-	uint8_t wbus16:1;
-	uint8_t reserved7_6:2;
-	char vendor_info[8];
-	char product_identification[16];
-	char product_revision[4];
-} inquiry_data_t;
-
-
 
 static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 {
-	inquiry_data_t data;
+	inquiry_data_t response;
+    cdb6_inquiry_t *inq;
+
 #if SCSI_DEBUG
 		printf("%s:\n", __func__ );
 #endif
@@ -699,26 +715,61 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
     next_state = scsi_next_state(current_state, cdb->operation);
 
     /* effective transition execution (if needed) */
+    inq = &(cdb->payload.cdb6_inquiry);
+
+
+#if 1
+    printf("inquiry:\n");
+    printf("CMDDT:         %x\n", inq->CMDDT);
+    printf("EVPD:          %x\n", inq->EVPD);
+    printf("page_code:     %x\n", inq->page_code);
+    printf("allocation_len:%x\n", from_big16(inq->allocation_length));
+    printf("control  :     %x\n", inq->control);
+#endif
+
+    /* sanitize received cmd in conformity with SCSI standard */
+    if (inq->EVPD == 0 && from_big16(inq->allocation_length) < 5) {
+        /* invalid: additional fields parameter can't be send */
+        goto invalid_cmd;
+    }
+
+    if (inq->EVPD == 1 && from_big16(inq->allocation_length) < 4) {
+        /* invalid: additional fields parameter can't be send */
+        goto invalid_cmd;
+    }
 
 	/* Most of support bits are set to 0
 	 * version is 0 because the device does not claim conformance to any
 	 * standard
 	 */
-	memset((void *)&data, 0, sizeof(data));
-	data.rmb = 1;                           /* Removable media */
-	data.data_format = 2;                   /* < 2 obsoletes, > 2 reserved */
-	data.additional_len = sizeof(data) - 5; /* (36 - 5) bytes after this one remain */
-    data.additional_len = sizeof(data) - 5; /* (36 - 5) bytes after this one remain */
-    strncpy(data.vendor_info, CONFIG_USB_DEV_MANUFACTURER, sizeof(data.vendor_info));
-    strncpy(data.product_identification, CONFIG_USB_DEV_PRODNAME, sizeof(data.product_identification));
-    strncpy(data.product_revision, CONFIG_USB_DEV_REVISION, sizeof(data.product_revision));
+	memset((void *)&response, 0, sizeof(response));
 
-    #if SCSI_DEBUG
-        printf("%s: %s\n",__func__, data.product_revision);
-    #endif
+    response.periph_device_type = 0x0; /* direct access block device */
+	response.RMB = 1;                           /* Removable media */
+
+	response.data_format = 2;                   /* < 2 obsoletes, > 2 reserved */
+	response.additional_len = sizeof(response) - 5; /* (36 - 5) bytes after this one remain */
+    response.additional_len = sizeof(response) - 5; /* (36 - 5) bytes after this one remain */
+    memcpy(response.vendor_info, CONFIG_USB_DEV_MANUFACTURER, sizeof(response.vendor_info));
+    memcpy(response.product_identification, CONFIG_USB_DEV_PRODNAME, sizeof(response.product_identification));
+    memcpy(response.product_revision, CONFIG_USB_DEV_REVISION, sizeof(response.product_revision));
+
+#if SCSI_DEBUG
+    printf("%s: %s\n",__func__, response.product_revision);
+#endif
 
 
-	usb_bbb_send((uint8_t *)&data, sizeof(data), 2);
+    if (inq->allocation_length > 0) {
+        usb_bbb_send((uint8_t *)&response, (from_big16(inq->allocation_length) < sizeof(response)) ? from_big16(inq->allocation_length) : sizeof(response), 2);
+    } else {
+        printf("allocation length is 0\n");
+    }
+	//usb_bbb_send((uint8_t *)&response, sizeof(response), 2);
+    return;
+
+invalid_cmd:
+    printf("%s: malformed cmd\n", __func__);
+    scsi_error(SCSI_ERROR_INVALID_COMMAND);
     return;
 
 invalid_transition:
