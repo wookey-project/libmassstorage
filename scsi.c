@@ -11,6 +11,7 @@
 #include "autoconf.h"
 #include "api/syscall.h"
 #include "wookey_ipc.h"
+#include "scsi_cmd.h"
 
 #define assert(val) if (!(val)) { while (1) ; };
 
@@ -110,7 +111,7 @@ scsi_context_t scsi_ctx = {
  * the transition handler has to handle this manually.
  */
 
-# define MAX_TRANSITION_STATE 13
+# define MAX_TRANSITION_STATE 15
 
 /*
  * Association between a request and a transition to a next state. This couple
@@ -129,11 +130,13 @@ static const struct {
     { SCSI_IDLE,               {
                                 {SCSI_CMD_INQUIRY,SCSI_IDLE},
                                 {SCSI_CMD_MODE_SELECT_10,SCSI_IDLE},
+                                {SCSI_CMD_MODE_SELECT_6,SCSI_IDLE},
                                 {SCSI_CMD_MODE_SENSE_10,SCSI_IDLE},
                                 {SCSI_CMD_MODE_SENSE_6,SCSI_IDLE},
                                 {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL,SCSI_IDLE},
                                 {SCSI_CMD_READ_10,SCSI_IDLE},
                                 {SCSI_CMD_READ_CAPACITY_10,SCSI_IDLE},
+                                {SCSI_CMD_READ_CAPACITY_16,SCSI_IDLE},
                                 {SCSI_CMD_READ_FORMAT_CAPACITIES,SCSI_IDLE},
                                 {SCSI_CMD_REPORT_LUNS,SCSI_IDLE},
                                 {SCSI_CMD_REQUEST_SENSE,SCSI_IDLE},
@@ -144,6 +147,8 @@ static const struct {
     },
     { SCSI_READ,     {
                                  {SCSI_CMD_READ_10,SCSI_IDLE},
+                                 {0xff,0xff},
+                                 {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
@@ -174,10 +179,14 @@ static const struct {
                                  {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
+                                 {0xff,0xff},
+                                 {0xff,0xff},
                              }
     },
     { SCSI_ERROR,     {
                                  {SCSI_CMD_MODE_SENSE_10, SCSI_IDLE},
+                                 {SCSI_CMD_MODE_SENSE_6, SCSI_IDLE},
+                                 {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
@@ -379,18 +388,82 @@ typedef struct  __attribute__((packed)){
 } cdb6_mode_sense_t;
 
 
+typedef struct __attribute__((packed)) {
+    uint8_t  reserved3:3;
+    uint8_t  PF:1;
+    uint8_t  reserved2:2;
+    uint8_t  RTD:1;
+    uint8_t  SP:1;
+    uint16_t reserved1;
+    uint8_t  parameter_list_length;
+    uint8_t  control;
+} cdb6_mode_select_t;
+
+typedef struct __attribute__((packed)) {
+    uint8_t  reserved3:3;
+    uint8_t  PF:1;
+    uint8_t  reserved2:3;
+    uint8_t  SP:1;
+    uint8_t  reserved1_bis;
+    uint32_t reserved1;
+    uint16_t  parameter_list_length;
+    uint8_t  control;
+} cdb10_mode_select_t;
+
+typedef struct  __attribute__((packed)){
+    uint8_t  Reserved2:3;
+    uint8_t  service_action:5;
+    uint64_t logical_block_address;
+    uint32_t allocation_length;
+    uint8_t  Reserved1:7;
+    uint8_t  PMI:1;
+    uint8_t  control;
+} cdb16_read_capacity_16_t;
+
 typedef union {
-    cdb10_t cdb10;
-    cdb10_mode_sense_t cdb10_mode_sense;
-    cdb10_prevent_allow_removal_t cdb10_prevent_allow_removal;
-    cdb10_request_sense_t cdb10_request_sense;
-    cdb6_mode_sense_t  cdb6_mode_sense;
+    /* CDB 6 bytes length */
+    cdb6_mode_sense_t              cdb6_mode_sense;
+    cdb6_mode_select_t             cdb6_mode_select;
+    /* CDB 10 bytes length */
+    cdb10_t                        cdb10; /* read and write */
+    cdb10_mode_sense_t             cdb10_mode_sense;
+    cdb10_mode_select_t            cdb10_mode_select;
+    cdb10_prevent_allow_removal_t  cdb10_prevent_allow_removal;
+    cdb10_request_sense_t          cdb10_request_sense;
+    /* CDB 16 bytes length */
+    cdb16_read_capacity_16_t       cdb16_read_capacity;
 } u_cdb_payload;
 
 typedef  struct  __attribute__((packed)){
     uint8_t operation;
     u_cdb_payload payload;
 } cdb_t;
+
+
+
+/***************************
+ * about responses
+ **************************/
+
+typedef struct __attribute__((packed)) {
+    uint32_t ret_lba;
+    uint32_t ret_block_length;
+} read_capacity10_parameter_data_t;
+
+typedef struct __attribute__((packed)) {
+    uint64_t ret_lba;
+    uint32_t ret_block_length;
+    uint8_t  reserved2:2;
+    uint8_t  rc_basis:2;
+    uint8_t  p_type:3;
+    uint8_t  prot_enable:1;
+    uint8_t  p_i_expornent:4;
+    uint8_t  logical_block_per_phys_block_component:4;
+    uint16_t lbpme:1;
+    uint16_t lbprz:1;
+    uint16_t lowest_aligned_lba:14;
+    uint8_t  reserved1[16];
+} read_capacity16_parameter_data_t;
 
 
 typedef struct  __attribute__((packed)) {
@@ -461,7 +534,7 @@ static inline bool scsi_is_ready_for_data_send(void)
 
 void scsi_get_data(void *buffer, uint32_t size)
 {
-#ifdef SCSI_DEBUG
+#if SCSI_DEBUG
 	printf("%s: size: %d \n", __func__, size );
 #endif
 	while(!scsi_is_ready_for_data_receive()){
@@ -479,7 +552,7 @@ void scsi_get_data(void *buffer, uint32_t size)
 
 void scsi_send_data(void *data, uint32_t size)
 {
-#ifdef SCSI_DEBUG
+#if SCSI_DEBUG
 	printf("%s: size: %d \n", __func__, size );
 #endif
 
@@ -608,7 +681,7 @@ typedef struct __packed inquiry_data {
 static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 {
 	inquiry_data_t data;
-#ifdef SCSI_DEBUG
+#if SCSI_DEBUG
 		printf("%s:\n", __func__ );
 #endif
     /* Sanity check */
@@ -731,6 +804,9 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
     rw_size = from_big16(current_cdb->payload.cdb10.transfer_blocks);
     rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
+    /* initialize size_to_process. This variable will be upated during the
+     * active wait loop below by the USB BBB triggers (usb_data_sent for
+     * read, usb_data_available for write */
     scsi_ctx.size_to_process = scsi_ctx.block_size * rw_size;
 
     total_num_sectors = scsi_ctx.size_to_process / scsi_ctx.block_size;
@@ -754,10 +830,6 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
         while(!scsi_is_ready_for_data_send()){
             continue;
         }
-        /* here, scsi_data_sent() has been executed, updating
-         * size_to_process accordingly */
-        aprintf_flush();
-        printf("%s: sending data chunk to host: DONE\n", __func__);
     }
 
     /* Fractional residue */
@@ -774,8 +846,6 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
         while(!scsi_is_ready_for_data_send()){
             continue;
         }
-        aprintf_flush();
-        printf("%s: sending data residue to host: DONE\n", __func__);
     }
 
     return;
@@ -792,7 +862,7 @@ invalid_transition:
 static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     uint8_t next_state;
-    uint32_t response[2];
+    read_capacity10_parameter_data_t response;
     uint8_t ret;
 
     #if SCSI_DEBUG
@@ -824,14 +894,10 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
     //what is expected is the _LAST_ LBA address ....
     // See Working draft SCSI block cmd  5.10.2 READ CAPACITY (10)
 
-	response[0] = to_big32(scsi_ctx.storage_size-1);
-	response[1] = to_big32(scsi_ctx.block_size);
+	response.ret_lba = to_big32(scsi_ctx.storage_size-1);
+	response.ret_block_length = to_big32(scsi_ctx.block_size);
 
-    #if SCSI_DEBUG
-        printf("%s: response[0]: %d response[1]: %d\n", __func__, response[0], response[1]);
-    #endif
-
-    usb_bbb_send((uint8_t *)response, sizeof(response), 2);
+    usb_bbb_send((uint8_t *)&response, sizeof(read_capacity10_parameter_data_t), 2);
     return;
 
 
@@ -840,6 +906,76 @@ invalid_transition:
     scsi_error(SCSI_ERROR_INVALID_COMMAND);
     return;
 }
+
+static void scsi_cmd_read_capacity16(scsi_state_t  current_state, cdb_t * current_cdb)
+{
+    uint8_t next_state;
+    read_capacity16_parameter_data_t response;
+    cdb16_read_capacity_16_t *rc16;
+    uint8_t ret;
+
+    #if SCSI_DEBUG
+        printf("%s\n", __func__);
+    #endif
+
+    /* Sanity check */
+    if(current_cdb == NULL){
+        goto invalid_transition;
+    }
+
+    /* Sanity check and next state detection */
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        goto invalid_transition;
+    }
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+
+    /* let's get capacity from upper layer */
+    ret = scsi_storage_backend_capacity(&(scsi_ctx.storage_size), &(scsi_ctx.block_size));
+    if (ret != 0) {
+        /* unable to get back capacity from backend... */
+        scsi_error(SCSI_ERROR_UNIT_BECOMING_READY);
+        return;
+    }
+
+    /* get back cdb content from union */
+    rc16 = &(current_cdb->payload.cdb16_read_capacity);
+
+    //what is expected is the _LAST_ LBA address ....
+    // See Working draft SCSI block cmd  5.10.2 READ CAPACITY (16)
+
+    /* creating response... */
+    memset((void*)&response, 0x0, sizeof(read_capacity16_parameter_data_t));
+	response.ret_lba = (uint64_t)to_big32(scsi_ctx.storage_size-1);
+	response.ret_block_length = to_big32(scsi_ctx.block_size);
+    response.prot_enable = 0; /* no prot_enable, protection associated fields
+                                 are disabled. */
+    response.rc_basis = 0x01; /* LBA is the LBA of the last logical block
+                                 on the logical unit. See Seagate SCSI
+                                 command ref., chap. 3.23.2 */
+
+    #if SCSI_DEBUG
+        printf("%s: response[0]: %d response[1]: %d\n", __func__, response[0], response[1]);
+    #endif
+
+    /* the amount of bytes sent in the response depends on the allocation
+     * length value set in the read_capacity16 cmd. If this value is null,
+     * no response should be sent.
+     * See Seagate SCSI command ref. chap. 3.23.2 */
+    if (rc16->allocation_length > 0) {
+        usb_bbb_send((uint8_t *)&response, (rc16->allocation_length < sizeof(response)) ? rc16->allocation_length : sizeof(response), 2);
+    }
+    return;
+
+
+invalid_transition:
+    printf("%s: invalid_transition\n", __func__);
+    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    return;
+}
+
 
 // FIXME SCSI_CMD_REPORT_LUNS
 static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cdb)
@@ -1056,6 +1192,35 @@ invalid_transition:
     return;
 }
 
+static void scsi_cmd_mode_select6(scsi_state_t  current_state, cdb_t * current_cdb)
+{
+    #if SCSI_DEBUG
+        printf("%s\n", __func__);
+    #endif
+
+    /* Sanity check */
+    if(current_cdb == NULL){
+        printf("%s: current_cdb == NULL\n", __func__);
+        goto invalid_transition;
+    }
+
+    /* Sanity check and next state detection */
+    uint8_t next_state;
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        goto invalid_transition;
+    }
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
+    return;
+
+invalid_transition:
+    printf("%s: invalid_transition\n", __func__);
+    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    return;
+}
 
 
 static void scsi_cmd_mode_select10(scsi_state_t  current_state, cdb_t * current_cdb)
@@ -1080,19 +1245,8 @@ static void scsi_cmd_mode_select10(scsi_state_t  current_state, cdb_t * current_
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
     /* effective transition execution (if needed) */
-    #if 0
-	if (sd_is_ready()) {
-		usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
-	} else {
-		usb_bbb_send_csw(CSW_STATUS_FAILED, 0);
-		scsi_ctx.error = SCSI_ERROR_UNIT_BECOMING_READY;
-        scsi_error(ERRUNKNOWN);
-	}
-    #else
-	    //usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
-        scsi_error(SCSI_ERROR_INVALID_COMMAND);
-        return;
-    #endif
+    usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
+    return;
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
@@ -1142,7 +1296,7 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     uint16_t rw_size;
     uint64_t rw_addr;
 
-#if 1
+#if SCSI_DEBUG
     printf("%s:\n",__func__);
 #endif
 
@@ -1182,6 +1336,10 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
     rw_size = from_big16(current_cdb->payload.cdb10.transfer_blocks);
     rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
+
+    /* initialize size_to_process. This variable will be upated during the
+     * active wait loop below by the USB BBB triggers (usb_data_sent for
+     * read, usb_data_available for write */
     scsi_ctx.size_to_process = scsi_ctx.block_size * rw_size;
 
 
@@ -1254,12 +1412,20 @@ void scsi_exec_automaton(void)
 		scsi_cmd_read_capacity10(current_state, current_cdb);
 		break;
 
+	case SCSI_CMD_READ_CAPACITY_16:
+		scsi_cmd_read_capacity16(current_state, current_cdb);
+		break;
+
 	case SCSI_CMD_REPORT_LUNS:
 		scsi_cmd_report_luns(current_state, current_cdb);
 		break;
 
     case SCSI_CMD_MODE_SELECT_10:
            scsi_cmd_mode_select10(current_state, current_cdb);
+           break;
+
+    case SCSI_CMD_MODE_SELECT_6:
+           scsi_cmd_mode_select6(current_state, current_cdb);
            break;
 
     case SCSI_CMD_MODE_SENSE_10:

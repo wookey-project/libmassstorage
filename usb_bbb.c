@@ -81,7 +81,9 @@ static void usb_bbb_cmd_received(uint32_t size)
 
 static void usb_bbb_data_received(uint32_t size)
 {
+#if BBB_DEBUG
     aprintf("[USB BBB] %s bbb_state: %x ... \n", __func__, bbb_state);
+#endif
     switch(bbb_state) {
         case READY:
 		    usb_bbb_cmd_received(size);
