@@ -765,8 +765,14 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 	response.data_format = 2;                   /* < 2 obsoletes, > 2 reserved */
 	response.additional_len = sizeof(response) - 5; /* (36 - 5) bytes after this one remain */
     response.additional_len = sizeof(response) - 5; /* (36 - 5) bytes after this one remain */
+
+    /* empty char must be set with spaces */
+    memset(response.vendor_info, 0x20, sizeof(response.vendor_info));
     memcpy(response.vendor_info, CONFIG_USB_DEV_MANUFACTURER, sizeof(response.vendor_info));
+    /* empty char must be set with spaces */
+    memset(response.product_identification, 0x20, sizeof(response.product_identification));
     memcpy(response.product_identification, CONFIG_USB_DEV_PRODNAME, sizeof(response.product_identification));
+
     memcpy(response.product_revision, CONFIG_USB_DEV_REVISION, sizeof(response.product_revision));
 
 #if SCSI_DEBUG
