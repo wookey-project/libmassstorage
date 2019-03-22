@@ -47,6 +47,7 @@ typedef enum {
 
 typedef enum {
     SCSI_ERROR_NONE = 0,
+    SCSI_ERROR_CHECK_CONDITION = 0x02, /* FIXME: encoded value to set */
     SCSI_ERROR_UNIT_BECOMING_READY = 0x20401,
     SCSI_ERROR_INVALID_COMMAND = 0x52000,
 
@@ -420,6 +421,18 @@ typedef struct __attribute__((packed)) {
     uint8_t  control;
 } cdb10_mode_select_t;
 
+typedef struct __attribute__((packed)) {
+    uint8_t  reserved3;
+    uint8_t  selected_report;
+    uint16_t reserved2_2;
+    uint8_t  reserved2_1;
+    uint32_t allocation_length;
+    uint8_t  reserved1;
+    uint8_t  control;
+} cdb12_report_luns_t;
+
+
+
 typedef struct  __attribute__((packed)){
     uint8_t  Reserved2:3;
     uint8_t  service_action:5;
@@ -441,6 +454,8 @@ typedef union {
     cdb10_mode_select_t            cdb10_mode_select;
     cdb10_prevent_allow_removal_t  cdb10_prevent_allow_removal;
     cdb10_request_sense_t          cdb10_request_sense;
+    /* CDB 12 bytes length */
+    cdb12_report_luns_t            cdb12_report_luns;
     /* CDB 16 bytes length */
     cdb16_read_capacity_16_t       cdb16_read_capacity;
 } u_cdb_payload;
@@ -507,9 +522,9 @@ typedef struct __packed request_sense_parameter_data {
 
 
 typedef struct  __attribute__((packed)) {
-    uint16_t lun_list_length;
-    uint16_t reserved;
-    uint16_t  luns[];
+    uint32_t lun_list_length;
+    uint32_t reserved;
+    uint64_t  luns[];
 } report_luns_data_t;
 
 typedef struct __packed inquiry_data {
@@ -764,7 +779,6 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
     } else {
         printf("allocation length is 0\n");
     }
-	//usb_bbb_send((uint8_t *)&response, sizeof(response), 2);
     return;
 
 invalid_cmd:
@@ -1031,6 +1045,8 @@ invalid_transition:
 // FIXME SCSI_CMD_REPORT_LUNS
 static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    cdb12_report_luns_t *rl;
+    bool check_condition = false;
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -1054,14 +1070,34 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
     } else {
         goto invalid_transition;
     }
+
+    rl = &(current_cdb->payload.cdb12_report_luns);
+
+    if (from_big16(rl->allocation_length) < 16) {
+        /* invalid: requested to be at least 16 by standard */
+        goto invalid_cmd;
+    }
+    if (from_big16(rl->allocation_length) < 24) {
+        /* enable to send first lun informations */
+        check_condition = true;
+    }
+
+
     // TODO We only support 1 LUN
-    report_luns_data_t report_lun_data = {
+    report_luns_data_t response = {
         .lun_list_length = 1,
         .reserved = 0,
     };
-    report_lun_data.luns[0] = 0;
+    response.luns[0] = 0;
 
-	usb_bbb_send((uint8_t *)&report_lun_data, sizeof(report_lun_data), 2);
+    /* sending response, up to required bytes */
+    usb_bbb_send((uint8_t *)&response, (from_big16(rl->allocation_length) < sizeof(response)) ? from_big16(rl->allocation_length) : sizeof(response), 2);
+
+    /* if the host didn't reserve enough space to respond, inform it that
+     * some informations are missing */
+    if (check_condition) {
+        usb_bbb_send_csw(SCSI_ERROR_CHECK_CONDITION, 0);
+    }
     return;
 
     /* XXX
@@ -1071,6 +1107,12 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
      * initiator port associated with every I_T nexus, with the additional sense code set
      * to REPORTED LUNS DATA HAS CHANGED.
      */
+
+
+invalid_cmd:
+    printf("%s: malformed cmd\n", __func__);
+    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    return;
 
 
 invalid_transition:
