@@ -1484,12 +1484,13 @@ void scsi_exec_automaton(void)
 
     enter_critical_section();
 	if(scsi_ctx.queue_empty == 1){
-		return;
-	}
-	current_cdb = queue_dequeue(scsi_ctx.queue);
-	if(queue_is_empty(scsi_ctx.queue)){
-		scsi_ctx.queue_empty = 1;
-	}
+        leave_critical_section();
+        return;
+    }
+    current_cdb = queue_dequeue(scsi_ctx.queue);
+    if(queue_is_empty(scsi_ctx.queue)){
+        scsi_ctx.queue_empty = 1;
+    }
     leave_critical_section();
 
     scsi_state_t current_state = scsi_get_state();
