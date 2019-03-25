@@ -18,8 +18,6 @@
 #define SCSI_DEBUG 0
 
 
-
-
 typedef enum scsi_state {
     SCSI_IDLE = 0x00,
     SCSI_READ,
@@ -607,7 +605,6 @@ void scsi_get_data(void *buffer, uint32_t size)
 
 	scsi_ctx.direction = SCSI_DIRECTION_RECV;
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_BUSY;
-	scsi_ctx.size_to_process = size;
     scsi_ctx.addr = 0;
 
 	usb_bbb_read(buffer, size, 1);
@@ -733,7 +730,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
     inq = &(cdb->payload.cdb6_inquiry);
 
 
-#if 1
+#if SCSI_DEBUG
     printf("inquiry:\n");
     printf("CMDDT:         %x\n", inq->CMDDT);
     printf("EVPD:          %x\n", inq->EVPD);
@@ -1028,7 +1025,7 @@ static void scsi_cmd_read_capacity16(scsi_state_t  current_state, cdb_t * curren
                                  command ref., chap. 3.23.2 */
 
     #if SCSI_DEBUG
-        printf("%s: response[0]: %d response[1]: %d\n", __func__, response[0], response[1]);
+        printf("%s: response[0]: %d response[1]: %d\n", __func__, response.ret_lba, response.ret_block_length);
     #endif
 
     /* the amount of bytes sent in the response depends on the allocation
@@ -1195,6 +1192,7 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
+#if SCSI_DEBUG
     printf("%s:\n", __func__);
     printf("\treserved1          : %x\n", current_cdb->payload.cdb10_mode_sense.LLBAA);
     printf("\tLLBAA              : %x\n", current_cdb->payload.cdb10_mode_sense.LLBAA);
@@ -1206,6 +1204,7 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
     printf("\treserved3          : %x\n", current_cdb->payload.cdb10_mode_sense.reserved3);
     printf("\tallocation_length  : %x\n", current_cdb->payload.cdb10_mode_sense.allocation_length);
     printf("\tcontrol            : %x\n", current_cdb->payload.cdb10_mode_sense.control);
+#endif
 
     /* Sending Mode Sense 10 answer */
     /* We only send back the mode parameter header with no data */
@@ -1252,7 +1251,7 @@ static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cd
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-#if 0
+#if SCSI_DEBUG
     printf("%s:\n", __func__);
     printf("\tLUN                : %x\n", current_cdb->payload.cdb6_mode_sense.LUN);
     printf("\treserved4          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved4);
@@ -1449,12 +1448,13 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
 
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
-        while(!scsi_is_ready_for_data_receive()) {
-            continue;
-        }
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
         scsi_storage_backend_write(rw_lba, num_sectors);
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        while(!scsi_is_ready_for_data_receive()){
+            continue;
+        }
+
     }
 
     /* Fractional residue */
@@ -1464,10 +1464,10 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
         /* num_sectors *must* be calculated before waiting for ISR, as
          * the ISR trigger decrement size_to_process */
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
+        scsi_storage_backend_write(rw_lba, num_sectors);
         while(!scsi_is_ready_for_data_receive()){
             continue;
         }
-        scsi_storage_backend_write(rw_lba, num_sectors);
     }
     return;
 
