@@ -307,14 +307,15 @@ static bool scsi_is_valid_transition(scsi_state_t current_state,
  * Critical sections must be as short as possible to avoid border
  * effects such as latency increase and ISR queue overloading.
  */
-static inline void enter_critical_section(void)
+static inline mbed_error_t enter_critical_section(void)
 {
     uint8_t ret;
     ret = sys_lock (LOCK_ENTER); /* Enter in critical section */
     if(ret != SYS_E_DONE){
         printf("%s: Error: failed entering critical section!\n", __func__);
+        return MBED_ERROR_BUSY;
     }
-    return;
+    return MBED_ERROR_NONE;
 }
 
 /*
@@ -324,16 +325,28 @@ static inline void enter_critical_section(void)
  */
 static inline void leave_critical_section(void)
 {
-    uint8_t ret;
-    ret = sys_lock (LOCK_EXIT);  /* Exit from critical section */
-    if(ret != SYS_E_DONE){
-        printf("Error: failed exiting critical section!\n");
-    }
+    sys_lock (LOCK_EXIT);  /* Exit from critical section, should not
+                              fail */
     return;
 }
 
 /****************** END OF AUTOMATON *********************/
 
+/***************************
+ * about SCSI commands
+ *
+ * All commands here are defined as packed structure
+ * *without* the starting operation byte.
+ *
+ * All commands start with the same field (the operation byte)
+ * which is used to segregate commands.
+ *
+ * This byte is added to the cdb_t structure, associating
+ * this byte to an union associating all supported commands
+ * (see bellow)
+ **************************/
+
+/* MODE SENSE 10  */
 typedef struct  __attribute__((packed)){
      uint8_t reserved1:3;
      uint8_t LLBAA:2;
@@ -348,6 +361,7 @@ typedef struct  __attribute__((packed)){
 } cdb10_mode_sense_t;
 
 
+/* PREVENT ALLOW REMOVAL */
 typedef struct  __attribute__((packed)){
      uint16_t reserved1;
      uint8_t reserved2:6;
@@ -355,6 +369,7 @@ typedef struct  __attribute__((packed)){
      uint8_t control;
 } cdb10_prevent_allow_removal_t;
 
+/* REQUEST SENSE 10 */
 typedef struct  __attribute__((packed)){
      uint8_t reserved1:7;
      uint8_t desc:1;
@@ -362,6 +377,7 @@ typedef struct  __attribute__((packed)){
      uint8_t allocation_length;
 } cdb10_request_sense_t;
 
+/* READ 10 / WRITE 10 */
 typedef struct  __attribute__((packed)){
      uint8_t misc1:3;
      uint8_t service_action:5;
@@ -371,6 +387,7 @@ typedef struct  __attribute__((packed)){
      uint8_t control;
 } cdb10_t;
 
+/* MODE SENSE 6 */
 typedef struct  __attribute__((packed)){
      uint8_t LUN:3;
      uint8_t reserved4:1;
@@ -386,7 +403,7 @@ typedef struct  __attribute__((packed)){
      uint8_t link:1;
 } cdb6_mode_sense_t;
 
-
+/* MODE SELECT 6 */
 typedef struct __attribute__((packed)) {
     uint8_t  reserved3:3;
     uint8_t  PF:1;
@@ -399,6 +416,7 @@ typedef struct __attribute__((packed)) {
 } cdb6_mode_select_t;
 
 
+/* INQUIRY 6 */
 typedef struct __attribute__((packed)) {
     uint8_t  reserved:6;
     uint8_t  CMDDT:1; /* obsolete */
@@ -408,6 +426,7 @@ typedef struct __attribute__((packed)) {
     uint8_t  control;
 } cdb6_inquiry_t;
 
+/* MODE SELECT 10 */
 typedef struct __attribute__((packed)) {
     uint8_t  reserved3:3;
     uint8_t  PF:1;
@@ -419,6 +438,7 @@ typedef struct __attribute__((packed)) {
     uint8_t  control;
 } cdb10_mode_select_t;
 
+/* REPORT LUNS */
 typedef struct __attribute__((packed)) {
     uint8_t  reserved3;
     uint8_t  selected_report;
@@ -430,7 +450,7 @@ typedef struct __attribute__((packed)) {
 } cdb12_report_luns_t;
 
 
-
+/* READ CAPACITY 16 */
 typedef struct  __attribute__((packed)){
     uint8_t  Reserved2:3;
     uint8_t  service_action:5;
@@ -441,6 +461,10 @@ typedef struct  __attribute__((packed)){
     uint8_t  control;
 } cdb16_read_capacity_16_t;
 
+/*
+ * polymorphic SCSI command content, using a C union
+ * type
+ */
 typedef union {
     /* CDB 6 bytes length */
     cdb6_mode_sense_t              cdb6_mode_sense;
@@ -458,6 +482,10 @@ typedef union {
     cdb16_read_capacity_16_t       cdb16_read_capacity;
 } u_cdb_payload;
 
+/*
+ * SCSI command storage area, associating the operation byte
+ * and the union field in a packed content
+ */
 typedef  struct  __attribute__((packed)){
     uint8_t operation;
     u_cdb_payload payload;
@@ -467,13 +495,24 @@ typedef  struct  __attribute__((packed)){
 
 /***************************
  * about responses
+ *
+ * SCSI responses are most of the time based on fixed content.
+ * Although, there is cases where SCSI response length are dynamic
+ * and are impacted by the associated SCSI command.
+ *
+ * The bellowing structures defined the supported SCSI responses,
+ * for the above SCSI commands
+ *
  **************************/
 
+/* READ CAPACITY 10 PARAMETER DATA */
 typedef struct __attribute__((packed)) {
     uint32_t ret_lba;
     uint32_t ret_block_length;
 } read_capacity10_parameter_data_t;
 
+
+/* READ CAPACITY 16 PARAMETER DATA */
 typedef struct __attribute__((packed)) {
     uint64_t ret_lba;
     uint32_t ret_block_length;
@@ -490,6 +529,7 @@ typedef struct __attribute__((packed)) {
 } read_capacity16_parameter_data_t;
 
 
+/* MODE SENSE PARAMETER DATA */
 typedef struct  __attribute__((packed)) {
     uint16_t mode_data_length;
     uint8_t medium_type;
@@ -500,6 +540,8 @@ typedef struct  __attribute__((packed)) {
     uint16_t block_descriptor_length;
 } mode_parameter_header_t;
 
+
+/* REQUEST SENSE PARAMETER DATA */
 typedef struct __packed request_sense_parameter_data {
    uint8_t error_code:7;
    uint8_t info_valid:1;
@@ -519,12 +561,15 @@ typedef struct __packed request_sense_parameter_data {
 } request_sense_parameter_data_t;
 
 
+/* REPORT LUNS PARAMETER DATA */
 typedef struct  __attribute__((packed)) {
     uint32_t lun_list_length;
     uint32_t reserved;
     uint64_t  luns[];
 } report_luns_data_t;
 
+
+/* INQUIRY PARAMETER DATA */
 typedef struct __packed inquiry_data {
 	uint8_t   periph_qualifier:3;
 	uint8_t   periph_device_type:5;
@@ -563,19 +608,23 @@ typedef struct __packed inquiry_data {
 } inquiry_data_t;
 
 
+/********* End of responses structures declaration ***********/
 
-
-
-static void scsi_release_cdb(cdb_t * current_cdb){
-
-	if(current_cdb != NULL){
-        enter_critical_section();
-		if(wfree((void**)&current_cdb)){
-			while(1){}; // FIXME
+static mbed_error_t scsi_release_cdb(cdb_t * current_cdb)
+{
+    /* no critical section here, as the exec_automaton
+     * is not reentrant and is fully exec in main thread mode.
+     * The current_cdb variable is a local only variable.
+     */
+    mbed_error_t ret = MBED_ERROR_NONE;
+	if(current_cdb != NULL) {
+		if(wfree((void**)&current_cdb)) {
+            /* should not arrise */
+            ret = MBED_ERROR_UNKNOWN;
 		}
-        leave_critical_section();
 	}
 	current_cdb = NULL;
+    return ret;
 }
 
 static inline bool scsi_is_ready_for_data_receive(void)
@@ -1557,7 +1606,17 @@ void scsi_exec_automaton(void)
         goto invalid_command;
 	};
 
-    scsi_release_cdb(current_cdb);
+    if (scsi_release_cdb(current_cdb) != MBED_ERROR_NONE) {
+        /* error while releasing cdb */
+        goto release_error;
+    }
+    return;
+
+release_error:
+#if SCSI_DEBUG
+    printf("%s: Error while releasing cdb!\n", __func__);
+#endif
+    /* TODO: here we need to specify a correct SCSI error for the host */
     return;
 
 invalid_command:
