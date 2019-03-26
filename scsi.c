@@ -660,7 +660,9 @@ typedef struct  __attribute__((packed)) {
     uint8_t block_descriptor_length;
 } mode_parameter6_header_t;
 
+/* MODE SELECT/MODE SENSE RESPONSE PARAMETERS */
 
+/* 1) Caching mode */
 typedef struct __attribute__((packed)) {
     uint8_t  PS:1;
     uint8_t  SPF:1;
@@ -712,8 +714,68 @@ typedef union {
 } u_mode_parameter;
 
 
-
 /********* End of responses structures declaration ***********/
+
+
+/********* About debugging and pretty printing **************/
+
+#if SCSI_DEBUG
+static void scsi_debug_dump_cmd(cdb_t * current_cdb, uint8_t scsi_cmd)
+{
+    if (!current_cdb) {
+        return;
+    }
+    switch (scsi_cmd) {
+        case SCSI_CMD_MODE_SENSE_10:
+        {
+            printf("mode_sense_10:\n");
+            printf("\treserved1          : %x\n", current_cdb->payload.cdb10_mode_sense.LLBAA);
+            printf("\tLLBAA              : %x\n", current_cdb->payload.cdb10_mode_sense.LLBAA);
+            printf("\tDBD                : %x\n", current_cdb->payload.cdb10_mode_sense.DBD);
+            printf("\treserved2          : %x\n", current_cdb->payload.cdb10_mode_sense.reserved2);
+            printf("\tPC                 : %x\n", current_cdb->payload.cdb10_mode_sense.PC);
+            printf("\tpage_code          : %x\n", current_cdb->payload.cdb10_mode_sense.page_code);
+            printf("\tsub_page_code      : %x\n", current_cdb->payload.cdb10_mode_sense.sub_page_code);
+            printf("\treserved3          : %x\n", current_cdb->payload.cdb10_mode_sense.reserved3);
+            printf("\tallocation_length  : %x\n", current_cdb->payload.cdb10_mode_sense.allocation_length);
+            printf("\tcontrol            : %x\n", current_cdb->payload.cdb10_mode_sense.control);
+            break;
+        }
+        case SCSI_CMD_MODE_SENSE_6:
+        {
+            printf("mode_sense_6:\n");
+            printf("\tLUN                : %x\n", current_cdb->payload.cdb6_mode_sense.LUN);
+            printf("\treserved4          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved4);
+            printf("\tDBD                : %x\n", current_cdb->payload.cdb6_mode_sense.DBD);
+            printf("\treserved3          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved3);
+            printf("\tPC                 : %x\n", current_cdb->payload.cdb6_mode_sense.PC);
+            printf("\tpage_code          : %x\n", current_cdb->payload.cdb6_mode_sense.page_code);
+            printf("\treserved2          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved2);
+            printf("\tallocation_length  : %x\n", current_cdb->payload.cdb6_mode_sense.allocation_length);
+            printf("\tvendor_specific    : %x\n", current_cdb->payload.cdb6_mode_sense.vendor_specific);
+            printf("\treserved1          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved1);
+            printf("\tflag               : %x\n", current_cdb->payload.cdb6_mode_sense.flag);
+            printf("\tlink               : %x\n", current_cdb->payload.cdb6_mode_sense.link);
+            break;
+
+        }
+        case SCSI_CMD_INQUIRY:
+        {
+            printf("current_cdbuiry:\n");
+            printf("CMDDT:         %x\n", current_cdb->payload.cdb6_inquiry.CMDDT);
+            printf("EVPD:          %x\n", current_cdb->payload.cdb6_inquiry.EVPD);
+            printf("page_code:     %x\n", current_cdb->payload.cdb6_inquiry.page_code);
+            printf("allocation_len:%x\n", from_big16(current_cdb->payload.cdb6_inquiry.allocation_length));
+            printf("control  :     %x\n", current_cdb->payload.cdb6_inquiry.control);
+            break;
+        }
+        default:
+            break;
+    }
+}
+#endif
+
+/******** End of debugging and pretty printing **************/
 
 static mbed_error_t scsi_release_cdb(cdb_t * current_cdb)
 {
@@ -847,13 +909,6 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
 }
 
 
-
-
-
-
-
-
-
 /*
  * Commands
  */
@@ -885,12 +940,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 
 
 #if SCSI_DEBUG
-    printf("inquiry:\n");
-    printf("CMDDT:         %x\n", inq->CMDDT);
-    printf("EVPD:          %x\n", inq->EVPD);
-    printf("page_code:     %x\n", inq->page_code);
-    printf("allocation_len:%x\n", from_big16(inq->allocation_length));
-    printf("control  :     %x\n", inq->control);
+    scsi_debug_dump_cmd(cdb, SCSI_CMD_INQUIRY);
 #endif
 
     /* sanitize received cmd in conformity with SCSI standard */
@@ -1489,17 +1539,7 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
 #if SCSI_DEBUG
-    printf("%s:\n", __func__);
-    printf("\treserved1          : %x\n", current_cdb->payload.cdb10_mode_sense.LLBAA);
-    printf("\tLLBAA              : %x\n", current_cdb->payload.cdb10_mode_sense.LLBAA);
-    printf("\tDBD                : %x\n", current_cdb->payload.cdb10_mode_sense.DBD);
-    printf("\treserved2          : %x\n", current_cdb->payload.cdb10_mode_sense.reserved2);
-    printf("\tPC                 : %x\n", current_cdb->payload.cdb10_mode_sense.PC);
-    printf("\tpage_code          : %x\n", current_cdb->payload.cdb10_mode_sense.page_code);
-    printf("\tsub_page_code      : %x\n", current_cdb->payload.cdb10_mode_sense.sub_page_code);
-    printf("\treserved3          : %x\n", current_cdb->payload.cdb10_mode_sense.reserved3);
-    printf("\tallocation_length  : %x\n", current_cdb->payload.cdb10_mode_sense.allocation_length);
-    printf("\tcontrol            : %x\n", current_cdb->payload.cdb10_mode_sense.control);
+    scsi_debug_dump_cmd(current_cdb, SCSI_CMD_MODE_SENSE_10);
 #endif
 
     /* Sending Mode Sense 10 answer */
@@ -1541,19 +1581,7 @@ static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cd
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
 #if SCSI_DEBUG
-    printf("%s:\n", __func__);
-    printf("\tLUN                : %x\n", current_cdb->payload.cdb6_mode_sense.LUN);
-    printf("\treserved4          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved4);
-    printf("\tDBD                : %x\n", current_cdb->payload.cdb6_mode_sense.DBD);
-    printf("\treserved3          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved3);
-    printf("\tPC                 : %x\n", current_cdb->payload.cdb6_mode_sense.PC);
-    printf("\tpage_code          : %x\n", current_cdb->payload.cdb6_mode_sense.page_code);
-    printf("\treserved2          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved2);
-    printf("\tallocation_length  : %x\n", current_cdb->payload.cdb6_mode_sense.allocation_length);
-    printf("\tvendor_specific    : %x\n", current_cdb->payload.cdb6_mode_sense.vendor_specific);
-    printf("\treserved1          : %x\n", current_cdb->payload.cdb6_mode_sense.reserved1);
-    printf("\tflag               : %x\n", current_cdb->payload.cdb6_mode_sense.flag);
-    printf("\tlink               : %x\n", current_cdb->payload.cdb6_mode_sense.link);
+    scsi_debug_dump_cmd(current_cdb, SCSI_CMD_MODE_SENSE_10);
 #endif
 
     mode_parameter6_data_t response;
