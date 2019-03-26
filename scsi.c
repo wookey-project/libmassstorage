@@ -660,6 +660,19 @@ typedef struct  __attribute__((packed)) {
     uint8_t block_descriptor_length;
 } mode_parameter6_header_t;
 
+typedef struct __attribute__((packed)) {
+    uint32_t number_of_blocks;
+    uint8_t  reserved;
+    uint32_t logical_block_length:24;
+} mode_parameter_shortlba_t;
+
+typedef struct __attribute__((packed)) {
+    uint64_t number_of_blocks;
+    uint32_t  reserved;
+    uint32_t logical_block_length;
+} mode_parameter_longlba_t;
+
+
 /* MODE SELECT/MODE SENSE RESPONSE PARAMETERS */
 
 /* 1) Caching mode */
@@ -691,7 +704,6 @@ typedef struct __attribute__((packed)) {
     uint8_t  cache_segment_number;
     uint16_t cache_segment_size;
     uint8_t  reserved1;
-    uint32_t obsolete:24;
 } mode_parameter_caching_t;
 
 /* TODO: the following is hard-coded as we reply only caching info.
@@ -1481,10 +1493,10 @@ static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t m
     memset(response, 0x0, sizeof(u_mode_parameter));
     if (mode == SCSI_CMD_MODE_SENSE_6) {
         /* We only send back the mode parameter header with no data */
-        response->mode6.header.mode_data_length = 23;        // The number of bytes that follow.
+        response->mode6.header.mode_data_length = 19;        // The number of bytes that follow.
         response->mode6.header.medium_type = 0;             // The media type SBC.
         response->mode6.header.block_descriptor_length = 20; // A block descriptor length of zero indicates that no block descriptors
-        // are included in the mode parameter list.
+        // setting shortlba
 
         // setting caching mode
         response->mode6.caching.SPF = 0;
@@ -1497,9 +1509,10 @@ static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t m
         response->mode6.caching.NV_DIS = 0x1;
     } else if (mode == SCSI_CMD_MODE_SENSE_10) {
         /* We only send back the mode parameter header with no data */
-        response->mode10.header.mode_data_length = 26;        // The number of bytes that follow.
+        response->mode10.header.mode_data_length = 22;        // The number of bytes that follow.
         response->mode10.header.medium_type = 0;             // The media type SBC.
         response->mode10.header.block_descriptor_length = 20; // A block descriptor length of zero indicates that no block descriptors
+        response->mode10.header.longLBA = 1;
         // are included in the mode parameter list.
 
         // setting caching mode
