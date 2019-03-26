@@ -546,16 +546,6 @@ typedef struct __attribute__((packed)) {
 } read_capacity16_parameter_data_t;
 
 
-/* MODE SENSE PARAMETER DATA */
-typedef struct  __attribute__((packed)) {
-    uint16_t mode_data_length;
-    uint8_t medium_type;
-    uint8_t device_specific_param;
-    uint8_t reserved1:7;
-    uint8_t longLBA:1;
-    uint8_t reserved2;
-    uint16_t block_descriptor_length;
-} mode_parameter_header_t;
 
 
 /* REQUEST SENSE PARAMETER DATA */
@@ -623,6 +613,104 @@ typedef struct __packed inquiry_data {
     /* copyright notice: 96->n */
 
 } inquiry_data_t;
+
+
+/* About MODE SELECT and MODE SENSE responses   */
+
+/* MODE SENSE PARAMETER DATA */
+
+/*
+ * MODE SELECT and MODE SENSE require a dynamic response content,
+ * based on a data header (mode_parameter(6,10)_header_t, associated
+ * with 0 or more mode parameters block descriptors.
+ * This block descriptors are, among others, the following:
+ * - short LBA mode
+ * - long LBA mode
+ * - Application tag
+ * - background control mode
+ * - background operation control mode
+ * - Caching mode
+ *  ... and so on ...
+ *
+ * This descriptors describe the way the SCSI client is able to
+ * modify its way to communicate with the SCSI server, and the
+ * various SCSI server capacities.
+ */
+
+typedef struct  __attribute__((packed)) {
+    uint16_t mode_data_length;
+    uint8_t  medium_type;
+    uint8_t  WP:1;
+    uint8_t  reserved3:2;
+    uint8_t  DPOFUA:1;
+    uint8_t  reserved2:4;
+    uint8_t  reserved1:7;
+    uint8_t  longLBA:1;
+    uint8_t  reserved0;
+    uint16_t block_descriptor_length;
+} mode_parameter10_header_t;
+
+typedef struct  __attribute__((packed)) {
+    uint8_t mode_data_length;
+    uint8_t medium_type;
+    uint8_t WP:1;
+    uint8_t reserved2:2;
+    uint8_t DPOFUA:1;
+    uint8_t reserved1:4;
+    uint8_t block_descriptor_length;
+} mode_parameter6_header_t;
+
+
+typedef struct __attribute__((packed)) {
+    uint8_t  PS:1;
+    uint8_t  SPF:1;
+    uint8_t  page_code:6;
+    uint8_t  page_length;
+    uint8_t  IC:1;
+    uint8_t  ABPF:1;
+    uint8_t  CAP:1;
+    uint8_t  disk:1;
+    uint8_t  size:1;
+    uint8_t  WCE:1;
+    uint8_t  MF:1;
+    uint8_t  RCD:1;
+    uint8_t  dmd_read_retention_prio:4;
+    uint8_t  write_retention_prio:4;
+    uint16_t disable_prefetch_transfer_length;
+    uint16_t min_prefetch;
+    uint16_t max_prefetch;
+    uint16_t max_prefetch_ceil;
+    uint8_t  FSW:1;
+    uint8_t  LB_CSS:1;
+    uint8_t  DRA:1;
+    uint8_t  vendor_specific:2;
+    uint8_t  SYNC_PROG:2;
+    uint8_t  NV_DIS:1;
+    uint8_t  cache_segment_number;
+    uint16_t cache_segment_size;
+    uint8_t  reserved1;
+    uint32_t obsolete:24;
+} mode_parameter_caching_t;
+
+/* TODO: the following is hard-coded as we reply only caching info.
+ * A cleaner way, for MODE_SENSE and MODE_SELECT, would be to forge
+ * the required mode pages and associated mode pages header depending
+ * on the CDB content */
+typedef struct __attribute__((packed)) {
+    mode_parameter6_header_t  header;
+    mode_parameter_caching_t  caching;
+} mode_parameter6_data_t;
+
+typedef struct __attribute__((packed)) {
+    mode_parameter10_header_t  header;
+    mode_parameter_caching_t  caching;
+} mode_parameter10_data_t;
+
+typedef union {
+    mode_parameter6_data_t mode6;
+    mode_parameter10_data_t mode10;
+} u_mode_parameter;
+
 
 
 /********* End of responses structures declaration ***********/
@@ -1338,6 +1426,47 @@ invalid_transition:
     return;
 }
 
+static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t mode)
+{
+    memset(response, 0x0, sizeof(u_mode_parameter));
+    if (mode == SCSI_CMD_MODE_SENSE_6) {
+        /* We only send back the mode parameter header with no data */
+        response->mode6.header.mode_data_length = 23;        // The number of bytes that follow.
+        response->mode6.header.medium_type = 0;             // The media type SBC.
+        response->mode6.header.block_descriptor_length = 20; // A block descriptor length of zero indicates that no block descriptors
+        // are included in the mode parameter list.
+
+        // setting caching mode
+        response->mode6.caching.SPF = 0;
+        response->mode6.caching.page_code = 0x08;
+        response->mode6.caching.page_length = 0x12;
+        response->mode6.caching.WCE = 0x1;
+        response->mode6.caching.RCD = 0x1;
+        response->mode6.caching.FSW = 0x1;
+        response->mode6.caching.DRA = 0x1;
+        response->mode6.caching.NV_DIS = 0x1;
+    } else if (mode == SCSI_CMD_MODE_SENSE_10) {
+        /* We only send back the mode parameter header with no data */
+        response->mode10.header.mode_data_length = 26;        // The number of bytes that follow.
+        response->mode10.header.medium_type = 0;             // The media type SBC.
+        response->mode10.header.block_descriptor_length = 20; // A block descriptor length of zero indicates that no block descriptors
+        // are included in the mode parameter list.
+
+        // setting caching mode
+        response->mode10.caching.SPF = 0;
+        response->mode10.caching.page_code = 0x08;
+        response->mode10.caching.page_length = 0x12;
+        response->mode10.caching.WCE = 0x1;
+        response->mode10.caching.RCD = 0x1;
+        response->mode10.caching.FSW = 0x1;
+        response->mode10.caching.DRA = 0x1;
+        response->mode10.caching.NV_DIS = 0x1;
+    }
+}
+
+
+
+
 static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     #if SCSI_DEBUG
@@ -1374,27 +1503,20 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
 #endif
 
     /* Sending Mode Sense 10 answer */
-    /* We only send back the mode parameter header with no data */
-    mode_parameter_header_t mode_sens_header = {
-        .mode_data_length = 3,        // The number of bytes that follow.
-        .medium_type = 0,             // The media type SBC.
-        .device_specific_param = 0,   // Not write proectected (bit:7), no cache control-bit support (bit:4).
-        .reserved1 = 0,
-        .longLBA = 0,
-        .reserved2  = 0,
-        .block_descriptor_length = 0, // A block descriptor length of zero indicates that no block descriptors
-                                      // are included in the mode parameter list.
-    };
+    mode_parameter10_data_t response;
+    scsi_forge_mode_sense_response((u_mode_parameter*)&response, SCSI_CMD_MODE_SENSE_10);
+    /* Sending Mode Sense 10 answer */
 
     //usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t));
-    usb_bbb_send((uint8_t *)&mode_sens_header, sizeof(mode_parameter_header_t), 2);
-    return;
+    usb_bbb_send((uint8_t *)&response, sizeof(mode_parameter10_data_t), 2);
+
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_ERROR_INVALID_COMMAND);
     return;
 }
+
 
 
 static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cdb)
@@ -1434,21 +1556,12 @@ static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cd
     printf("\tlink               : %x\n", current_cdb->payload.cdb6_mode_sense.link);
 #endif
 
+    mode_parameter6_data_t response;
+    scsi_forge_mode_sense_response((u_mode_parameter*)&response, SCSI_CMD_MODE_SENSE_6);
     /* Sending Mode Sense 10 answer */
-    /* We only send back the mode parameter header with no data */
-    mode_parameter_header_t mode_sens_header = {
-        .mode_data_length = 3,        // The number of bytes that follow.
-        .medium_type = 0,             // The media type SBC.
-        .device_specific_param = 0,   // Not write proectected (bit:7), no cache control-bit support (bit:4).
-        .reserved1 = 0,
-        .longLBA = 0,
-        .reserved2  = 0,
-        .block_descriptor_length = 0, // A block descriptor length of zero indicates that no block descriptors
-                                      // are included in the mode parameter list.
-    };
 
     //usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t));
-    usb_bbb_send((uint8_t *)&mode_sens_header, sizeof(mode_parameter_header_t), 2);
+    usb_bbb_send((uint8_t *)&response, sizeof(mode_parameter6_data_t), 2);
     return;
 
 invalid_transition:
