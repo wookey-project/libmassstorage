@@ -13,18 +13,12 @@
 #include "wookey_ipc.h"
 #include "scsi_cmd.h"
 #include "scsi_log.h"
+#include "scsi_automaton.h"
 
 #define assert(val) if (!(val)) { while (1) ; };
 
 #define SCSI_DEBUG 0
 
-
-typedef enum scsi_state {
-    SCSI_IDLE = 0x00,
-    SCSI_READ,
-    SCSI_WRITE,
-    SCSI_ERROR,
-} scsi_state_t;
 
 /*
  * The SCSI stack context. This is a global variable, which means
@@ -55,7 +49,6 @@ typedef  struct {
     bool queue_empty;
     uint8_t *global_buf;
     uint16_t global_buf_len;
-    scsi_state_t state;
     uint32_t block_size;
     uint32_t storage_size;
 } scsi_context_t;
@@ -70,164 +63,12 @@ scsi_context_t scsi_ctx = {
     .queue=NULL,
     .queue_empty = true,
     .global_buf = NULL,
-    .state = SCSI_IDLE,
     .global_buf_len = 0,
     .block_size = 0,
     .storage_size = 0,
 };
 
 
-
-
-
-
-/****************************************************************
- * SCSI state automaton formal definition and associate utility
- * functions
- ***************************************************************/
-
-/*
- * all allowed transitions and target states for each current state
- * empty fields are set as 0xff/0xff for request/state couple, which is
- * an inexistent state and request
- *
- * This table associate each state of the DFU automaton with up to
- * 5 potential allowed transitions/next_state couples. This permit to
- * easily detect:
- *    1) authorized transitions, based on the current state
- *    2) next state, based on the current state and current transition
- *
- * If the next_state for the current transision is keeped to 0xff, this
- * means that the current transition for the current state may lead to
- * multiple next state depending on other informations. In this case,
- * the transition handler has to handle this manually.
- */
-
-# define MAX_TRANSITION_STATE 17
-
-/*
- * Association between a request and a transition to a next state. This couple
- * depend on the current state and is use in the following structure
- */
-typedef struct scsi_operation_code_transition {
-    uint8_t    request;
-    uint8_t    target_state;
-} scsi_operation_code_transition_t;
-
-
-static const struct {
-    scsi_state_t          state;
-    scsi_operation_code_transition_t  req_trans[MAX_TRANSITION_STATE];
-} scsi_automaton[] = {
-    { SCSI_IDLE,               {
-                                {SCSI_CMD_INQUIRY,SCSI_IDLE},
-                                {SCSI_CMD_MODE_SELECT_10,SCSI_IDLE},
-                                {SCSI_CMD_MODE_SELECT_6,SCSI_IDLE},
-                                {SCSI_CMD_MODE_SENSE_10,SCSI_IDLE},
-                                {SCSI_CMD_MODE_SENSE_6,SCSI_IDLE},
-                                {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL,SCSI_IDLE},
-                                {SCSI_CMD_READ_6,SCSI_IDLE},
-                                {SCSI_CMD_READ_10,SCSI_IDLE},
-                                {SCSI_CMD_READ_CAPACITY_10,SCSI_IDLE},
-                                {SCSI_CMD_READ_CAPACITY_16,SCSI_IDLE},
-                                {SCSI_CMD_READ_FORMAT_CAPACITIES,SCSI_IDLE},
-                                {SCSI_CMD_REPORT_LUNS,SCSI_IDLE},
-                                {SCSI_CMD_REQUEST_SENSE,SCSI_IDLE},
-                                {SCSI_CMD_SEND_DIAGNOSTIC,SCSI_IDLE},
-                                {SCSI_CMD_TEST_UNIT_READY,SCSI_IDLE},
-                                {SCSI_CMD_WRITE_6,SCSI_IDLE},
-                                {SCSI_CMD_WRITE_10,SCSI_IDLE},
-                             }
-    },
-    { SCSI_READ,     {
-                                 {SCSI_CMD_READ_6,SCSI_IDLE},
-                                 {SCSI_CMD_READ_10,SCSI_IDLE},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-
-
-                             }
-    },
-    { SCSI_WRITE,     {
-                                 {SCSI_CMD_WRITE_6,SCSI_IDLE},
-                                 {SCSI_CMD_WRITE_10,SCSI_IDLE},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                             }
-    },
-    { SCSI_ERROR,     {
-                                 {SCSI_CMD_MODE_SENSE_10, SCSI_IDLE},
-                                 {SCSI_CMD_MODE_SENSE_6, SCSI_IDLE},
-                                 {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL,SCSI_IDLE},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                             },
-    },
-
-};
-
-/**********************************************
- * SCSI getters and setters
- *********************************************/
-
-static inline scsi_state_t scsi_get_state() {
-    return scsi_ctx.state;
-}
-
-
-/*
- * This function is eligible in both main thread and ISR
- * mode (through trigger execution). Please use aprintf only
- * here.
- */
-static inline void scsi_set_state(const scsi_state_t new_state)
-{
-    if (new_state == 0xff) {
-        aprintf("%s: PANIC! this should never arise !", __func__);
-        while (1) {}; //FIXME
-        return;
-    }
-#if SCSI_DEBUG
-    aprintf("%s: state: %x => %x\n", __func__, scsi_ctx.state, new_state);
-#endif
-    scsi_ctx.state = new_state;
-}
 
 static void scsi_error(scsi_sense_key_t sensekey, uint8_t asc, uint8_t ascq){
 #if SCSI_DEBUG
@@ -238,59 +79,6 @@ static void scsi_error(scsi_sense_key_t sensekey, uint8_t asc, uint8_t ascq){
     /* returning status */
     usb_bbb_send_csw(CSW_STATUS_FAILED, 0);
     scsi_set_state(SCSI_IDLE);
-}
-
-/******************************************************
- * SCSI automaton management function (transition and
- * state check)
- *****************************************************/
-
-/*!
- * \brief return the next automaton state
- *
- * The next state is returned depending on the current state
- * and the current request. In some case, it can be 0xff if multiple
- * next states are possible.
- *
- * \param current_state the current automaton state
- * \param request       the current transition request
- *
- * \return the next state, or 0xff
- */
-static uint8_t scsi_next_state(scsi_state_t  current_state, scsi_operation_code_t    request)
-{
-    for (uint8_t i = 0; i < MAX_TRANSITION_STATE; ++i) {
-        if (scsi_automaton[current_state].req_trans[i].request == request) {
-            return (scsi_automaton[current_state].req_trans[i].target_state);
-        }
-    }
-    /* fallback, no corresponding request found for  this state */
-    return 0xff;
-}
-
-/*!
- * \brief Specify if the current request is valid for the current state
- *
- * \param current_state the current automaton state
- * \param request       the current transition request
- *
- * \return true if the transition request is allowed for this state, or false
- */
-static bool scsi_is_valid_transition(scsi_state_t current_state,
-        scsi_operation_code_t    request)
-{
-    for (uint8_t i = 0; i < MAX_TRANSITION_STATE; ++i) {
-        if (scsi_automaton[current_state].req_trans[i].request == request) {
-            return true;
-        }
-    }
-    /*
-     * Didn't find any request associated to current state. This is not a
-     * valid transition. We should stall the request.
-     */
-    printf("%s: invalid transition from state %d, request %d\n", __func__, current_state, request);
-    scsi_set_state(SCSI_ERROR);
-    return false;
 }
 
 /*********************************************************************
@@ -329,8 +117,6 @@ static inline void leave_critical_section(void)
                               fail */
     return;
 }
-
-/****************** END OF AUTOMATON *********************/
 
 /***************************
  * about SCSI commands
@@ -706,12 +492,12 @@ typedef struct __attribute__((packed)) {
  * on the CDB content */
 typedef struct __attribute__((packed)) {
     mode_parameter6_header_t  header;
-    mode_parameter_caching_t  caching;
+    // mode_parameter_caching_t  caching;
 } mode_parameter6_data_t;
 
 typedef struct __attribute__((packed)) {
     mode_parameter10_header_t  header;
-    mode_parameter_caching_t  caching;
+    // mode_parameter_caching_t  caching;
 } mode_parameter10_data_t;
 
 typedef union {
@@ -1487,11 +1273,11 @@ static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t m
     memset(response, 0x0, sizeof(u_mode_parameter));
     if (mode == SCSI_CMD_MODE_SENSE_6) {
         /* We only send back the mode parameter header with no data */
-        response->mode6.header.mode_data_length = 19;        // The number of bytes that follow.
+        response->mode6.header.mode_data_length = 3;        // The number of bytes that follow.
         response->mode6.header.medium_type = 0;             // The media type SBC.
-        response->mode6.header.block_descriptor_length = 20; // A block descriptor length of zero indicates that no block descriptors
+        response->mode6.header.block_descriptor_length = 0; // A block descriptor length of zero indicates that no block descriptors
         // setting shortlba
-
+#if 0
         // setting caching mode
         response->mode6.caching.SPF = 0;
         response->mode6.caching.page_code = 0x08;
@@ -1501,14 +1287,15 @@ static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t m
         response->mode6.caching.FSW = 0x1;
         response->mode6.caching.DRA = 0x1;
         response->mode6.caching.NV_DIS = 0x1;
+#endif
     } else if (mode == SCSI_CMD_MODE_SENSE_10) {
         /* We only send back the mode parameter header with no data */
-        response->mode10.header.mode_data_length = 22;        // The number of bytes that follow.
+        response->mode10.header.mode_data_length = 3;        // The number of bytes that follow.
         response->mode10.header.medium_type = 0;             // The media type SBC.
-        response->mode10.header.block_descriptor_length = 20; // A block descriptor length of zero indicates that no block descriptors
-        response->mode10.header.longLBA = 1;
+        response->mode10.header.block_descriptor_length = 0; // A block descriptor length of zero indicates that no block descriptors
+        response->mode10.header.longLBA = 0;
         // are included in the mode parameter list.
-
+#if 0
         // setting caching mode
         response->mode10.caching.SPF = 0;
         response->mode10.caching.page_code = 0x08;
@@ -1518,6 +1305,7 @@ static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t m
         response->mode10.caching.FSW = 0x1;
         response->mode10.caching.DRA = 0x1;
         response->mode10.caching.NV_DIS = 0x1;
+#endif
     }
 }
 
@@ -2057,6 +1845,7 @@ void scsi_init(void)
 
     scsi_ctx.storage_size = 0;
     scsi_ctx.block_size = 4096; /* default */
+    scsi_set_state(SCSI_IDLE);
 
 	scsi_ctx.queue = queue_create(MAX_SCSI_CMD_QUEUE_SIZE);
 
