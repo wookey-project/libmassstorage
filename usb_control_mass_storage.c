@@ -9,10 +9,14 @@
 #include "usb_control_mass_storage.h"
 #include "usbmass_desc.h"
 
+static mass_storage_reset_trigger_t reset_trigger = NULL;
 
 static void mass_storage_reset(void)
 {
     	printf("Bulk-Only Mass Storage Reset\n");
+        if (reset_trigger != NULL) {
+            reset_trigger();
+        }
 }
 
 
@@ -47,7 +51,8 @@ void mass_storage_class_rqst_handler(struct usb_setup_packet *packet)
 }
 
 
-static void mass_storage_mft_string_desc_rqst_handler(uint16_t wLength){
+static void mass_storage_mft_string_desc_rqst_handler(uint16_t wLength)
+{
     uint32_t i;
     uint32_t len;
      printf("MFT String, wLength:\n", wLength);
@@ -76,10 +81,11 @@ static void mass_storage_mft_string_desc_rqst_handler(uint16_t wLength){
     usb_driver_setup_read_status();
 }
 
+
 /**
  * \brief Set callback for class_rqst in usb_control
  */
-void mass_storage_init(void)
+void mass_storage_init(mass_storage_reset_trigger_t upper_stack_reset_trigger)
 {
 	usb_ctrl_callbacks_t usbmass_usb_ctrl_callbacks = {
         	.class_rqst_handler             = mass_storage_class_rqst_handler,
@@ -90,6 +96,7 @@ void mass_storage_init(void)
             .mft_string_rqst_handler        = mass_storage_mft_string_desc_rqst_handler,
 
     	};
+    reset_trigger = upper_stack_reset_trigger;
 
 	usb_ctrl_init(usbmass_usb_ctrl_callbacks, usbmass_device_desc , usbmass_configuration_desc );
 }

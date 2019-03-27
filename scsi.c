@@ -35,6 +35,8 @@
 #include "api/syscall.h"
 #include "wookey_ipc.h"
 
+#include "usb_control_mass_storage.h"
+
 #include "scsi_cmd.h"
 #include "scsi_resp.h"
 #include "scsi_log.h"
@@ -1485,6 +1487,34 @@ typedef enum scsi_init_error {
     SCSI_INIT_BUFFER_ERROR,
 } scsi_init_error_t;
 
+/*
+ * Resetting SCSI context. Should be executed as a trigger of BULK level
+ * USB reset order
+ */
+static void scsi_reset_context(void)
+{
+    cdb_t * current_cdb = NULL;
+    enter_critical_section();
+    /* releasing all existing command from queue */
+    while (!queue_is_empty(scsi_ctx.queue)) {
+        current_cdb = queue_dequeue(scsi_ctx.queue);
+        scsi_release_cdb(current_cdb);
+    }
+    leave_critical_section();
+    /* resetting the context in a known, empty, idle state */
+    scsi_ctx.direction = SCSI_DIRECTION_IDLE;
+    scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
+    scsi_ctx.size_to_process = 0;
+    scsi_ctx.addr = 0;
+    scsi_ctx.error= 0;
+    scsi_ctx.queue_empty = true;
+    scsi_ctx.block_size = 0;
+    scsi_ctx.storage_size = 0;
+    scsi_set_state(SCSI_IDLE);
+    /* acknowledge the reset order */
+    usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
+}
+
 
 uint8_t scsi_early_init(uint8_t *buf, uint16_t len)
 {
@@ -1547,6 +1577,9 @@ void scsi_init(void)
 	usb_bbb_init();
 
     scsi_set_state(SCSI_IDLE);
+
+    /* initialize control plane, adding the reset event trigger for SCSI level */
+    mass_storage_init(scsi_reset_context);
 }
 
 
