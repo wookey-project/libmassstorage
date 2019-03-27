@@ -12,6 +12,7 @@
 #include "api/syscall.h"
 #include "wookey_ipc.h"
 #include "scsi_cmd.h"
+#include "scsi_log.h"
 
 #define assert(val) if (!(val)) { while (1) ; };
 
@@ -43,21 +44,13 @@ typedef enum {
     SCSI_DIRECTION_RECV,
 } transmission_direction_t;
 
-typedef enum {
-    SCSI_ERROR_NONE = 0,
-    SCSI_ERROR_CHECK_CONDITION = 0x02, /* FIXME: encoded value to set */
-    SCSI_ERROR_UNIT_BECOMING_READY = 0x20401,
-    SCSI_ERROR_INVALID_COMMAND = 0x52000,
-
-} scsi_error_t;
-
 
 typedef  struct {
     volatile transmission_direction_t direction;
     volatile transmition_line_state_t line_state;
     volatile uint32_t size_to_process;
     uint32_t addr;
-    scsi_error_t error;
+    uint32_t error;
     struct queue *queue;
     bool queue_empty;
     uint8_t *global_buf;
@@ -236,12 +229,13 @@ static inline void scsi_set_state(const scsi_state_t new_state)
     scsi_ctx.state = new_state;
 }
 
-void scsi_error(scsi_error_t reason){
+static void scsi_error(scsi_sense_key_t sensekey, uint8_t asc, uint8_t ascq){
 #if SCSI_DEBUG
     aprintf("%s: %s: status=%d\n", __func__, __func__, reason);
     aprintf("%s: state -> Error\n",__func__);
 #endif
-    scsi_ctx.error = reason;
+    scsi_ctx.error = (sensekey << 16 | asc << 8 | ascq);
+    /* returning status */
     usb_bbb_send_csw(CSW_STATUS_FAILED, 0);
     scsi_set_state(SCSI_IDLE);
 }
@@ -1002,12 +996,12 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 
 invalid_cmd:
     printf("%s: malformed cmd\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1041,7 +1035,7 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t  current_state, c
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1079,7 +1073,7 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
      * before requesting GET_CAPACITY cmd. In this very case, we have to
      * send back INVALID to the host */
     if (scsi_ctx.storage_size == 0) {
-        scsi_error(SCSI_ERROR_INVALID_COMMAND);
+        scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
         return;
     }
 
@@ -1142,7 +1136,7 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1178,7 +1172,7 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
      * before requesting GET_CAPACITY cmd. In this very case, we have to
      * send back INVALID to the host */
     if (scsi_ctx.storage_size == 0) {
-        scsi_error(SCSI_ERROR_INVALID_COMMAND);
+        scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
         return;
     }
 
@@ -1237,7 +1231,7 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1272,7 +1266,7 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
     ret = scsi_storage_backend_capacity(&(scsi_ctx.storage_size), &(scsi_ctx.block_size));
     if (ret != 0) {
         /* unable to get back capacity from backend... */
-        scsi_error(SCSI_ERROR_UNIT_BECOMING_READY);
+        scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
         return;
     }
 
@@ -1288,7 +1282,7 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1321,7 +1315,7 @@ static void scsi_cmd_read_capacity16(scsi_state_t  current_state, cdb_t * curren
     ret = scsi_storage_backend_capacity(&(scsi_ctx.storage_size), &(scsi_ctx.block_size));
     if (ret != 0) {
         /* unable to get back capacity from backend... */
-        scsi_error(SCSI_ERROR_UNIT_BECOMING_READY);
+        scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
         return;
     }
 
@@ -1357,7 +1351,7 @@ static void scsi_cmd_read_capacity16(scsi_state_t  current_state, cdb_t * curren
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1416,7 +1410,7 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
     /* if the host didn't reserve enough space to respond, inform it that
      * some informations are missing */
     if (check_condition) {
-        usb_bbb_send_csw(SCSI_ERROR_CHECK_CONDITION, 0);
+        usb_bbb_send_csw(SCSI_STATUS_CHECK_CONDITION, 0);
     }
     return;
 
@@ -1431,13 +1425,13 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
 
 invalid_cmd:
     printf("%s: malformed cmd\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1474,17 +1468,17 @@ static void scsi_cmd_request_sense(scsi_state_t  current_state, cdb_t * current_
 
 	memset((void *)&data, 0, sizeof(data));
 	data.error_code = 0x70;
-	data.sense_key = SCSI_ERROR_GET_SENSE_KEY(scsi_ctx.error);
+	data.sense_key = scsi_error_get_sense_key(scsi_ctx.error);
 	data.additional_sense_length = 0x0a;
-	data.asc = SCSI_ERROR_GET_ASC(scsi_ctx.error);
-	data.ascq = SCSI_ERROR_GET_ASCQ(scsi_ctx.error);
+	data.asc = scsi_error_get_asc(scsi_ctx.error);
+	data.ascq = scsi_error_get_ascq(scsi_ctx.error);
 	usb_bbb_send((uint8_t *)&data, sizeof(data), 2);
     return;
 
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1566,7 +1560,7 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1607,7 +1601,7 @@ static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cd
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1637,7 +1631,7 @@ static void scsi_cmd_mode_select6(scsi_state_t  current_state, cdb_t * current_c
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1669,7 +1663,7 @@ static void scsi_cmd_mode_select10(scsi_state_t  current_state, cdb_t * current_
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1702,7 +1696,7 @@ static void scsi_cmd_test_unit_ready(scsi_state_t  current_state, cdb_t * curren
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1749,7 +1743,7 @@ static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
      * before requesting GET_CAPACITY cmd. In this very case, we have to
      * send back INVALID to the host */
     if (scsi_ctx.storage_size == 0) {
-        scsi_error(SCSI_ERROR_INVALID_COMMAND);
+        scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
         return;
     }
 
@@ -1799,7 +1793,7 @@ static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1846,7 +1840,7 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
      * before requesting GET_CAPACITY cmd. In this very case, we have to
      * send back INVALID to the host */
     if (scsi_ctx.storage_size == 0) {
-        scsi_error(SCSI_ERROR_INVALID_COMMAND);
+        scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
         return;
     }
 
@@ -1893,7 +1887,7 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -2002,7 +1996,7 @@ invalid_command:
 #if SCSI_DEBUG
     printf("%s: Unsupported command: %x  \n", __func__, current_cdb->operation);
 #endif
-    scsi_error(SCSI_ERROR_INVALID_COMMAND);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
