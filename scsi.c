@@ -11,14 +11,13 @@
 #include "autoconf.h"
 #include "api/syscall.h"
 #include "wookey_ipc.h"
+
 #include "scsi_cmd.h"
+#include "scsi_resp.h"
 #include "scsi_log.h"
 #include "scsi_automaton.h"
 
-#define assert(val) if (!(val)) { while (1) ; };
-
 #define SCSI_DEBUG 0
-
 
 /*
  * The SCSI stack context. This is a global variable, which means
@@ -118,397 +117,6 @@ static inline void leave_critical_section(void)
     return;
 }
 
-/***************************
- * about SCSI commands
- *
- * All commands here are defined as packed structure
- * *without* the starting operation byte.
- *
- * All commands start with the same field (the operation byte)
- * which is used to segregate commands.
- *
- * This byte is added to the cdb_t structure, associating
- * this byte to an union associating all supported commands
- * (see bellow)
- **************************/
-
-/* MODE SENSE 10  */
-typedef struct  __attribute__((packed)){
-     uint8_t reserved1:3;
-     uint8_t LLBAA:2;
-     uint8_t DBD:2;
-     uint8_t reserved2:1;
-     uint8_t PC:2;
-     uint8_t page_code:6;
-     uint8_t sub_page_code;
-     uint16_t reserved3;
-     uint16_t allocation_length;
-     uint8_t control;
-} cdb10_mode_sense_t;
-
-
-/* PREVENT ALLOW REMOVAL */
-typedef struct  __attribute__((packed)){
-     uint16_t reserved1;
-     uint8_t reserved2:6;
-     uint8_t prevent:2;
-     uint8_t control;
-} cdb10_prevent_allow_removal_t;
-
-/* REQUEST SENSE 10 */
-typedef struct  __attribute__((packed)){
-     uint8_t reserved1:7;
-     uint8_t desc:1;
-     uint16_t reserved;
-     uint8_t allocation_length;
-} cdb10_request_sense_t;
-
-
-/* READ 6 / WRITE 6 */
-typedef struct  __attribute__((packed)){
-     uint32_t reserved:3;
-     uint32_t logical_block:21;
-     uint8_t transfer_blocks;
-     uint8_t control;
-} cdb6_t;
-
-
-/* READ 10 / WRITE 10 */
-typedef struct  __attribute__((packed)){
-     uint8_t misc1:3;
-     uint8_t service_action:5;
-     uint32_t logical_block;
-     uint8_t misc2;
-     uint16_t transfer_blocks;
-     uint8_t control;
-} cdb10_t;
-
-/* MODE SENSE 6 */
-typedef struct  __attribute__((packed)){
-     uint8_t LUN:3;
-     uint8_t reserved4:1;
-     uint8_t DBD:1;
-     uint8_t reserved3:3;
-     uint8_t PC:2;
-     uint8_t page_code:6;
-     uint8_t reserved2;
-     uint8_t allocation_length;
-     uint8_t vendor_specific:2;
-     uint8_t reserved1:4;
-     uint8_t flag:1;
-     uint8_t link:1;
-} cdb6_mode_sense_t;
-
-/* MODE SELECT 6 */
-typedef struct __attribute__((packed)) {
-    uint8_t  reserved3:3;
-    uint8_t  PF:1;
-    uint8_t  reserved2:2;
-    uint8_t  RTD:1;
-    uint8_t  SP:1;
-    uint16_t reserved1;
-    uint8_t  parameter_list_length;
-    uint8_t  control;
-} cdb6_mode_select_t;
-
-
-/* INQUIRY 6 */
-typedef struct __attribute__((packed)) {
-    uint8_t  reserved:6;
-    uint8_t  CMDDT:1; /* obsolete */
-    uint8_t  EVPD:1;
-    uint8_t  page_code;
-    uint16_t allocation_length;
-    uint8_t  control;
-} cdb6_inquiry_t;
-
-/* MODE SELECT 10 */
-typedef struct __attribute__((packed)) {
-    uint8_t  reserved3:3;
-    uint8_t  PF:1;
-    uint8_t  reserved2:3;
-    uint8_t  SP:1;
-    uint8_t  reserved1_bis;
-    uint32_t reserved1;
-    uint16_t  parameter_list_length;
-    uint8_t  control;
-} cdb10_mode_select_t;
-
-/* REPORT LUNS */
-typedef struct __attribute__((packed)) {
-    uint8_t  reserved3;
-    uint8_t  selected_report;
-    uint16_t reserved2_2;
-    uint8_t  reserved2_1;
-    uint32_t allocation_length;
-    uint8_t  reserved1;
-    uint8_t  control;
-} cdb12_report_luns_t;
-
-
-/* READ CAPACITY 16 */
-typedef struct  __attribute__((packed)){
-    uint8_t  Reserved2:3;
-    uint8_t  service_action:5;
-    uint64_t logical_block_address;
-    uint32_t allocation_length;
-    uint8_t  Reserved1:7;
-    uint8_t  PMI:1;
-    uint8_t  control;
-} cdb16_read_capacity_16_t;
-
-/*
- * polymorphic SCSI command content, using a C union
- * type
- */
-typedef union {
-    /* CDB 6 bytes length */
-    cdb6_t                         cdb6; /* read and write */
-    cdb6_mode_sense_t              cdb6_mode_sense;
-    cdb6_mode_select_t             cdb6_mode_select;
-    cdb6_inquiry_t                 cdb6_inquiry;
-    /* CDB 10 bytes length */
-    cdb10_t                        cdb10; /* read and write */
-    cdb10_mode_sense_t             cdb10_mode_sense;
-    cdb10_mode_select_t            cdb10_mode_select;
-    cdb10_prevent_allow_removal_t  cdb10_prevent_allow_removal;
-    cdb10_request_sense_t          cdb10_request_sense;
-    /* CDB 12 bytes length */
-    cdb12_report_luns_t            cdb12_report_luns;
-    /* CDB 16 bytes length */
-    cdb16_read_capacity_16_t       cdb16_read_capacity;
-} u_cdb_payload;
-
-/*
- * SCSI command storage area, associating the operation byte
- * and the union field in a packed content
- */
-typedef  struct  __attribute__((packed)){
-    uint8_t operation;
-    u_cdb_payload payload;
-} cdb_t;
-
-
-
-/***************************
- * about responses
- *
- * SCSI responses are most of the time based on fixed content.
- * Although, there is cases where SCSI response length are dynamic
- * and are impacted by the associated SCSI command.
- *
- * The bellowing structures defined the supported SCSI responses,
- * for the above SCSI commands
- *
- **************************/
-
-/* READ CAPACITY 10 PARAMETER DATA */
-typedef struct __attribute__((packed)) {
-    uint32_t ret_lba;
-    uint32_t ret_block_length;
-} read_capacity10_parameter_data_t;
-
-
-/* READ CAPACITY 16 PARAMETER DATA */
-typedef struct __attribute__((packed)) {
-    uint64_t ret_lba;
-    uint32_t ret_block_length;
-    uint8_t  reserved2:2;
-    uint8_t  rc_basis:2;
-    uint8_t  p_type:3;
-    uint8_t  prot_enable:1;
-    uint8_t  p_i_expornent:4;
-    uint8_t  logical_block_per_phys_block_component:4;
-    uint16_t lbpme:1;
-    uint16_t lbprz:1;
-    uint16_t lowest_aligned_lba:14;
-    uint8_t  reserved1[16];
-} read_capacity16_parameter_data_t;
-
-
-
-
-/* REQUEST SENSE PARAMETER DATA */
-typedef struct __packed request_sense_parameter_data {
-   uint8_t error_code:7;
-   uint8_t info_valid:1;
-   uint8_t reserved1;
-   uint8_t sense_key:4;
-   uint8_t reserved:1;
-   uint8_t ili:1;
-   uint8_t eom:1;
-   uint8_t filemark:1;
-   uint8_t information[4];
-   uint8_t additional_sense_length;
-   uint32_t reserved8;
-   uint8_t asc;
-   uint8_t ascq;
-   uint8_t field_replaceable_unit_code;
-   uint8_t sense_key_specific[3];
-} request_sense_parameter_data_t;
-
-
-/* REPORT LUNS PARAMETER DATA */
-typedef struct  __attribute__((packed)) {
-    uint32_t lun_list_length;
-    uint32_t reserved;
-    uint64_t  luns[];
-} report_luns_data_t;
-
-
-/* INQUIRY PARAMETER DATA */
-typedef struct __packed inquiry_data {
-	uint8_t   periph_qualifier:3;
-	uint8_t   periph_device_type:5;
-	uint8_t   RMB:1;
-	uint8_t   reserved3:7;
-	uint8_t   version;
-	uint8_t   obsolete4:2;
-	uint8_t   NORMACA:1;
-	uint8_t   HISUP:1;
-	uint8_t   data_format:4;
-	uint8_t   additional_len;
-	uint8_t   SCCS:1;
-	uint8_t   ACC:1;
-	uint8_t   TPGS:2;
-	uint8_t   TPC:1;
-	uint8_t   reserved2:2;
-	uint8_t   PROTECT:1;
-	uint8_t   obsolete3:1;
-	uint8_t   ENCSERV:1;
-	uint8_t   VS2:1;
-	uint8_t   multip:1;
-	uint8_t   obsolete2:4;
-	uint8_t   obsolete1:6;
-	uint8_t   CMDQUE:1;
-	uint8_t   VS1:1;
-	char      vendor_info[8];
-	char      product_identification[16];
-	char      product_revision[4];
-    uint64_t  drive_serial_number;
-    uint8_t   vendor_unique[12];
-    uint8_t   reserved1;
-    uint16_t  version_descriptor[8];
-    /*reserved: bytes 74->95 */
-    /* copyright notice: 96->n */
-
-} inquiry_data_t;
-
-
-/* About MODE SELECT and MODE SENSE responses   */
-
-/* MODE SENSE PARAMETER DATA */
-
-/*
- * MODE SELECT and MODE SENSE require a dynamic response content,
- * based on a data header (mode_parameter(6,10)_header_t, associated
- * with 0 or more mode parameters block descriptors.
- * This block descriptors are, among others, the following:
- * - short LBA mode
- * - long LBA mode
- * - Application tag
- * - background control mode
- * - background operation control mode
- * - Caching mode
- *  ... and so on ...
- *
- * This descriptors describe the way the SCSI client is able to
- * modify its way to communicate with the SCSI server, and the
- * various SCSI server capacities.
- */
-
-typedef struct  __attribute__((packed)) {
-    uint16_t mode_data_length;
-    uint8_t  medium_type;
-    uint8_t  WP:1;
-    uint8_t  reserved3:2;
-    uint8_t  DPOFUA:1;
-    uint8_t  reserved2:4;
-    uint8_t  reserved1:7;
-    uint8_t  longLBA:1;
-    uint8_t  reserved0;
-    uint16_t block_descriptor_length;
-} mode_parameter10_header_t;
-
-typedef struct  __attribute__((packed)) {
-    uint8_t mode_data_length;
-    uint8_t medium_type;
-    uint8_t WP:1;
-    uint8_t reserved2:2;
-    uint8_t DPOFUA:1;
-    uint8_t reserved1:4;
-    uint8_t block_descriptor_length;
-} mode_parameter6_header_t;
-
-typedef struct __attribute__((packed)) {
-    uint32_t number_of_blocks;
-    uint8_t  reserved;
-    uint32_t logical_block_length:24;
-} mode_parameter_shortlba_t;
-
-typedef struct __attribute__((packed)) {
-    uint64_t number_of_blocks;
-    uint32_t  reserved;
-    uint32_t logical_block_length;
-} mode_parameter_longlba_t;
-
-
-/* MODE SELECT/MODE SENSE RESPONSE PARAMETERS */
-
-/* 1) Caching mode */
-typedef struct __attribute__((packed)) {
-    uint8_t  PS:1;
-    uint8_t  SPF:1;
-    uint8_t  page_code:6;
-    uint8_t  page_length;
-    uint8_t  IC:1;
-    uint8_t  ABPF:1;
-    uint8_t  CAP:1;
-    uint8_t  disk:1;
-    uint8_t  size:1;
-    uint8_t  WCE:1;
-    uint8_t  MF:1;
-    uint8_t  RCD:1;
-    uint8_t  dmd_read_retention_prio:4;
-    uint8_t  write_retention_prio:4;
-    uint16_t disable_prefetch_transfer_length;
-    uint16_t min_prefetch;
-    uint16_t max_prefetch;
-    uint16_t max_prefetch_ceil;
-    uint8_t  FSW:1;
-    uint8_t  LB_CSS:1;
-    uint8_t  DRA:1;
-    uint8_t  vendor_specific:2;
-    uint8_t  SYNC_PROG:2;
-    uint8_t  NV_DIS:1;
-    uint8_t  cache_segment_number;
-    uint16_t cache_segment_size;
-    uint8_t  reserved1;
-} mode_parameter_caching_t;
-
-/* TODO: the following is hard-coded as we reply only caching info.
- * A cleaner way, for MODE_SENSE and MODE_SELECT, would be to forge
- * the required mode pages and associated mode pages header depending
- * on the CDB content */
-typedef struct __attribute__((packed)) {
-    mode_parameter6_header_t  header;
-    // mode_parameter_caching_t  caching;
-} mode_parameter6_data_t;
-
-typedef struct __attribute__((packed)) {
-    mode_parameter10_header_t  header;
-    // mode_parameter_caching_t  caching;
-} mode_parameter10_data_t;
-
-typedef union {
-    mode_parameter6_data_t mode6;
-    mode_parameter10_data_t mode10;
-} u_mode_parameter;
-
-
-/********* End of responses structures declaration ***********/
-
-
 /********* About debugging and pretty printing **************/
 
 #if SCSI_DEBUG
@@ -569,6 +177,12 @@ static void scsi_debug_dump_cmd(cdb_t * current_cdb, uint8_t scsi_cmd)
 
 /******** End of debugging and pretty printing **************/
 
+
+/********* About various utility functions     **************/
+
+/*
+ * Release the current CDB structure
+ */
 static mbed_error_t scsi_release_cdb(cdb_t * current_cdb)
 {
     /* no critical section here, as the exec_automaton
@@ -586,6 +200,9 @@ static mbed_error_t scsi_release_cdb(cdb_t * current_cdb)
     return ret;
 }
 
+/*
+ * Is the current context compatible with data reception ?
+ */
 static inline bool scsi_is_ready_for_data_receive(void)
 {
     return (   (   scsi_ctx.direction == SCSI_DIRECTION_RECV
@@ -593,6 +210,9 @@ static inline bool scsi_is_ready_for_data_receive(void)
             && scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY );
 }
 
+/*
+ * Is the current context compatible with data transmission ?
+ */
 static inline bool scsi_is_ready_for_data_send(void)
 {
     return (   (   scsi_ctx.direction == SCSI_DIRECTION_SEND
@@ -601,7 +221,11 @@ static inline bool scsi_is_ready_for_data_send(void)
 }
 
 
-
+/*
+ * Request data of given size from BULK stack.
+ * This function is sending an asynchronous read request. The
+ * read terminaison is acknowledge by a trigger on scsi_data_available()
+ */
 void scsi_get_data(void *buffer, uint32_t size)
 {
 #if SCSI_DEBUG
@@ -618,7 +242,11 @@ void scsi_get_data(void *buffer, uint32_t size)
 	usb_bbb_read(buffer, size, 1);
 }
 
-
+/*
+ * Request to send data of given size into the BULK stack.
+ * This function is sending an asynchronous write request. The
+ * transmission terminaison is acknowledge by a trigger on scsi_data_sent()
+ */
 void scsi_send_data(void *data, uint32_t size)
 {
 #if SCSI_DEBUG
@@ -629,7 +257,7 @@ void scsi_send_data(void *data, uint32_t size)
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_BUSY;
     scsi_ctx.addr = 0;
 
-	usb_bbb_send(data, size, 2); // FIXME HARCODED ENDPOINT
+	usb_bbb_send(data, size, 2); /* FIXME HARCODED ENDPOINT */
 }
 
 /*
@@ -680,15 +308,81 @@ static void scsi_data_sent(void)
 }
 
 
-/* NB: this function is executed in a handler context when a
- * command comes from USB.
+static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t mode)
+{
+    memset(response, 0x0, sizeof(u_mode_parameter));
+    if (mode == SCSI_CMD_MODE_SENSE_6) {
+        /* We only send back the mode parameter header with no data */
+        response->mode6.header.mode_data_length = 3;        /* The number of bytes that follow. */
+        response->mode6.header.medium_type = 0;             /* The media type SBC. */
+        response->mode6.header.block_descriptor_length = 0; /* A block descriptor length of zero indicates that no block descriptors */
+        /* setting shortlba */
+#if 0
+        /* FIXME: Caching is buggy right now... */
+        /* setting caching mode */
+        response->mode6.caching.SPF = 0;
+        response->mode6.caching.page_code = 0x08;
+        response->mode6.caching.page_length = 0x12;
+        response->mode6.caching.WCE = 0x1;
+        response->mode6.caching.RCD = 0x1;
+        response->mode6.caching.FSW = 0x1;
+        response->mode6.caching.DRA = 0x1;
+        response->mode6.caching.NV_DIS = 0x1;
+#endif
+    } else if (mode == SCSI_CMD_MODE_SENSE_10) {
+        /* We only send back the mode parameter header with no data */
+        response->mode10.header.mode_data_length = 3;        /* The number of bytes that follow. */
+        response->mode10.header.medium_type = 0;             /* The media type SBC. */
+        response->mode10.header.block_descriptor_length = 0; /* A block descriptor length of zero indicates that no block descriptors */
+        response->mode10.header.longLBA = 0;
+        /* are included in the mode parameter list. */
+#if 0
+        /* FIXME: Caching is buggy right now... */
+        /* setting caching mode */
+        response->mode10.caching.SPF = 0;
+        response->mode10.caching.page_code = 0x08;
+        response->mode10.caching.page_length = 0x12;
+        response->mode10.caching.WCE = 0x1;
+        response->mode10.caching.RCD = 0x1;
+        response->mode10.caching.FSW = 0x1;
+        response->mode10.caching.DRA = 0x1;
+        response->mode10.caching.NV_DIS = 0x1;
+#endif
+    }
+}
+
+
+/************** End of utility functions **********************/
+
+
+/*
+ * SCSI automaton implementation.
+ *
+ * The SCSI automaton is based on two main entry points:
+ * - scsi_parse_cdb, triggered by USB ISR when a SCSI command is received
+ * - scsi_exec_automaton, which effectively execute the SCSI command, in
+ *   main thread mode
+ *
+ * scsi_parse_cdb enqueue received command in the command queue. This functions
+ * is as small as possible to reduce the ISR execution cost.
+ * scsi_exec_automaton check for the command queue and dequeue commands to
+ * execute them.
+ *
+ * All scsi_cmd_* procedures execute a given SCSI command. These procedures
+ * are executed through scsi_exec_automaton.
+ */
+
+
+/*
+ * Enqueue any received SCSI command
+ * this function is executed in a handler context when a command comes from USB.
  */
 static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)))
 {
     cdb_t *current_cdb;
 	int ret;
 
-    // Only 10 byte commands are supported, bigger sized commands are trunccated
+    /* Only 10 byte commands are supported, bigger sized commands are trunccated */
     ret = wmalloc((void**)&current_cdb, sizeof(cdb_t), ALLOC_NORMAL);
     if(ret){
         scsi_set_state(SCSI_ERROR);
@@ -702,9 +396,13 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
 
 
 /*
- * Commands
+ * Commands implementation.
+ *
+ * All commands implementation check the SCSI state automaton to validate that
+ * the transition is authorized, and then execute the command.
  */
 
+/* SCSI_CMD_INQUIRY */
 static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 {
 	inquiry_data_t response;
@@ -814,7 +512,7 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t  current_state, c
 #if SCSI_DEBUG
     printf("%s: Prevent allow medium removal: %x\n",__func__, current_cdb->payload.cdb10_prevent_allow_removal.prevent);
 #endif
-    // FIXME Add callback ?
+    /* FIXME Add callback ? */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
     return;
     /* effective transition execution (if needed) */
@@ -826,9 +524,11 @@ invalid_transition:
 }
 
 
-// SCSI_CMD_READ_6
-// INFO: this command is deprecated but is implemented for retrocompatibility
-// with older Operating Systems
+/*
+ * SCSI_CMD_READ_6
+ * INFO: this command is deprecated but is implemented for retrocompatibility
+ * with older Operating Systems
+ */
 static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     uint32_t num_sectors;
@@ -927,7 +627,7 @@ invalid_transition:
 }
 
 
-// SCSI_CMD_READ_10
+/* SCSI_CMD_READ_10 */
 static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     uint32_t num_sectors;
@@ -1022,8 +722,7 @@ invalid_transition:
 }
 
 
-
-// FIXME SCSI_CMD_READ_CAPACITY_10
+/* SCSI_CMD_READ_CAPACITY_10 */
 static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     uint8_t next_state;
@@ -1056,8 +755,8 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
         return;
     }
 
-    //what is expected is the _LAST_ LBA address ....
-    // See Working draft SCSI block cmd  5.10.2 READ CAPACITY (10)
+    /* what is expected is the _LAST_ LBA address ....
+     * See Working draft SCSI block cmd  5.10.2 READ CAPACITY (10) */
 
 	response.ret_lba = to_big32(scsi_ctx.storage_size-1);
 	response.ret_block_length = to_big32(scsi_ctx.block_size);
@@ -1072,6 +771,7 @@ invalid_transition:
     return;
 }
 
+/* SCSI_CMD_READ_CAPACITY_16 */
 static void scsi_cmd_read_capacity16(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     uint8_t next_state;
@@ -1108,8 +808,8 @@ static void scsi_cmd_read_capacity16(scsi_state_t  current_state, cdb_t * curren
     /* get back cdb content from union */
     rc16 = &(current_cdb->payload.cdb16_read_capacity);
 
-    //what is expected is the _LAST_ LBA address ....
-    // See Working draft SCSI block cmd  5.10.2 READ CAPACITY (16)
+    /* what is expected is the _LAST_ LBA address ....
+     * See Working draft SCSI block cmd  5.10.2 READ CAPACITY (16) */
 
     /* creating response... */
     memset((void*)&response, 0x0, sizeof(read_capacity16_parameter_data_t));
@@ -1142,7 +842,7 @@ invalid_transition:
 }
 
 
-// FIXME SCSI_CMD_REPORT_LUNS
+/* SCSI_CMD_REPORT_LUNS */
 static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     cdb12_report_luns_t *rl;
@@ -1183,7 +883,7 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
     }
 
 
-    // TODO We only support 1 LUN
+    /* TODO We only support 1 LUN */
     report_luns_data_t response = {
         .lun_list_length = 1,
         .reserved = 0,
@@ -1221,6 +921,7 @@ invalid_transition:
     return;
 }
 
+/* SCSI_CMD_REQUEST_SENSE */
 static void scsi_cmd_request_sense(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     request_sense_parameter_data_t data;
@@ -1249,8 +950,9 @@ static void scsi_cmd_request_sense(scsi_state_t  current_state, cdb_t * current_
             current_cdb->payload.cdb10_request_sense.allocation_length);
 #endif
 
-    // TODO If desc is set to 1 and descriptor format sense data is supported
-    // descriptor format sense data shall be returned.
+    /* TODO If desc is set to 1 and descriptor format sense data is supported */
+
+    /* descriptor format sense data shall be returned. */
 
 	memset((void *)&data, 0, sizeof(data));
 	data.error_code = 0x70;
@@ -1268,50 +970,9 @@ invalid_transition:
     return;
 }
 
-static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t mode)
-{
-    memset(response, 0x0, sizeof(u_mode_parameter));
-    if (mode == SCSI_CMD_MODE_SENSE_6) {
-        /* We only send back the mode parameter header with no data */
-        response->mode6.header.mode_data_length = 3;        // The number of bytes that follow.
-        response->mode6.header.medium_type = 0;             // The media type SBC.
-        response->mode6.header.block_descriptor_length = 0; // A block descriptor length of zero indicates that no block descriptors
-        // setting shortlba
-#if 0
-        // setting caching mode
-        response->mode6.caching.SPF = 0;
-        response->mode6.caching.page_code = 0x08;
-        response->mode6.caching.page_length = 0x12;
-        response->mode6.caching.WCE = 0x1;
-        response->mode6.caching.RCD = 0x1;
-        response->mode6.caching.FSW = 0x1;
-        response->mode6.caching.DRA = 0x1;
-        response->mode6.caching.NV_DIS = 0x1;
-#endif
-    } else if (mode == SCSI_CMD_MODE_SENSE_10) {
-        /* We only send back the mode parameter header with no data */
-        response->mode10.header.mode_data_length = 3;        // The number of bytes that follow.
-        response->mode10.header.medium_type = 0;             // The media type SBC.
-        response->mode10.header.block_descriptor_length = 0; // A block descriptor length of zero indicates that no block descriptors
-        response->mode10.header.longLBA = 0;
-        // are included in the mode parameter list.
-#if 0
-        // setting caching mode
-        response->mode10.caching.SPF = 0;
-        response->mode10.caching.page_code = 0x08;
-        response->mode10.caching.page_length = 0x12;
-        response->mode10.caching.WCE = 0x1;
-        response->mode10.caching.RCD = 0x1;
-        response->mode10.caching.FSW = 0x1;
-        response->mode10.caching.DRA = 0x1;
-        response->mode10.caching.NV_DIS = 0x1;
-#endif
-    }
-}
 
 
-
-
+/* SCSI_CMD_MODE_SENSE(10) */
 static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     #if SCSI_DEBUG
@@ -1342,7 +1003,7 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
     scsi_forge_mode_sense_response((u_mode_parameter*)&response, SCSI_CMD_MODE_SENSE_10);
     /* Sending Mode Sense 10 answer */
 
-    //usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t));
+    /*usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t)); */
     usb_bbb_send((uint8_t *)&response, sizeof(mode_parameter10_data_t), 2);
 
 
@@ -1353,7 +1014,7 @@ invalid_transition:
 }
 
 
-
+/* SCSI_CMD_MODE_SENSE(6) */
 static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     #if SCSI_DEBUG
@@ -1383,7 +1044,7 @@ static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cd
     scsi_forge_mode_sense_response((u_mode_parameter*)&response, SCSI_CMD_MODE_SENSE_6);
     /* Sending Mode Sense 10 answer */
 
-    //usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t));
+    /*usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t)); */
     usb_bbb_send((uint8_t *)&response, sizeof(mode_parameter6_data_t), 2);
     return;
 
@@ -1393,6 +1054,7 @@ invalid_transition:
     return;
 }
 
+/* SCSI_CMD_MODE_SELECT(6) */
 static void scsi_cmd_mode_select6(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     #if SCSI_DEBUG
@@ -1424,6 +1086,7 @@ invalid_transition:
 }
 
 
+/* SCSI_CMD_MODE_SELECT(10) */
 static void scsi_cmd_mode_select10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     #if SCSI_DEBUG
@@ -1456,7 +1119,7 @@ invalid_transition:
 }
 
 
-// FIXME SCSI_CMD_TEST_UNIT_READY
+/* SCSI_CMD_TEST_UNIT_READY */
 static void scsi_cmd_test_unit_ready(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     #if SCSI_DEBUG
@@ -1488,9 +1151,11 @@ invalid_transition:
     return;
 }
 
-// FIXME SCSI_CMD_WRITE_6*
-// This command is declared as obsolete by the T10 consorsium.
-// It is implemented here for retrocompatibility with old Operating Systems
+/*
+ * SCSI_CMD_WRITE(6)
+ * This command is declared as obsolete by the T10 consorsium.
+ * It is implemented here for retrocompatibility with old Operating System
+ */
 static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     uint32_t num_sectors;
@@ -1587,7 +1252,7 @@ invalid_transition:
 
 
 
-// FIXME SCSI_CMD_WRITE_10
+/* SCSI_CMD_WRITE(10) */
 static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
     uint32_t num_sectors;
@@ -1679,7 +1344,9 @@ invalid_transition:
     return;
 }
 
-
+/*
+ * SCSI Automaton execution
+ */
 void scsi_exec_automaton(void)
 {
     cdb_t * current_cdb = NULL;

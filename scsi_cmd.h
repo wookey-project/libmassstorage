@@ -2,7 +2,7 @@
 # define SCSI_CMD_H_
 
 
-/* SCSI commands */
+/* SCSI commands list */
 typedef enum {
     SCSI_CMD_FORMAT_UNIT                   = 0x04, // Mandatory
     SCSI_CMD_INQUIRY			            = 0x12, // Mandatory
@@ -26,5 +26,177 @@ typedef enum {
     SCSI_CMD_WRITE_10			            = 0x2a, // Mandatory
     SCSI_CMD_READ_CAPACITY_16		        = 0x9e,
 } scsi_operation_code_t;
+
+/***************************
+ * about SCSI commands
+ *
+ * All commands here are defined as packed structure
+ * *without* the starting operation byte.
+ *
+ * All commands start with the same field (the operation byte)
+ * which is used to segregate commands.
+ *
+ * This byte is added to the cdb_t structure, associating
+ * this byte to an union associating all supported commands
+ * (see bellow)
+ **************************/
+
+/* MODE SENSE 10  */
+typedef struct  __attribute__((packed)){
+     uint8_t reserved1:3;
+     uint8_t LLBAA:2;
+     uint8_t DBD:2;
+     uint8_t reserved2:1;
+     uint8_t PC:2;
+     uint8_t page_code:6;
+     uint8_t sub_page_code;
+     uint16_t reserved3;
+     uint16_t allocation_length;
+     uint8_t control;
+} cdb10_mode_sense_t;
+
+
+/* PREVENT ALLOW REMOVAL */
+typedef struct  __attribute__((packed)){
+     uint16_t reserved1;
+     uint8_t reserved2:6;
+     uint8_t prevent:2;
+     uint8_t control;
+} cdb10_prevent_allow_removal_t;
+
+/* REQUEST SENSE 10 */
+typedef struct  __attribute__((packed)){
+     uint8_t reserved1:7;
+     uint8_t desc:1;
+     uint16_t reserved;
+     uint8_t allocation_length;
+} cdb10_request_sense_t;
+
+
+/* READ 6 / WRITE 6 */
+typedef struct  __attribute__((packed)){
+     uint32_t reserved:3;
+     uint32_t logical_block:21;
+     uint8_t transfer_blocks;
+     uint8_t control;
+} cdb6_t;
+
+
+/* READ 10 / WRITE 10 */
+typedef struct  __attribute__((packed)){
+     uint8_t misc1:3;
+     uint8_t service_action:5;
+     uint32_t logical_block;
+     uint8_t misc2;
+     uint16_t transfer_blocks;
+     uint8_t control;
+} cdb10_t;
+
+/* MODE SENSE 6 */
+typedef struct  __attribute__((packed)){
+     uint8_t LUN:3;
+     uint8_t reserved4:1;
+     uint8_t DBD:1;
+     uint8_t reserved3:3;
+     uint8_t PC:2;
+     uint8_t page_code:6;
+     uint8_t reserved2;
+     uint8_t allocation_length;
+     uint8_t vendor_specific:2;
+     uint8_t reserved1:4;
+     uint8_t flag:1;
+     uint8_t link:1;
+} cdb6_mode_sense_t;
+
+/* MODE SELECT 6 */
+typedef struct __attribute__((packed)) {
+    uint8_t  reserved3:3;
+    uint8_t  PF:1;
+    uint8_t  reserved2:2;
+    uint8_t  RTD:1;
+    uint8_t  SP:1;
+    uint16_t reserved1;
+    uint8_t  parameter_list_length;
+    uint8_t  control;
+} cdb6_mode_select_t;
+
+
+/* INQUIRY 6 */
+typedef struct __attribute__((packed)) {
+    uint8_t  reserved:6;
+    uint8_t  CMDDT:1; /* obsolete */
+    uint8_t  EVPD:1;
+    uint8_t  page_code;
+    uint16_t allocation_length;
+    uint8_t  control;
+} cdb6_inquiry_t;
+
+/* MODE SELECT 10 */
+typedef struct __attribute__((packed)) {
+    uint8_t  reserved3:3;
+    uint8_t  PF:1;
+    uint8_t  reserved2:3;
+    uint8_t  SP:1;
+    uint8_t  reserved1_bis;
+    uint32_t reserved1;
+    uint16_t  parameter_list_length;
+    uint8_t  control;
+} cdb10_mode_select_t;
+
+/* REPORT LUNS */
+typedef struct __attribute__((packed)) {
+    uint8_t  reserved3;
+    uint8_t  selected_report;
+    uint16_t reserved2_2;
+    uint8_t  reserved2_1;
+    uint32_t allocation_length;
+    uint8_t  reserved1;
+    uint8_t  control;
+} cdb12_report_luns_t;
+
+
+/* READ CAPACITY 16 */
+typedef struct  __attribute__((packed)){
+    uint8_t  Reserved2:3;
+    uint8_t  service_action:5;
+    uint64_t logical_block_address;
+    uint32_t allocation_length;
+    uint8_t  Reserved1:7;
+    uint8_t  PMI:1;
+    uint8_t  control;
+} cdb16_read_capacity_16_t;
+
+/*
+ * polymorphic SCSI command content, using a C union
+ * type
+ */
+typedef union {
+    /* CDB 6 bytes length */
+    cdb6_t                         cdb6; /* read and write */
+    cdb6_mode_sense_t              cdb6_mode_sense;
+    cdb6_mode_select_t             cdb6_mode_select;
+    cdb6_inquiry_t                 cdb6_inquiry;
+    /* CDB 10 bytes length */
+    cdb10_t                        cdb10; /* read and write */
+    cdb10_mode_sense_t             cdb10_mode_sense;
+    cdb10_mode_select_t            cdb10_mode_select;
+    cdb10_prevent_allow_removal_t  cdb10_prevent_allow_removal;
+    cdb10_request_sense_t          cdb10_request_sense;
+    /* CDB 12 bytes length */
+    cdb12_report_luns_t            cdb12_report_luns;
+    /* CDB 16 bytes length */
+    cdb16_read_capacity_16_t       cdb16_read_capacity;
+} u_cdb_payload;
+
+/*
+ * SCSI command storage area, associating the operation byte
+ * and the union field in a packed content
+ */
+typedef  struct  __attribute__((packed)){
+    uint8_t operation;
+    u_cdb_payload payload;
+} cdb_t;
+
+
 
 #endif/*!SCSI_CMD_H_*/
