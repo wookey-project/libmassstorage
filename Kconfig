@@ -3,7 +3,6 @@ config USR_LIB_MASSSTORAGE
   default y
   select USR_DRV_SDIO
   select USR_DRV_USB
-  select USR_LIB_DEBUG
   ---help---
   Support for Mass-Storage class feature for USB stack.
 

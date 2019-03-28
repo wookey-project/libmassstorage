@@ -27,10 +27,9 @@
 #include "api/string.h"
 #include "api/scsi.h"
 #include "api/string.h"
+#include "api/queue.h"
 #include "usb.h"
 #include "usb_bbb.h"
-#include "queue.h"
-#include "debug.h"
 #include "autoconf.h"
 #include "api/syscall.h"
 #include "wookey_ipc.h"
@@ -50,6 +49,7 @@
  * As most micro-controlers are not multicore based, this should not be
  * a problem.
  */
+
 typedef enum {
    SCSI_TRANSMIT_LINE_READY = 0,
    SCSI_TRANSMIT_LINE_BUSY,
@@ -69,7 +69,7 @@ typedef  struct {
     volatile uint32_t size_to_process;
     uint32_t addr;
     uint32_t error;
-    struct queue *queue;
+    queue_t *queue;
     bool queue_empty;
     uint8_t *global_buf;
     uint16_t global_buf_len;
@@ -406,6 +406,7 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
 {
     cdb_t *current_cdb;
 	int ret;
+    mbed_error_t err;
 
     /* Only 10 byte commands are supported, bigger sized commands are trunccated */
     ret = wmalloc((void**)&current_cdb, sizeof(cdb_t), ALLOC_NORMAL);
@@ -415,7 +416,13 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
 
     memcpy((void *)current_cdb, (void *)cdb, sizeof(cdb_t));
 
-	queue_enqueue(scsi_ctx.queue, current_cdb);
+	err = queue_enqueue(scsi_ctx.queue, current_cdb);
+    if (err == MBED_ERROR_BUSY) {
+        aprintf("[ISR] Error! queue is busy!\n");
+    }
+if (err == MBED_ERROR_NOMEM) {
+        aprintf("[ISR] Error! queue is full!\n");
+    }
 	scsi_ctx.queue_empty = 0;
 }
 
@@ -1375,13 +1382,19 @@ invalid_transition:
 void scsi_exec_automaton(void)
 {
     cdb_t * current_cdb = NULL;
+    mbed_error_t err;
 
     enter_critical_section();
 	if(scsi_ctx.queue_empty == 1){
         leave_critical_section();
         return;
     }
-    current_cdb = queue_dequeue(scsi_ctx.queue);
+    err = queue_dequeue(scsi_ctx.queue, (void**)&current_cdb);
+    if (err != MBED_ERROR_NONE) {
+        /* using aprintf() here to avoid blocking call
+         * in the middle of a critical section */
+        aprintf("error while dequeuing command!\n");
+    }
     if(queue_is_empty(scsi_ctx.queue)){
         scsi_ctx.queue_empty = 1;
     }
@@ -1497,8 +1510,9 @@ static void scsi_reset_context(void)
     enter_critical_section();
     /* releasing all existing command from queue */
     while (!queue_is_empty(scsi_ctx.queue)) {
-        current_cdb = queue_dequeue(scsi_ctx.queue);
-        scsi_release_cdb(current_cdb);
+        if (queue_dequeue(scsi_ctx.queue, (void**)&current_cdb) == MBED_ERROR_NONE) {
+            scsi_release_cdb(current_cdb);
+        }
     }
     leave_critical_section();
     /* resetting the context in a known, empty, idle state */
@@ -1552,7 +1566,7 @@ init_error:
  */
 #define MAX_SCSI_CMD_QUEUE_SIZE 10
 
-void scsi_init(void)
+mbed_error_t scsi_init(void)
 {
     #if SCSI_DEBUG
         printf("%s\n", __func__);
@@ -1567,7 +1581,9 @@ void scsi_init(void)
     scsi_ctx.block_size = 4096; /* default */
     scsi_set_state(SCSI_IDLE);
 
-	scsi_ctx.queue = queue_create(MAX_SCSI_CMD_QUEUE_SIZE);
+	if (queue_create(MAX_SCSI_CMD_QUEUE_SIZE, &scsi_ctx.queue) != MBED_ERROR_NONE) {
+        return MBED_ERROR_NOMEM;
+    }
 
 	for(i = 0; i < scsi_ctx.global_buf_len; i++){
 		scsi_ctx.global_buf[i] = i;
@@ -1580,6 +1596,7 @@ void scsi_init(void)
 
     /* initialize control plane, adding the reset event trigger for SCSI level */
     mass_storage_init(scsi_reset_context);
+    return MBED_ERROR_NONE;
 }
 
 

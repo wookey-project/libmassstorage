@@ -69,7 +69,7 @@ uint8_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize);
 
 uint8_t scsi_early_init(uint8_t*buf, uint16_t buflen);
 
-void scsi_init(void);
+mbed_error_t scsi_init(void);
 
 void scsi_send_data(void *data, uint32_t size);
 
