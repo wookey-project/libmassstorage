@@ -32,6 +32,7 @@
 #include "usb_bbb.h"
 #include "autoconf.h"
 #include "api/syscall.h"
+#include "api/arpa/inet.h"
 #include "wookey_ipc.h"
 
 #include "usb_control_mass_storage.h"
@@ -190,7 +191,7 @@ static void scsi_debug_dump_cmd(cdb_t * current_cdb, uint8_t scsi_cmd)
             printf("CMDDT:         %x\n", current_cdb->payload.cdb6_inquiry.CMDDT);
             printf("EVPD:          %x\n", current_cdb->payload.cdb6_inquiry.EVPD);
             printf("page_code:     %x\n", current_cdb->payload.cdb6_inquiry.page_code);
-            printf("allocation_len:%x\n", from_big16(current_cdb->payload.cdb6_inquiry.allocation_length));
+            printf("allocation_len:%x\n", ntohs(current_cdb->payload.cdb6_inquiry.allocation_length));
             printf("control  :     %x\n", current_cdb->payload.cdb6_inquiry.control);
             break;
         }
@@ -466,12 +467,12 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 #endif
 
     /* sanitize received cmd in conformity with SCSI standard */
-    if (inq->EVPD == 0 && from_big16(inq->allocation_length) < 5) {
+    if (inq->EVPD == 0 && ntohs(inq->allocation_length) < 5) {
         /* invalid: additional fields parameter can't be send */
         goto invalid_cmd;
     }
 
-    if (inq->EVPD == 1 && from_big16(inq->allocation_length) < 4) {
+    if (inq->EVPD == 1 && ntohs(inq->allocation_length) < 4) {
         /* invalid: additional fields parameter can't be send */
         goto invalid_cmd;
     }
@@ -504,7 +505,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 
 
     if (inq->allocation_length > 0) {
-        usb_bbb_send((uint8_t *)&response, (from_big16(inq->allocation_length) < sizeof(response)) ? from_big16(inq->allocation_length) : sizeof(response), 2);
+        usb_bbb_send((uint8_t *)&response, (ntohs(inq->allocation_length) < sizeof(response)) ? ntohs(inq->allocation_length) : sizeof(response), 2);
     } else {
         printf("allocation length is 0\n");
     }
@@ -601,7 +602,7 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
 
     /* TODO: is the big endian is set only on the last 16 bytes of this
      * unaligned field ? */
-    rw_lba = from_big16((uint16_t)current_cdb->payload.cdb6.logical_block)
+    rw_lba = ntohs((uint16_t)current_cdb->payload.cdb6.logical_block)
         + (current_cdb->payload.cdb6.logical_block & 0x1f0000);
 
     rw_size = current_cdb->payload.cdb6.transfer_blocks;
@@ -698,8 +699,8 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     next_state = scsi_next_state(current_state, current_cdb->operation);
     scsi_set_state(next_state);
 
-    rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
-    rw_size = from_big16(current_cdb->payload.cdb10.transfer_blocks);
+    rw_lba = ntohl(current_cdb->payload.cdb10.logical_block);
+    rw_size = ntohs(current_cdb->payload.cdb10.transfer_blocks);
     rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
     /* initialize size_to_process. This variable will be upated during the
      * active wait loop below by the USB BBB triggers (usb_data_sent for
@@ -790,8 +791,8 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
     /* what is expected is the _LAST_ LBA address ....
      * See Working draft SCSI block cmd  5.10.2 READ CAPACITY (10) */
 
-	response.ret_lba = to_big32(scsi_ctx.storage_size-1);
-	response.ret_block_length = to_big32(scsi_ctx.block_size);
+	response.ret_lba = htonl(scsi_ctx.storage_size-1);
+	response.ret_block_length = htonl(scsi_ctx.block_size);
 
     usb_bbb_send((uint8_t *)&response, sizeof(read_capacity10_parameter_data_t), 2);
     return;
@@ -845,8 +846,8 @@ static void scsi_cmd_read_capacity16(scsi_state_t  current_state, cdb_t * curren
 
     /* creating response... */
     memset((void*)&response, 0x0, sizeof(read_capacity16_parameter_data_t));
-	response.ret_lba = (uint64_t)to_big32(scsi_ctx.storage_size-1);
-	response.ret_block_length = to_big32(scsi_ctx.block_size);
+	response.ret_lba = (uint64_t)htonl(scsi_ctx.storage_size-1);
+	response.ret_block_length = htonl(scsi_ctx.block_size);
     response.prot_enable = 0; /* no prot_enable, protection associated fields
                                  are disabled. */
     response.rc_basis = 0x01; /* LBA is the LBA of the last logical block
@@ -905,11 +906,11 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
 
     rl = &(current_cdb->payload.cdb12_report_luns);
 
-    if (from_big16(rl->allocation_length) < 16) {
+    if (ntohs(rl->allocation_length) < 16) {
         /* invalid: requested to be at least 16 by standard */
         goto invalid_cmd;
     }
-    if (from_big16(rl->allocation_length) < 24) {
+    if (ntohs(rl->allocation_length) < 24) {
         /* enable to send first lun informations */
         check_condition = true;
     }
@@ -923,7 +924,7 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
     response.luns[0] = 0;
 
     /* sending response, up to required bytes */
-    usb_bbb_send((uint8_t *)&response, (from_big16(rl->allocation_length) < sizeof(response)) ? from_big16(rl->allocation_length) : sizeof(response), 2);
+    usb_bbb_send((uint8_t *)&response, (ntohs(rl->allocation_length) < sizeof(response)) ? ntohs(rl->allocation_length) : sizeof(response), 2);
 
     /* if the host didn't reserve enough space to respond, inform it that
      * some informations are missing */
@@ -1235,7 +1236,7 @@ static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
 
     /* TODO: is the big endian is set only on the last 16 bytes of this
      * unaligned field ? */
-    rw_lba = from_big16((uint16_t)current_cdb->payload.cdb6.logical_block)
+    rw_lba = ntohs((uint16_t)current_cdb->payload.cdb6.logical_block)
         + (current_cdb->payload.cdb6.logical_block & 0x1f0000);
     rw_size = current_cdb->payload.cdb6.transfer_blocks;
     rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
@@ -1330,8 +1331,8 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     }
 
 
-    rw_lba = from_big32(current_cdb->payload.cdb10.logical_block);
-    rw_size = from_big16(current_cdb->payload.cdb10.transfer_blocks);
+    rw_lba = ntohl(current_cdb->payload.cdb10.logical_block);
+    rw_size = ntohs(current_cdb->payload.cdb10.transfer_blocks);
     rw_addr  = (uint64_t)scsi_ctx.block_size * (uint64_t)rw_lba;
 
     /* initialize size_to_process. This variable will be upated during the
