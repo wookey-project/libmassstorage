@@ -1,5 +1,5 @@
-Welcome to the libMassStorage project documentation!
-====================================================
+The SCSI stack
+==============
 
 The LibMassStorage project aim to implement a complete SCSI stack for mass storage
 devices.
