@@ -1395,6 +1395,8 @@ void scsi_exec_automaton(void)
         /* using aprintf() here to avoid blocking call
          * in the middle of a critical section */
         aprintf("error while dequeuing command!\n");
+        leave_critical_section();
+        return;
     }
     if(queue_is_empty(scsi_ctx.queue)){
         scsi_ctx.queue_empty = 1;
