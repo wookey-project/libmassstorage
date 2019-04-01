@@ -79,4 +79,33 @@ A basic usage of the automaton would be::
    while (1) {
        scsi_exec_automaton();
    }
+Supported SCSI commands
+"""""""""""""""""""""""
+
+The SCSI standard is huge and the requested supported commands depend on the
+SCSI device type, the host Operating System SCSI stack version and some
+inter-commands dependencies.
+
+Today, this SCSI stack support the following commands:
+
+   * FORMAT UNIT
+   * INQUIRY
+   * MODE SELECT(6)
+   * MODE SELECT(10)
+   * MODE SENSE(6)
+   * MODE SENSE(10)
+   * PREVENT ALLOW MEDIUM REMOVAL
+   * READ(6)
+   * READ(10)
+   * READ CAPACITY(10)
+   * READ CAPACITY(16)
+   * READ FORMAT CAPACITIES
+   * REPORT LUNS
+   * START STOP UNIT
+   * SYNCHONIZE CACHE(10)
+   * TEST UNIT READY
+   * VERIFY(10)
+   * WRITE(6)
+   * WRITE(10)
+
 
