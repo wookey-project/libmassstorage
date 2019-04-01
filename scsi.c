@@ -71,7 +71,6 @@ typedef  struct {
     uint32_t addr;
     uint32_t error;
     queue_t *queue;
-    bool queue_empty;
     uint8_t *global_buf;
     uint16_t global_buf_len;
     uint32_t block_size;
@@ -86,7 +85,6 @@ scsi_context_t scsi_ctx = {
     .addr = 0,
     .error= 0,
     .queue=NULL,
-    .queue_empty = true,
     .global_buf = NULL,
     .global_buf_len = 0,
     .block_size = 0,
@@ -424,7 +422,6 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
 if (err == MBED_ERROR_NOMEM) {
         aprintf("[ISR] Error! queue is full!\n");
     }
-	scsi_ctx.queue_empty = 0;
 }
 
 
@@ -1386,7 +1383,7 @@ void scsi_exec_automaton(void)
     mbed_error_t err;
 
     enter_critical_section();
-	if(scsi_ctx.queue_empty == 1){
+	if(scsi_ctx.queue->size == 0){
         leave_critical_section();
         return;
     }
@@ -1395,11 +1392,9 @@ void scsi_exec_automaton(void)
         /* using aprintf() here to avoid blocking call
          * in the middle of a critical section */
         aprintf("error while dequeuing command!\n");
+        queue_dump(scsi_ctx.queue);
         leave_critical_section();
         return;
-    }
-    if(queue_is_empty(scsi_ctx.queue)){
-        scsi_ctx.queue_empty = 1;
     }
     leave_critical_section();
 
@@ -1524,7 +1519,6 @@ static void scsi_reset_context(void)
     scsi_ctx.size_to_process = 0;
     scsi_ctx.addr = 0;
     scsi_ctx.error= 0;
-    scsi_ctx.queue_empty = true;
     scsi_ctx.block_size = 0;
     scsi_ctx.storage_size = 0;
     scsi_set_state(SCSI_IDLE);
