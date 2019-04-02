@@ -407,9 +407,9 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
 	int ret;
     mbed_error_t err;
 
-    /* Only 10 byte commands are supported, bigger sized commands are trunccated */
+    /* Only 10 bytes commands are supported: bigger commands are truncated */
     ret = wmalloc((void**)&current_cdb, sizeof(cdb_t), ALLOC_NORMAL);
-    if(ret){
+    if(ret != 0){
         scsi_set_state(SCSI_ERROR);
     }
 
@@ -419,8 +419,11 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
     if (err == MBED_ERROR_BUSY) {
         aprintf("[ISR] Error! queue is busy!\n");
     }
-if (err == MBED_ERROR_NOMEM) {
+    else if (err == MBED_ERROR_NOMEM) {
         aprintf("[ISR] Error! queue is full!\n");
+    }
+    else if (err != MBED_ERROR_NONE) {
+        aprintf("[ISR] Error!\n");
     }
 }
 
