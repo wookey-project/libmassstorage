@@ -95,7 +95,7 @@ scsi_context_t scsi_ctx = {
 
 static void scsi_error(scsi_sense_key_t sensekey, uint8_t asc, uint8_t ascq){
 #if SCSI_DEBUG
-    aprintf("%s: %s: status=%d\n", __func__, __func__, reason);
+    aprintf("%s: %s: status=%d\n", __func__, __func__, sensekey);
     aprintf("%s: state -> Error\n",__func__);
 #endif
     scsi_ctx.error = (sensekey << 16 | asc << 8 | ascq);
