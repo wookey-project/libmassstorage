@@ -40,7 +40,7 @@
  *
  * \return 0 on success
  */
-uint8_t scsi_storage_backend_read(uint32_t sector_addr, uint32_t num_sectors);
+mbed_error_t scsi_storage_backend_read(uint32_t sector_addr, uint32_t num_sectors);
 
 /*
  * \brief Write data to the storage backend
@@ -50,7 +50,7 @@ uint8_t scsi_storage_backend_read(uint32_t sector_addr, uint32_t num_sectors);
  *
  * \return 0 on success
  */
-uint8_t scsi_storage_backend_write(uint32_t sector_addr, uint32_t num_sectors);
+mbed_error_t scsi_storage_backend_write(uint32_t sector_addr, uint32_t num_sectors);
 
 /*
  * \brief get back the backend storage capacity
@@ -60,7 +60,7 @@ uint8_t scsi_storage_backend_write(uint32_t sector_addr, uint32_t num_sectors);
  *
  * \return 0 on success
  */
-uint8_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize);
+mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize);
 
 
 /***********************************************************

@@ -570,6 +570,7 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
     uint32_t rw_lba;
     uint16_t rw_size;
     uint64_t rw_addr;
+    mbed_error_t error;
 
     #if SCSI_DEBUG
         printf("%s\n", __func__);
@@ -624,7 +625,11 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
 
         /* INFO: num_sectors may be defined out of the loop */
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-        scsi_storage_backend_read(rw_lba, num_sectors);
+        error = scsi_storage_backend_read(rw_lba, num_sectors);
+        if (error == MBED_ERROR_RDERROR) {
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR, ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
         /* send data we have just read */
 		scsi_send_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         /* increment read pointer */
@@ -641,7 +646,11 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
         printf("%s: sending data residue to host.\n", __func__);
 #endif
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
-        scsi_storage_backend_read((uint32_t)rw_lba, num_sectors);
+        error = scsi_storage_backend_read((uint32_t)rw_lba, num_sectors);
+        if (error == MBED_ERROR_RDERROR) {
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR, ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
 #if SCSI_DEBUG
         #endif
@@ -651,6 +660,7 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
         }
     }
 
+end:
     return;
 
 invalid_transition:
@@ -669,6 +679,8 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     uint32_t rw_lba;
     uint16_t rw_size;
     uint64_t rw_addr;
+
+    mbed_error_t error;
 
     #if SCSI_DEBUG
         printf("%s\n", __func__);
@@ -719,8 +731,12 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
 
         /* INFO: num_sectors may be defined out of the loop */
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-        scsi_storage_backend_read(rw_lba, num_sectors);
+        error = scsi_storage_backend_read(rw_lba, num_sectors);
         /* send data we have just read */
+        if (error == MBED_ERROR_RDERROR) {
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR, ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
 		scsi_send_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         /* increment read pointer */
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
@@ -736,7 +752,11 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
         printf("%s: sending data residue to host.\n", __func__);
 #endif
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
-        scsi_storage_backend_read((uint32_t)rw_lba, num_sectors);
+        error = scsi_storage_backend_read((uint32_t)rw_lba, num_sectors);
+        if (error == MBED_ERROR_RDERROR) {
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR, ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
 #if SCSI_DEBUG
         #endif
@@ -745,7 +765,7 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
             continue;
         }
     }
-
+end:
     return;
 
 invalid_transition:
@@ -1197,6 +1217,8 @@ static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
     uint16_t rw_size;
     uint64_t rw_addr;
 
+    mbed_error_t error;
+
 #if SCSI_DEBUG
     printf("%s:\n",__func__);
 #endif
@@ -1255,7 +1277,11 @@ static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-        scsi_storage_backend_write(rw_lba, num_sectors);
+        error = scsi_storage_backend_write(rw_lba, num_sectors);
+        if (error == MBED_ERROR_WRERROR) {
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR, ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         while(!scsi_is_ready_for_data_receive()){
             continue;
@@ -1270,11 +1296,16 @@ static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
         /* num_sectors *must* be calculated before waiting for ISR, as
          * the ISR trigger decrement size_to_process */
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
-        scsi_storage_backend_write(rw_lba, num_sectors);
+        error = scsi_storage_backend_write(rw_lba, num_sectors);
+        if (error == MBED_ERROR_WRERROR) {
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR, ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
         while(!scsi_is_ready_for_data_receive()){
             continue;
         }
     }
+end:
     return;
 
 invalid_transition:
@@ -1293,6 +1324,8 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     uint32_t rw_lba;
     uint16_t rw_size;
     uint64_t rw_addr;
+
+    mbed_error_t error;
 
 #if SCSI_DEBUG
     printf("%s:\n",__func__);
@@ -1349,7 +1382,11 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-        scsi_storage_backend_write(rw_lba, num_sectors);
+        error = scsi_storage_backend_write(rw_lba, num_sectors);
+        if (error == MBED_ERROR_WRERROR) {
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR, ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         while(!scsi_is_ready_for_data_receive()){
             continue;
@@ -1364,11 +1401,16 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
         /* num_sectors *must* be calculated before waiting for ISR, as
          * the ISR trigger decrement size_to_process */
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
-        scsi_storage_backend_write(rw_lba, num_sectors);
+        error = scsi_storage_backend_write(rw_lba, num_sectors);
+        if (error == MBED_ERROR_WRERROR) {
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR, ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
         while(!scsi_is_ready_for_data_receive()){
             continue;
         }
     }
+end:
     return;
 
 invalid_transition:

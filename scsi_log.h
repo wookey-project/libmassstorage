@@ -83,6 +83,7 @@ typedef enum {
 # define ASC_PERIPHERAL_DEVICE_WRITE_FAULT          0x03
 # define ASC_UNRECOVERED_READ_ERROR                 0x11
 # define ASC_WRITE_PROTECTED                        0x27
+# define ASC_WRITE_ERROR                            0x0C
 
 # define ASCQ_NO_ADDITIONAL_SENSE                   0x00
 # define ASCQ_LOGICAL_BLOCK_ADDRESS_OUT_OF_RANGE    0x00
