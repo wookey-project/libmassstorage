@@ -415,7 +415,6 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
     /* Only 10 bytes commands are supported: bigger commands are truncated */
     ret = wmalloc((void**)&current_cdb, sizeof(cdb_t), ALLOC_NORMAL);
     if(ret != 0){
-        scsi_set_state(SCSI_ERROR);
         aprintf("[ISR] Error! unable to alloc cdb!\n");
         goto err;
     }
@@ -443,6 +442,7 @@ err:
      * that the command has failed. We consider this failure is as a not-ready device,
      * letting the host reacting consequently */
     scsi_error(SCSI_SENSE_NOT_READY, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
+    scsi_set_state(SCSI_ERROR);
     return;
 }
 
@@ -1446,8 +1446,8 @@ void scsi_exec_automaton(void)
     cdb_t * current_cdb = NULL;
     mbed_error_t err;
 
-    while (scsi_ctx.queue_empty == true) {
-        continue;
+    if (scsi_ctx.queue_empty == true) {
+        return;
     }
     /* critical section part. This part of the code is handling
      * the command queue to get back the older cdb block from it.
@@ -1589,6 +1589,7 @@ typedef enum scsi_init_error {
  */
 static void scsi_reset_context(void)
 {
+    aprintf("[reset] clearing USB context\n");
     cdb_t * current_cdb = NULL;
     enter_critical_section();
     /* releasing all existing command from queue */
@@ -1604,11 +1605,10 @@ static void scsi_reset_context(void)
     scsi_ctx.size_to_process = 0;
     scsi_ctx.addr = 0;
     scsi_ctx.error= 0;
+    scsi_ctx.queue_empty = true;
     scsi_ctx.block_size = 0;
     scsi_ctx.storage_size = 0;
     scsi_set_state(SCSI_IDLE);
-    /* acknowledge the reset order */
-    usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
 }
 
 
