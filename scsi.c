@@ -436,7 +436,13 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
         goto err;
     }
     scsi_ctx.queue_empty = false;
+    return;
+
 err:
+    /* if we fail to enqueue the cdb, for whatever reason, the host *must* be informed
+     * that the command has failed. We consider this failure is as a not-ready device,
+     * letting the host reacting consequently */
+    scsi_error(SCSI_SENSE_NOT_READY, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
@@ -1543,10 +1549,7 @@ void scsi_exec_automaton(void)
 		break;
 
 	default:
-        if (scsi_release_cdb(current_cdb) != MBED_ERROR_NONE) {
-            /* error while releasing cdb */
-            goto release_error;
-        }
+        scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
         goto invalid_command;
 	};
 
@@ -1567,7 +1570,6 @@ invalid_command:
 #if SCSI_DEBUG
     printf("%s: Unsupported command: %x  \n", __func__, current_cdb->operation);
 #endif
-    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
     return;
 
 nothing_to_do:
