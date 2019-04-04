@@ -70,7 +70,8 @@ typedef  struct {
     volatile uint32_t size_to_process;
     uint32_t addr;
     uint32_t error;
-    queue_t *queue;
+    queue_t *queue; /* used to avoid lock loop */
+    volatile bool     queue_empty;
     uint8_t *global_buf;
     uint16_t global_buf_len;
     uint32_t block_size;
@@ -85,6 +86,7 @@ scsi_context_t scsi_ctx = {
     .addr = 0,
     .error= 0,
     .queue=NULL,
+    .queue_empty = true,
     .global_buf = NULL,
     .global_buf_len = 0,
     .block_size = 0,
@@ -147,6 +149,9 @@ static inline void leave_critical_section(void)
 static void scsi_debug_dump_cmd(cdb_t * current_cdb, uint8_t scsi_cmd)
 {
     if (!current_cdb) {
+        return;
+    }
+    if (SCSI_DEBUG < 2) {
         return;
     }
     switch (scsi_cmd) {
@@ -411,6 +416,8 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
     ret = wmalloc((void**)&current_cdb, sizeof(cdb_t), ALLOC_NORMAL);
     if(ret != 0){
         scsi_set_state(SCSI_ERROR);
+        aprintf("[ISR] Error! unable to alloc cdb!\n");
+        goto err;
     }
 
     memcpy((void *)current_cdb, (void *)cdb, sizeof(cdb_t));
@@ -418,13 +425,19 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)
 	err = queue_enqueue(scsi_ctx.queue, current_cdb);
     if (err == MBED_ERROR_BUSY) {
         aprintf("[ISR] Error! queue is busy!\n");
+        goto err;
     }
     else if (err == MBED_ERROR_NOMEM) {
         aprintf("[ISR] Error! queue is full!\n");
+        goto err;
     }
     else if (err != MBED_ERROR_NONE) {
         aprintf("[ISR] Error!\n");
+        goto err;
     }
+    scsi_ctx.queue_empty = false;
+err:
+    return;
 }
 
 
@@ -462,7 +475,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
     inq = &(cdb->payload.cdb6_inquiry);
 
 
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
     scsi_debug_dump_cmd(cdb, SCSI_CMD_INQUIRY);
 #endif
 
@@ -1047,7 +1060,7 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
     scsi_debug_dump_cmd(current_cdb, SCSI_CMD_MODE_SENSE_10);
 #endif
 
@@ -1089,7 +1102,7 @@ static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cd
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
     scsi_debug_dump_cmd(current_cdb, SCSI_CMD_MODE_SENSE_10);
 #endif
 
@@ -1427,8 +1440,20 @@ void scsi_exec_automaton(void)
     cdb_t * current_cdb = NULL;
     mbed_error_t err;
 
-    enter_critical_section();
-	if(scsi_ctx.queue->size == 0){
+    if (scsi_ctx.queue_empty == true) {
+        return;
+    }
+    /* critical section part. This part of the code is handling
+     * the command queue to get back the older cdb block from it.
+     */
+    if (enter_critical_section() != MBED_ERROR_NONE) {
+        /* unable to enter critical section by now... leaving current turn */
+        printf("Unable to enter critical section!\n");
+        return;
+    }
+	if(scsi_ctx.queue->size == 0) {
+        /* nothing to do... */
+        scsi_ctx.queue_empty = true;
         leave_critical_section();
         return;
     }
@@ -1441,7 +1466,13 @@ void scsi_exec_automaton(void)
         leave_critical_section();
         return;
     }
+	if(scsi_ctx.queue->size == 0) {
+        scsi_ctx.queue_empty = true;
+    }
     leave_critical_section();
+    /* end of the critical section part. From now one, ISR can
+     * be executed again
+     */
 
     scsi_state_t current_state = scsi_get_state();
 
