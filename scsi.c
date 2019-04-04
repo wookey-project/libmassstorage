@@ -1440,8 +1440,8 @@ void scsi_exec_automaton(void)
     cdb_t * current_cdb = NULL;
     mbed_error_t err;
 
-    if (scsi_ctx.queue_empty == true) {
-        return;
+    while (scsi_ctx.queue_empty == true) {
+        continue;
     }
     /* critical section part. This part of the code is handling
      * the command queue to get back the older cdb block from it.
@@ -1449,24 +1449,24 @@ void scsi_exec_automaton(void)
     if (enter_critical_section() != MBED_ERROR_NONE) {
         /* unable to enter critical section by now... leaving current turn */
         printf("Unable to enter critical section!\n");
-        return;
+        goto nothing_to_do;
     }
 	if(scsi_ctx.queue->size == 0) {
         /* nothing to do... */
         scsi_ctx.queue_empty = true;
         leave_critical_section();
-        return;
+        goto nothing_to_do;
     }
     err = queue_dequeue(scsi_ctx.queue, (void**)&current_cdb);
     if (err != MBED_ERROR_NONE) {
         /* using aprintf() here to avoid blocking call
          * in the middle of a critical section */
-        aprintf("error while dequeuing command!\n");
         queue_dump(scsi_ctx.queue);
         leave_critical_section();
-        return;
+        printf("error while dequeuing command! err=%d\n", err);
+        goto nothing_to_do;
     }
-	if(scsi_ctx.queue->size == 0) {
+	if (scsi_ctx.queue->size == 0) {
         scsi_ctx.queue_empty = true;
     }
     leave_critical_section();
@@ -1543,6 +1543,10 @@ void scsi_exec_automaton(void)
 		break;
 
 	default:
+        if (scsi_release_cdb(current_cdb) != MBED_ERROR_NONE) {
+            /* error while releasing cdb */
+            goto release_error;
+        }
         goto invalid_command;
 	};
 
@@ -1564,6 +1568,9 @@ invalid_command:
     printf("%s: Unsupported command: %x  \n", __func__, current_cdb->operation);
 #endif
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
+    return;
+
+nothing_to_do:
     return;
 }
 
