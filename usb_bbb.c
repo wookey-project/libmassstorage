@@ -19,7 +19,7 @@ static void (*callback_data_received)(uint32_t size);
 static void (*callback_data_sent)(void);
 
 
-static enum bbb_state bbb_state;
+static volatile enum bbb_state bbb_state;
 uint32_t current_tag;
 
 
