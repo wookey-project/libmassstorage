@@ -131,7 +131,7 @@ static const struct {
                                  {SCSI_CMD_MODE_SENSE_10, SCSI_IDLE},
                                  {SCSI_CMD_MODE_SENSE_6, SCSI_IDLE},
                                  {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL,SCSI_IDLE},
-                                 {0xff,0xff},
+                                 {SCSI_CMD_REQUEST_SENSE,SCSI_IDLE},
                                  {0xff,0xff},
                                  {0xff,0xff},
                                  {0xff,0xff},
