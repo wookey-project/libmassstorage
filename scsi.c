@@ -95,6 +95,8 @@ scsi_context_t scsi_ctx = {
 
 
 
+static volatile cdb_t queued_cdb = { 0 };
+
 static void scsi_error(scsi_sense_key_t sensekey, uint8_t asc, uint8_t ascq){
 #if SCSI_DEBUG
     aprintf("%s: %s: status=%d\n", __func__, __func__, sensekey);
@@ -408,41 +410,10 @@ static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t m
  */
 static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)))
 {
-    cdb_t *current_cdb;
-	int ret;
-    mbed_error_t err;
-
-    /* Only 10 bytes commands are supported: bigger commands are truncated */
-    ret = wmalloc((void**)&current_cdb, sizeof(cdb_t), ALLOC_NORMAL);
-    if(ret != 0){
-        aprintf("[ISR] Error! unable to alloc cdb!\n");
-        goto err;
-    }
-
-    memcpy((void *)current_cdb, (void *)cdb, sizeof(cdb_t));
-
-	err = queue_enqueue(scsi_ctx.queue, current_cdb);
-    if (err == MBED_ERROR_BUSY) {
-        aprintf("[ISR] Error! queue is busy!\n");
-        goto err;
-    }
-    else if (err == MBED_ERROR_NOMEM) {
-        aprintf("[ISR] Error! queue is full!\n");
-        goto err;
-    }
-    else if (err != MBED_ERROR_NONE) {
-        aprintf("[ISR] Error!\n");
-        goto err;
-    }
+    /* Only up to 16 bytes commands are supported: bigger commands are truncated,
+     * See cdb_t definition in scsi_cmd.h */
+    memcpy((void*)&queued_cdb, (void*)cdb, sizeof(cdb_t));
     scsi_ctx.queue_empty = false;
-    return;
-
-err:
-    /* if we fail to enqueue the cdb, for whatever reason, the host *must* be informed
-     * that the command has failed. We consider this failure is as a not-ready device,
-     * letting the host reacting consequently */
-    scsi_error(SCSI_SENSE_NOT_READY, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
-    scsi_set_state(SCSI_ERROR);
     return;
 }
 
@@ -1032,6 +1003,9 @@ static void scsi_cmd_request_sense(scsi_state_t  current_state, cdb_t * current_
 	data.additional_sense_length = 0x0a;
 	data.asc = scsi_error_get_asc(scsi_ctx.error);
 	data.ascq = scsi_error_get_ascq(scsi_ctx.error);
+    /* now that data has been sent successfully, scsi error is cleared */
+    scsi_ctx.error = 0;
+
 	usb_bbb_send((uint8_t *)&data, sizeof(data), 2);
     return;
 
@@ -1443,38 +1417,27 @@ invalid_transition:
  */
 void scsi_exec_automaton(void)
 {
-    cdb_t * current_cdb = NULL;
-    mbed_error_t err;
+    /* local cdb copy */
+    cdb_t local_cdb;
 
     if (scsi_ctx.queue_empty == true) {
         return;
     }
+
+
     /* critical section part. This part of the code is handling
-     * the command queue to get back the older cdb block from it.
+     * the command queue to get back the queued cdb block from it.
      */
     if (enter_critical_section() != MBED_ERROR_NONE) {
         /* unable to enter critical section by now... leaving current turn */
         printf("Unable to enter critical section!\n");
         goto nothing_to_do;
     }
-	if(scsi_ctx.queue->size == 0) {
-        /* nothing to do... */
-        scsi_ctx.queue_empty = true;
-        leave_critical_section();
-        goto nothing_to_do;
-    }
-    err = queue_dequeue(scsi_ctx.queue, (void**)&current_cdb);
-    if (err != MBED_ERROR_NONE) {
-        /* using aprintf() here to avoid blocking call
-         * in the middle of a critical section */
-        queue_dump(scsi_ctx.queue);
-        leave_critical_section();
-        printf("error while dequeuing command! err=%d\n", err);
-        goto nothing_to_do;
-    }
-	if (scsi_ctx.queue->size == 0) {
-        scsi_ctx.queue_empty = true;
-    }
+    memcpy((void*)&local_cdb, (void*)&queued_cdb, sizeof(cdb_t));
+    /* we handle a signe command at a time, which is standard for the
+     * SCSI automaton, as SCSI is syncrhonous */
+    scsi_ctx.queue_empty = true;
+
     leave_critical_section();
     /* end of the critical section part. From now one, ISR can
      * be executed again
@@ -1482,94 +1445,79 @@ void scsi_exec_automaton(void)
 
     scsi_state_t current_state = scsi_get_state();
 
-	switch (current_cdb->operation) {
+	switch (local_cdb.operation) {
 	case SCSI_CMD_INQUIRY:
-		scsi_cmd_inquiry(current_state, current_cdb);
+		scsi_cmd_inquiry(current_state, &local_cdb);
 		break;
 
 	case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
-		scsi_cmd_prevent_allow_medium_removal(current_state, current_cdb);
+		scsi_cmd_prevent_allow_medium_removal(current_state, &local_cdb);
 		break;
 
 	case SCSI_CMD_READ_6:
-		scsi_cmd_read_data6(current_state, current_cdb);
+		scsi_cmd_read_data6(current_state, &local_cdb);
 		break;
 
 	case SCSI_CMD_READ_10:
-		scsi_cmd_read_data10(current_state, current_cdb);
+		scsi_cmd_read_data10(current_state, &local_cdb);
 		break;
 
 	case SCSI_CMD_READ_CAPACITY_10:
-		scsi_cmd_read_capacity10(current_state, current_cdb);
+		scsi_cmd_read_capacity10(current_state, &local_cdb);
 		break;
 
 	case SCSI_CMD_READ_CAPACITY_16:
-		scsi_cmd_read_capacity16(current_state, current_cdb);
+		scsi_cmd_read_capacity16(current_state, &local_cdb);
 		break;
 
 	case SCSI_CMD_REPORT_LUNS:
-		scsi_cmd_report_luns(current_state, current_cdb);
+		scsi_cmd_report_luns(current_state, &local_cdb);
 		break;
 
     case SCSI_CMD_MODE_SELECT_10:
-           scsi_cmd_mode_select10(current_state, current_cdb);
-           break;
+        scsi_cmd_mode_select10(current_state, &local_cdb);
+        break;
 
     case SCSI_CMD_MODE_SELECT_6:
-           scsi_cmd_mode_select6(current_state, current_cdb);
-           break;
+        scsi_cmd_mode_select6(current_state, &local_cdb);
+        break;
 
     case SCSI_CMD_MODE_SENSE_10:
-           scsi_cmd_mode_sense10(current_state, current_cdb);
-           break;
+        scsi_cmd_mode_sense10(current_state, &local_cdb);
+        break;
 
     case SCSI_CMD_MODE_SENSE_6:
-           scsi_cmd_mode_sense6(current_state, current_cdb);
-           break;
+        scsi_cmd_mode_sense6(current_state, &local_cdb);
+        break;
 
 
     case SCSI_CMD_REQUEST_SENSE:
-           scsi_cmd_request_sense(current_state, current_cdb);
-           break;
+        scsi_cmd_request_sense(current_state, &local_cdb);
+        break;
 #if 0
 	case SCSI_CMD_SEND_DIAGNOSTIC:
-		scsi_cmd_send_diagnostic(current_state, current_cdb);
+		scsi_cmd_send_diagnostic(current_state, &local_cdb);
 		break;
 #endif
 	case SCSI_CMD_TEST_UNIT_READY:
-		scsi_cmd_test_unit_ready(current_state, current_cdb);
+		scsi_cmd_test_unit_ready(current_state, &local_cdb);
 		break;
 
 	case SCSI_CMD_WRITE_6:
-		scsi_write_data6(current_state, current_cdb);
+		scsi_write_data6(current_state, &local_cdb);
 		break;
 
 	case SCSI_CMD_WRITE_10:
-		scsi_write_data10(current_state, current_cdb);
+		scsi_write_data10(current_state, &local_cdb);
 		break;
 
 	default:
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
-        goto invalid_command;
+#if SCSI_DEBUG
+        printf("%s: Unsupported command: %x  \n", __func__, &local_cdb.operation);
+#endif
 	};
 
-    if (scsi_release_cdb(current_cdb) != MBED_ERROR_NONE) {
-        /* error while releasing cdb */
-        goto release_error;
-    }
-    return;
-
-release_error:
-#if SCSI_DEBUG
-    printf("%s: Error while releasing cdb!\n", __func__);
-#endif
-    /* TODO: here we need to specify a correct SCSI error for the host */
-    return;
-
-invalid_command:
-#if SCSI_DEBUG
-    printf("%s: Unsupported command: %x  \n", __func__, current_cdb->operation);
-#endif
     return;
 
 nothing_to_do:
@@ -1590,15 +1538,6 @@ typedef enum scsi_init_error {
 static void scsi_reset_context(void)
 {
     aprintf("[reset] clearing USB context\n");
-    cdb_t * current_cdb = NULL;
-    enter_critical_section();
-    /* releasing all existing command from queue */
-    while (!queue_is_empty(scsi_ctx.queue)) {
-        if (queue_dequeue(scsi_ctx.queue, (void**)&current_cdb) == MBED_ERROR_NONE) {
-            scsi_release_cdb(current_cdb);
-        }
-    }
-    leave_critical_section();
     /* resetting the context in a known, empty, idle state */
     scsi_ctx.direction = SCSI_DIRECTION_IDLE;
     scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;

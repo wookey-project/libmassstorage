@@ -84,6 +84,9 @@ typedef enum {
 # define ASC_UNRECOVERED_READ_ERROR                 0x11
 # define ASC_WRITE_PROTECTED                        0x27
 # define ASC_WRITE_ERROR                            0x0C
+# define ASC_SERVO_FAULT                            0x09
+# define ASC_ABORTED_COMMAND                        0x0B
+# define ASC_ECHO_BUFFER_OVERWRITTEN                0x3F
 
 # define ASCQ_NO_ADDITIONAL_SENSE                   0x00
 # define ASCQ_LOGICAL_BLOCK_ADDRESS_OUT_OF_RANGE    0x00
