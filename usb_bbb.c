@@ -19,7 +19,7 @@ static void (*callback_data_received)(uint32_t size);
 static void (*callback_data_sent)(void);
 
 
-static volatile enum bbb_state bbb_state;
+volatile enum bbb_state bbb_state;
 uint32_t current_tag;
 
 
@@ -46,7 +46,7 @@ struct __packed scsi_cbw {
 static struct scsi_cbw cbw;
 # define USB_BBB_CBW_SIG		0x43425355 /* "USBC" */
 
-static void read_next_cmd(void)
+void read_next_cmd(void)
 {
 #if BBB_DEBUG
 	printf("[USB BBB] %s: Reading a command\n",  __func__ );

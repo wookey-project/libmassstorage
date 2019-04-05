@@ -47,4 +47,6 @@ void usb_bbb_send(const uint8_t *src, uint32_t size, uint8_t ep);
  */
 void usb_bbb_read(void *dst, uint32_t size, uint8_t ep);
 
+void read_next_cmd(void);
+
 #endif /* USB_BBB_H */

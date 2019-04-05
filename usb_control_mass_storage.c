@@ -6,6 +6,7 @@
 #include "api/nostd.h"
 #include "api/regutils.h"
 #include "usb.h"
+#include "usb_bbb.h"
 #include "usb_control_mass_storage.h"
 #include "usbmass_desc.h"
 
@@ -42,6 +43,7 @@ void mass_storage_class_rqst_handler(struct usb_setup_packet *packet)
 		break;
 	case USB_RQST_MS_RESET:
         	mass_storage_reset(); // FIXME We must use a callback function
+            read_next_cmd();
 		break;
 		// FIXME: break here or not????
 	default:
