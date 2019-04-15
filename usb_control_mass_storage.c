@@ -33,15 +33,30 @@
 #include "usb_control_mass_storage.h"
 #include "usbmass_desc.h"
 
-static mass_storage_reset_trigger_t reset_trigger = NULL;
+static mass_storage_reset_trigger_t ms_reset_trigger = NULL;
+static device_reset_trigger_t device_reset_trigger = NULL;
 
+
+/*
+ * Enumeration phase MS_RESET
+ */
 static void mass_storage_reset(void)
 {
-    	printf("Bulk-Only Mass Storage Reset\n");
-        if (reset_trigger != NULL) {
-            reset_trigger();
+    	aprintf("Bulk-Only Mass Storage Reset\n");
+        if (ms_reset_trigger != NULL) {
+            ms_reset_trigger();
         }
 }
+
+/*
+ * Nominal phase device reset (critical communication error with device)
+ */
+static void full_device_reset(void)
+{
+    	aprintf("Bulk-Only Mass Storage Reset\n");
+        device_reset_trigger();
+}
+
 
 
 /**
@@ -110,7 +125,8 @@ static void mass_storage_mft_string_desc_rqst_handler(uint16_t wLength)
 /**
  * \brief Set callback for class_rqst in usb_control
  */
-void mass_storage_init(mass_storage_reset_trigger_t upper_stack_reset_trigger)
+void mass_storage_init(mass_storage_reset_trigger_t upper_stack_ms_reset_trigger,
+                       device_reset_trigger_t       upper_stack_device_reset_trigger)
 {
 	usb_ctrl_callbacks_t usbmass_usb_ctrl_callbacks = {
         	.class_rqst_handler             = mass_storage_class_rqst_handler,
@@ -119,9 +135,10 @@ void mass_storage_init(mass_storage_reset_trigger_t upper_stack_reset_trigger)
         	.set_interface_rqst_handler     = NULL,
         	.functional_rqst_handler        = NULL,
             .mft_string_rqst_handler        = mass_storage_mft_string_desc_rqst_handler,
-
+            .reset_handler                  = full_device_reset,
     	};
-    reset_trigger = upper_stack_reset_trigger;
+    ms_reset_trigger = upper_stack_ms_reset_trigger;
+    device_reset_trigger = upper_stack_device_reset_trigger;
 
 	usb_ctrl_init(usbmass_usb_ctrl_callbacks, usbmass_device_desc , usbmass_configuration_desc );
 }

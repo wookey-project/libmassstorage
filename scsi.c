@@ -1617,7 +1617,7 @@ mbed_error_t scsi_init(void)
     scsi_set_state(SCSI_IDLE);
 
     /* initialize control plane, adding the reset event trigger for SCSI level */
-    mass_storage_init(scsi_reset_context);
+    mass_storage_init(scsi_reset_context, scsi_reset_device);
     return MBED_ERROR_NONE;
 }
 

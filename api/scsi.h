@@ -86,6 +86,20 @@ mbed_error_t scsi_storage_backend_write(uint32_t sector_addr, uint32_t num_secto
 mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize);
 
 
+/*
+ * \brief respond to a reset has been received on the line
+ *
+ * When a reset has been received on control endpoint while the SCSI state
+ * machine is running, this means that something bad happened. The policy to
+ * handle this reset softly, or hardly (for e.g. by rebooting) is leaving
+ * to the user task, depending on the global device software stack.
+ *
+ * This function is triggered only *after* the enumeration phase, until the
+ * SCSI stack is up and running.
+ *
+ */
+void scsi_reset_device(void);
+
 /***********************************************************
  * libSCSI API
  ***********************************************************/
