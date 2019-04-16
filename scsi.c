@@ -1425,6 +1425,7 @@ void scsi_exec_automaton(void)
         return;
     }
 
+    usb_ctrl_set_initphase_done();
 
     /* critical section part. This part of the code is handling
      * the command queue to get back the queued cdb block from it.
