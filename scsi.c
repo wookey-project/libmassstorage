@@ -42,7 +42,7 @@
 #include "scsi_log.h"
 #include "scsi_automaton.h"
 
-#define SCSI_DEBUG 1
+#define SCSI_DEBUG 0
 
 /*
  * The SCSI stack context. This is a global variable, which means
