@@ -21,9 +21,9 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#include "api/stdio.h"
-#include "api/nostd.h"
-#include "api/regutils.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
+#include "libc/regutils.h"
 #include "usb.h"
 #include "usb_bbb.h"
 

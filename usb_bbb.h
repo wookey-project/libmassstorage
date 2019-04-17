@@ -24,7 +24,7 @@
 #ifndef USB_BBB_H
 # define USB_BBB_H
 
-# include "api/regutils.h"
+# include "libc/regutils.h"
 
 /**
  * usb_bbb_init - Initialize the bulk only layer

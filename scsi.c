@@ -21,18 +21,18 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#include "api/malloc.h"
-#include "api/stdio.h"
-#include "api/nostd.h"
-#include "api/string.h"
+#include "libc/malloc.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
+#include "libc/string.h"
 #include "api/scsi.h"
-#include "api/string.h"
-#include "api/queue.h"
+#include "libc/string.h"
+#include "libc/queue.h"
 #include "usb.h"
 #include "usb_bbb.h"
 #include "autoconf.h"
-#include "api/syscall.h"
-#include "api/arpa/inet.h"
+#include "libc/syscall.h"
+#include "libc/arpa/inet.h"
 #include "wookey_ipc.h"
 
 #include "usb_control_mass_storage.h"

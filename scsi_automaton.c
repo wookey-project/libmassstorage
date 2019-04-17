@@ -22,9 +22,9 @@
  *
  */
 #include "scsi_automaton.h"
-#include "api/stdio.h"
-#include "api/nostd.h"
-#include "api/string.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
+#include "libc/string.h"
 
 
 /****************************************************************

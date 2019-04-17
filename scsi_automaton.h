@@ -24,7 +24,7 @@
 #ifndef SCSI_AUTOMATON_H_
 #define SCSI_AUTOMATON_H_
 
-#include "api/types.h"
+#include "libc/types.h"
 #include "scsi_cmd.h"
 
 typedef enum scsi_state {

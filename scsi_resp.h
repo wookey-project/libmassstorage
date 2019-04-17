@@ -24,7 +24,7 @@
 #ifndef SCSI_RESP_H_
 #define SCSI_RESP_H_
 
-#include "api/types.h"
+#include "libc/types.h"
 
 /***************************
  * about responses

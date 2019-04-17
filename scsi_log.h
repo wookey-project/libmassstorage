@@ -24,7 +24,7 @@
 #ifndef SCSI_LOG_H_
 #define SCSI_LOG_H_
 
-#include "api/types.h"
+#include "libc/types.h"
 
 /*
  * SCSI status, that are returned at each command terminaison

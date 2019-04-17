@@ -25,9 +25,9 @@
  *
  */
 #include "autoconf.h"
-#include "api/stdio.h"
-#include "api/nostd.h"
-#include "api/regutils.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
+#include "libc/regutils.h"
 #include "usb.h"
 #include "usb_bbb.h"
 #include "usb_control_mass_storage.h"

@@ -1,31 +1,33 @@
+###################################################################
+# About the library name and path
+###################################################################
+
+# library name, without extension
 LIB_NAME ?= libmassstorage
 
+# project root directory, relative to app dir
 PROJ_FILES = ../../
+
+# library name, with extension
 LIB_FULL_NAME = $(LIB_NAME).a
 
-VERSION = 1
-#############################
-
+# SDK helper Makefiles inclusion
 -include $(PROJ_FILES)/Makefile.conf
 -include $(PROJ_FILES)/Makefile.gen
 
 # use an app-specific build dir
 APP_BUILD_DIR = $(BUILD_DIR)/libs/$(LIB_NAME)
 
+###################################################################
+# About the compilation flags
+###################################################################
+
 CFLAGS += $(LIBS_CFLAGS)
-CFLAGS += -ffreestanding
-CFLAGS += $(DRIVERS_CFLAGS)
-CFLAGS += -I$(PROJ_FILES)/include/generated -I$(PROJ_FILES) -I$(PROJ_FILES)/libs/std -I$(PROJ_FILES)/kernel/shared -I.
-CFLAGS += -I$(PROJ_FILES)/libs/debug/api
-CFLAGS += -I$(PROJ_FILES)/libs/wookey # FIXME: scsi.c should not invoke IPC but callbacks instead
-CFLAGS += -I$(PROJ_FILES)/libs/std
-CFLAGS += -I$(PROJ_FILES)/drivers/socs/$(CONFIG_SOCNAME)/usb
-CFLAGS += -MMD -MP -nostdlib -O3
+CFLAGS += -MMD -MP -O3
 
-LDFLAGS += -fno-builtin -nostdlib -nostartfiles
-LD_LIBS += -lg
-
-BUILD_DIR ?= $(PROJ_FILE)build
+#############################################################
+# About library sources
+#############################################################
 
 SRC_DIR = .
 SRC = $(wildcard $(SRC_DIR)/*.c)
@@ -39,6 +41,10 @@ OUT_DIRS = $(dir $(OBJ))
 TODEL_CLEAN += $(OBJ)
 # targets
 TODEL_DISTCLEAN += $(APP_BUILD_DIR)
+
+##########################################################
+# generic targets of all libraries makefiles
+##########################################################
 
 .PHONY: app doc
 
@@ -61,9 +67,6 @@ show:
 
 lib: $(APP_BUILD_DIR)/$(LIB_FULL_NAME)
 
-#############################################################
-# build targets (driver, core, SoC, Board... and local)
-# App C sources files
 $(APP_BUILD_DIR)/%.o: %.c
 	$(call if_changed,cc_o_c)
 
@@ -76,4 +79,3 @@ $(APP_BUILD_DIR):
 	$(call cmd,mkdir)
 
 -include $(DEP)
--include $(TESTSDEP)
