@@ -42,7 +42,7 @@
 #include "scsi_log.h"
 #include "scsi_automaton.h"
 
-#define SCSI_DEBUG 0
+#define SCSI_DEBUG 1
 
 /*
  * The SCSI stack context. This is a global variable, which means
@@ -1052,6 +1052,7 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
     /*usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t)); */
     usb_bbb_send((uint8_t *)&response, sizeof(mode_parameter10_data_t), 2);
 
+    return;
 
 invalid_transition:
     printf("%s: invalid_transition\n", __func__);
