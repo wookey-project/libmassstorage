@@ -95,6 +95,17 @@ typedef struct  __attribute__((packed)){
      uint8_t allocation_length;
 } cdb10_request_sense_t;
 
+/* READ FORMAT CAPACITIES */
+typedef struct __attribute__((packed)){
+    uint8_t  lun:3;
+    uint8_t  reserved_1:5;
+    uint32_t reserved_2;
+    uint8_t  reserved_3;
+    uint8_t  allocation_length_msb;
+    uint8_t  allocation_length_lsb;
+    uint16_t reserved_4;
+    uint8_t  reserved_5;
+} cdb12_read_format_capacities_t;
 
 /* READ 6 / WRITE 6 */
 typedef struct  __attribute__((packed)){
@@ -207,6 +218,7 @@ typedef union {
     cdb10_request_sense_t          cdb10_request_sense;
     /* CDB 12 bytes length */
     cdb12_report_luns_t            cdb12_report_luns;
+    cdb12_read_format_capacities_t cdb12_read_format_capacities;
     /* CDB 16 bytes length */
     cdb16_read_capacity_16_t       cdb16_read_capacity;
 } u_cdb_payload;

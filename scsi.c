@@ -42,7 +42,7 @@
 #include "scsi_log.h"
 #include "scsi_automaton.h"
 
-#define SCSI_DEBUG 0
+#define SCSI_DEBUG 1
 
 /*
  * The SCSI stack context. This is a global variable, which means
@@ -546,6 +546,62 @@ invalid_transition:
     return;
 }
 
+
+static void scsi_cmd_read_format_capacities(scsi_state_t  current_state, cdb_t * current_cdb)
+{
+#if SCSI_DEBUG
+    printf("%s\n", __func__);
+#endif
+
+    /* Sanity check */
+    if(current_cdb == NULL){
+        goto invalid_transition;
+    }
+
+    /* Sanity check and next state detection */
+    uint8_t next_state;
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        goto invalid_transition;
+    }
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    cdb12_read_format_capacities_t *rfc = &(current_cdb->payload.cdb12_read_format_capacities);
+
+    capacity_list_t response = {
+        .list_header.reserved_1            = 0,
+        .list_header.reserved_2            = 0,
+        .list_header.capacity_list_length  = 8,
+        .cur_max_capacity.number_of_blocks = htonl(scsi_ctx.storage_size-1),
+        .cur_max_capacity.reserved         = 0,
+        .cur_max_capacity.descriptor_code  = FORMATTED_MEDIA,
+        .cur_max_capacity.block_length     = htonl(scsi_ctx.block_size),
+        .num_format_descriptors            = 1,
+        .formattable_descriptor.number_of_blocks = htonl(scsi_ctx.storage_size-1),
+        .formattable_descriptor.reserved = 0,
+        .formattable_descriptor.block_length = htonl(scsi_ctx.block_size)
+    };
+
+    /* we return only the current/max capacity descriptor, no formatable capacity descriptor, making the
+     * response size the following: */
+    uint32_t size = sizeof(capacity_list_header_t) + sizeof(curr_max_capacity_descriptor_t) + 1 + sizeof(formattable_capacity_descriptor_t);
+
+    if (ntohs(rfc->allocation_length_msb) > 0) {
+        usb_bbb_send((uint8_t *)&response, (ntohs(rfc->allocation_length_msb) < size) ? rfc->allocation_length_msb : size, 2);
+    } else {
+        printf("allocation length is 0\n");
+        usb_bbb_send((uint8_t *)&response, size, 2);
+    }
+    return;
+
+
+invalid_transition:
+    printf("%s: invalid_transition\n", __func__);
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
+    return;
+
+}
 
 /*
  * SCSI_CMD_READ_6
@@ -1475,6 +1531,10 @@ void scsi_exec_automaton(void)
 	case SCSI_CMD_REPORT_LUNS:
 		scsi_cmd_report_luns(current_state, &local_cdb);
 		break;
+
+    case SCSI_CMD_READ_FORMAT_CAPACITIES:
+        scsi_cmd_read_format_capacities(current_state, &local_cdb);
+        break;
 
     case SCSI_CMD_MODE_SELECT_10:
         scsi_cmd_mode_select10(current_state, &local_cdb);

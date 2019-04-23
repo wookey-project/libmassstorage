@@ -91,6 +91,38 @@ typedef struct  __attribute__((packed)) {
     uint64_t  luns[];
 } report_luns_data_t;
 
+/* READ FORMAT CAPACITIES response structure */
+typedef struct __attribute__((packed)) {
+    uint16_t reserved_1;
+    uint8_t  reserved_2;
+    uint8_t  capacity_list_length;
+} capacity_list_header_t;
+
+typedef enum {
+    UNFORMATTED_MEDIA    = 1,
+    FORMATTED_MEDIA      = 2,
+    NO_CARTIDGE_IN_DRIVE = 3
+} capacity_descriptor_code_t;
+
+typedef struct __attribute__((packed)) {
+    uint32_t number_of_blocks;
+    uint8_t  reserved:6;
+    uint8_t  descriptor_code:2;
+    uint32_t block_length:24;
+} curr_max_capacity_descriptor_t;
+
+typedef struct __attribute__((packed)) {
+    uint32_t number_of_blocks;
+    uint8_t  reserved;
+    uint32_t block_length:24;
+} formattable_capacity_descriptor_t;
+
+typedef struct __attribute__((packed)) {
+    capacity_list_header_t           list_header;
+    curr_max_capacity_descriptor_t    cur_max_capacity;
+    uint8_t                           num_format_descriptors;
+    formattable_capacity_descriptor_t formattable_descriptor;
+} capacity_list_t;
 
 /* INQUIRY PARAMETER DATA */
 typedef struct __packed inquiry_data {
