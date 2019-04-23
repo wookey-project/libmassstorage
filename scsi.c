@@ -42,7 +42,7 @@
 #include "scsi_log.h"
 #include "scsi_automaton.h"
 
-#define SCSI_DEBUG 1
+#define SCSI_DEBUG CONFIG_USR_LIB_MASSSTORAGE_DEBUG
 
 /*
  * The SCSI stack context. This is a global variable, which means
@@ -259,7 +259,7 @@ static inline bool scsi_is_ready_for_data_send(void)
  */
 void scsi_get_data(void *buffer, uint32_t size)
 {
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
 	printf("%s: size: %d \n", __func__, size );
 #endif
 	while(!scsi_is_ready_for_data_receive()){
@@ -280,7 +280,7 @@ void scsi_get_data(void *buffer, uint32_t size)
  */
 void scsi_send_data(void *data, uint32_t size)
 {
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
 	printf("%s: size: %d \n", __func__, size );
 #endif
 
@@ -296,7 +296,9 @@ void scsi_send_data(void *data, uint32_t size)
  */
 static void scsi_data_available(uint32_t size)
 {
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
+    /* this function is triggered, printing trigger events is done only
+     * on debug level 2 */
     aprintf("%s: %d\n", __func__, size);
 #endif
 
@@ -320,7 +322,9 @@ static void scsi_data_available(uint32_t size)
  */
 static void scsi_data_sent(void)
 {
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
+    /* this function is triggered, printing trigger events is done only
+     * on debug level 2 */
     aprintf("%s\n", __func__);
 #endif
 
@@ -532,7 +536,7 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t  current_state, c
         goto invalid_transition;
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
     printf("%s: Prevent allow medium removal: %x\n",__func__, current_cdb->payload.cdb10_prevent_allow_removal.prevent);
 #endif
     /* FIXME Add callback ? */
@@ -660,7 +664,7 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
     scsi_ctx.size_to_process = scsi_ctx.block_size * rw_size;
 
     total_num_sectors = scsi_ctx.size_to_process / scsi_ctx.block_size;
-    #if SCSI_DEBUG
+    #if SCSI_DEBUG > 1
     printf("%s: sz %u, block_size: %u | num_sectors: %u\n", __func__, scsi_ctx.size_to_process, scsi_ctx.block_size, total_num_sectors);
     #endif
 
@@ -688,7 +692,7 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
 
     /* Fractional residue */
     if (scsi_ctx.size_to_process > 0) {
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
         printf("%s: sending data residue to host.\n", __func__);
 #endif
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
@@ -698,8 +702,6 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
             goto end;
         }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
-#if SCSI_DEBUG
-        #endif
         /* active wait for data to be sent */
         while(!scsi_is_ready_for_data_send()){
             continue;
@@ -766,7 +768,7 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     scsi_ctx.size_to_process = scsi_ctx.block_size * rw_size;
 
     total_num_sectors = scsi_ctx.size_to_process / scsi_ctx.block_size;
-    #if SCSI_DEBUG
+    #if SCSI_DEBUG > 1
     printf("%s: sz %u, block_size: %u | num_sectors: %u\n", __func__, scsi_ctx.size_to_process, scsi_ctx.block_size, total_num_sectors);
     #endif
 
@@ -794,7 +796,7 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
 
     /* Fractional residue */
     if (scsi_ctx.size_to_process > 0) {
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
         printf("%s: sending data residue to host.\n", __func__);
 #endif
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
@@ -920,7 +922,7 @@ static void scsi_cmd_read_capacity16(scsi_state_t  current_state, cdb_t * curren
                                  on the logical unit. See Seagate SCSI
                                  command ref., chap. 3.23.2 */
 
-    #if SCSI_DEBUG
+    #if SCSI_DEBUG > 1
         printf("%s: response[0]: %d response[1]: %d\n", __func__, response.ret_lba, response.ret_block_length);
     #endif
 
@@ -1043,7 +1045,7 @@ static void scsi_cmd_request_sense(scsi_state_t  current_state, cdb_t * current_
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
     printf( "%s: desc: %x, allocation_length: %x\n",
             current_cdb->payload.cdb10_request_sense.desc,
             current_cdb->payload.cdb10_request_sense.allocation_length);
@@ -1319,7 +1321,7 @@ static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
     scsi_ctx.size_to_process = scsi_ctx.block_size * rw_size;
 
 
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
     uint32_t total_num_sectors = rw_size;
     printf("%s: sz %u, block_size: %u | num_sectors: %u\n", __func__, scsi_ctx.size_to_process, scsi_ctx.block_size, total_num_sectors);
 #endif
@@ -1424,7 +1426,7 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     scsi_ctx.size_to_process = scsi_ctx.block_size * rw_size;
 
 
-#if SCSI_DEBUG
+#if SCSI_DEBUG > 1
     uint32_t total_num_sectors = rw_size;
     printf("%s: sz %u, block_size: %u | num_sectors: %u\n", __func__, scsi_ctx.size_to_process, scsi_ctx.block_size, total_num_sectors);
 #endif
@@ -1574,10 +1576,10 @@ void scsi_exec_automaton(void)
 		break;
 
 	default:
-        scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
 #if SCSI_DEBUG
-        printf("%s: Unsupported command: %x  \n", __func__, &local_cdb.operation);
+        printf("%s: Unsupported command: %x  \n", __func__, local_cdb.operation);
 #endif
+        scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
 	};
 
     return;
@@ -1681,5 +1683,4 @@ mbed_error_t scsi_init(void)
     mass_storage_init(scsi_reset_context, scsi_reset_device);
     return MBED_ERROR_NONE;
 }
-
 

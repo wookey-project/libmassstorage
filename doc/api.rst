@@ -109,4 +109,16 @@ Today, this SCSI stack support the following commands:
    * WRITE(6)
    * WRITE(10)
 
+Debugging the stack
+"""""""""""""""""""
 
+The SCSI stack can be debugged easily using the SCSI menu of the library
+in the configuration menu. There is three levels of debug:
+
+   * 0: no debug at all. Production mode
+   * 1: SCSI commands sequence. All SCSI command are printed on the serial interface
+   * 2: SCSI commands dump and behavior: complex commands (inquiry, etc.) are dumped
+        on the serial interface. Triggers (data sent, data available) events are
+        printed. amount of data sent or received are also printed.
+
+The debugging is functional only if the kernel serial console is activated.

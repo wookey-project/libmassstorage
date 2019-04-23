@@ -6,3 +6,22 @@ config USR_LIB_MASSSTORAGE
   ---help---
   Support for Mass-Storage class feature for USB stack.
 
+if USR_LIB_MASSSTORAGE
+
+menu "SCSI options"
+
+config USR_LIB_MASSSTORAGE_DEBUG
+  int "SCSI stack debug informations level"
+  default 0
+  range 0 2
+  ---help---
+  SCSI stack debug level. Supported levels are:
+    * 0: no debug
+    * 1: command execution debug, list received and sent commands
+    * 2: command dump debug, dumping complex commands content and
+         received and sent data size
+
+endmenu
+
+
+endif
