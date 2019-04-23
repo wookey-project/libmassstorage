@@ -95,6 +95,7 @@ Today, this SCSI stack support the following commands:
    * MODE SENSE(6)
    * MODE SENSE(10)
    * PREVENT ALLOW MEDIUM REMOVAL
+   * READ FORMAT CAPACITIES
    * READ(6)
    * READ(10)
    * READ CAPACITY(10)
