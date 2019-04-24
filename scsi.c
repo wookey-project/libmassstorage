@@ -212,26 +212,6 @@ static void scsi_debug_dump_cmd(cdb_t * current_cdb, uint8_t scsi_cmd)
 /********* About various utility functions     **************/
 
 /*
- * Release the current CDB structure
- */
-static mbed_error_t scsi_release_cdb(cdb_t * current_cdb)
-{
-    /* no critical section here, as the exec_automaton
-     * is not reentrant and is fully exec in main thread mode.
-     * The current_cdb variable is a local only variable.
-     */
-    mbed_error_t ret = MBED_ERROR_NONE;
-	if(current_cdb != NULL) {
-		if(wfree((void**)&current_cdb)) {
-            /* should not arrise */
-            ret = MBED_ERROR_UNKNOWN;
-		}
-	}
-	current_cdb = NULL;
-    return ret;
-}
-
-/*
  * Is the current context compatible with data reception ?
  */
 static inline bool scsi_is_ready_for_data_receive(void)
@@ -412,11 +392,11 @@ static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t m
  * Enqueue any received SCSI command
  * this function is executed in a handler context when a command comes from USB.
  */
-static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len __attribute__((unused)))
+static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
 {
     /* Only up to 16 bytes commands are supported: bigger commands are truncated,
      * See cdb_t definition in scsi_cmd.h */
-    memcpy((void*)&queued_cdb, (void*)cdb, sizeof(cdb_t));
+    memcpy((void*)&queued_cdb, (void*)cdb, cdb_len);
     scsi_ctx.queue_empty = false;
     return;
 }
@@ -434,6 +414,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 {
 	inquiry_data_t response;
     cdb6_inquiry_t *inq;
+    uint8_t next_state;
 
 #if SCSI_DEBUG
 		printf("%s:\n", __func__ );
@@ -444,13 +425,13 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, cdb->operation);
 
     if (!scsi_is_valid_transition(current_state, cdb->operation)) {
         goto invalid_transition;
     }
+
     next_state = scsi_next_state(current_state, cdb->operation);
+    scsi_set_state(next_state);
 
     /* effective transition execution (if needed) */
     inq = &(cdb->payload.cdb6_inquiry);
@@ -519,6 +500,7 @@ invalid_transition:
 
 static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -529,18 +511,18 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t  current_state, c
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
+
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    scsi_set_state(next_state);
 #if SCSI_DEBUG > 1
     printf("%s: Prevent allow medium removal: %x\n",__func__, current_cdb->payload.cdb10_prevent_allow_removal.prevent);
 #endif
     /* FIXME Add callback ? */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
+
     return;
     /* effective transition execution (if needed) */
 
@@ -553,6 +535,8 @@ invalid_transition:
 
 static void scsi_cmd_read_format_capacities(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
+
 #if SCSI_DEBUG
     printf("%s\n", __func__);
 #endif
@@ -563,13 +547,11 @@ static void scsi_cmd_read_format_capacities(scsi_state_t  current_state, cdb_t *
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    scsi_set_state(next_state);
 
     cdb12_read_format_capacities_t *rfc = &(current_cdb->payload.cdb12_read_format_capacities);
 
@@ -620,6 +602,7 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
     uint32_t rw_lba;
     uint16_t rw_size;
     uint64_t rw_addr;
+    uint8_t next_state;
     mbed_error_t error;
 
     #if SCSI_DEBUG
@@ -632,12 +615,13 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    /* entering READ state... */
+    scsi_set_state(next_state);
 
     /* SCSI standard says that the host should not request READ10 cmd
      * before requesting GET_CAPACITY cmd. In this very case, we have to
@@ -646,10 +630,6 @@ static void scsi_cmd_read_data6(scsi_state_t  current_state, cdb_t * current_cdb
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
         return;
     }
-
-    /* entering READ state... */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-    scsi_set_state(next_state);
 
     /* TODO: is the big endian is set only on the last 16 bytes of this
      * unaligned field ? */
@@ -727,6 +707,7 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     uint32_t rw_lba;
     uint16_t rw_size;
     uint64_t rw_addr;
+    uint8_t next_state;
 
     mbed_error_t error;
 
@@ -740,12 +721,10 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
+    next_state = scsi_next_state(current_state, current_cdb->operation);
 
     /* SCSI standard says that the host should not request READ10 cmd
      * before requesting GET_CAPACITY cmd. In this very case, we have to
@@ -756,7 +735,6 @@ static void scsi_cmd_read_data10(scsi_state_t  current_state, cdb_t * current_cd
     }
 
     /* entering READ state... */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
     scsi_set_state(next_state);
 
     rw_lba = ntohl(current_cdb->payload.cdb10.logical_block);
@@ -840,13 +818,15 @@ static void scsi_cmd_read_capacity10(scsi_state_t  current_state, cdb_t * curren
     }
 
     /* Sanity check and next state detection */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
 
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
+
+    /* entering target state */
+    scsi_set_state(next_state);
 
     /* let's get capacity from upper layer */
     ret = scsi_storage_backend_capacity(&(scsi_ctx.storage_size), &(scsi_ctx.block_size));
@@ -890,12 +870,13 @@ static void scsi_cmd_read_capacity16(scsi_state_t  current_state, cdb_t * curren
     }
 
     /* Sanity check and next state detection */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    /* entering target state */
+    scsi_set_state(next_state);
 
 
     /* let's get capacity from upper layer */
@@ -946,6 +927,7 @@ invalid_transition:
 /* SCSI_CMD_REPORT_LUNS */
 static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
     cdb12_report_luns_t *rl;
     bool check_condition = false;
     #if SCSI_DEBUG
@@ -958,19 +940,13 @@ static void scsi_cmd_report_luns(scsi_state_t  current_state, cdb_t * current_cd
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
+
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-    if (next_state != 0xff) {
-        scsi_set_state(next_state);
-    } else {
-        goto invalid_transition;
-    }
+    scsi_set_state(next_state);
 
     rl = &(current_cdb->payload.cdb12_report_luns);
 
@@ -1025,6 +1001,7 @@ invalid_transition:
 /* SCSI_CMD_REQUEST_SENSE */
 static void scsi_cmd_request_sense(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
     request_sense_parameter_data_t data;
 
     #if SCSI_DEBUG
@@ -1037,13 +1014,12 @@ static void scsi_cmd_request_sense(scsi_state_t  current_state, cdb_t * current_
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    scsi_set_state(next_state);
 
 #if SCSI_DEBUG > 1
     printf( "%s: desc: %x, allocation_length: %x\n",
@@ -1079,6 +1055,7 @@ invalid_transition:
 /* SCSI_CMD_MODE_SENSE(10) */
 static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -1090,13 +1067,12 @@ static void scsi_cmd_mode_sense10(scsi_state_t  current_state, cdb_t * current_c
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
+
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    scsi_set_state(next_state);
 
 #if SCSI_DEBUG > 1
     scsi_debug_dump_cmd(current_cdb, SCSI_CMD_MODE_SENSE_10);
@@ -1122,6 +1098,7 @@ invalid_transition:
 /* SCSI_CMD_MODE_SENSE(6) */
 static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -1133,13 +1110,12 @@ static void scsi_cmd_mode_sense6(scsi_state_t  current_state, cdb_t * current_cd
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
+
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    scsi_set_state(next_state);
 
 #if SCSI_DEBUG > 1
     scsi_debug_dump_cmd(current_cdb, SCSI_CMD_MODE_SENSE_10);
@@ -1162,6 +1138,7 @@ invalid_transition:
 /* SCSI_CMD_MODE_SELECT(6) */
 static void scsi_cmd_mode_select6(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -1173,13 +1150,11 @@ static void scsi_cmd_mode_select6(scsi_state_t  current_state, cdb_t * current_c
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    scsi_set_state(next_state);
 
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
     return;
@@ -1194,6 +1169,8 @@ invalid_transition:
 /* SCSI_CMD_MODE_SELECT(10) */
 static void scsi_cmd_mode_select10(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
+
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -1205,13 +1182,12 @@ static void scsi_cmd_mode_select10(scsi_state_t  current_state, cdb_t * current_
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
+
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    scsi_set_state(next_state);
 
     /* effective transition execution (if needed) */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
@@ -1227,6 +1203,7 @@ invalid_transition:
 /* SCSI_CMD_TEST_UNIT_READY */
 static void scsi_cmd_test_unit_ready(scsi_state_t  current_state, cdb_t * current_cdb)
 {
+    uint8_t next_state;
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -1238,13 +1215,12 @@ static void scsi_cmd_test_unit_ready(scsi_state_t  current_state, cdb_t * curren
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
+
+    scsi_set_state(next_state);
 
     /* effective transition execution (if needed) */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
@@ -1270,6 +1246,7 @@ static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
     uint64_t rw_addr;
 
     mbed_error_t error;
+    uint8_t next_state;
 
 #if SCSI_DEBUG
     printf("%s:\n",__func__);
@@ -1285,19 +1262,13 @@ static void scsi_write_data6(scsi_state_t  current_state, cdb_t * current_cdb)
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
+
     next_state = scsi_next_state(current_state, current_cdb->operation);
 
-    if (next_state != 0xff) {
-        scsi_set_state(next_state);
-    } else {
-        goto invalid_transition;
-    }
+    scsi_set_state(next_state);
 
     /* SCSI standard says that the host should not request WRITE10 cmd
      * before requesting GET_CAPACITY cmd. In this very case, we have to
@@ -1378,6 +1349,7 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     uint64_t rw_addr;
 
     mbed_error_t error;
+    uint8_t next_state;
 
 #if SCSI_DEBUG
     printf("%s:\n",__func__);
@@ -1393,19 +1365,12 @@ static void scsi_write_data10(scsi_state_t  current_state, cdb_t * current_cdb)
     }
 
     /* Sanity check and next state detection */
-    uint8_t next_state;
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         goto invalid_transition;
     }
-    next_state = scsi_next_state(current_state, current_cdb->operation);
 
-    if (next_state != 0xff) {
-        scsi_set_state(next_state);
-    } else {
-        goto invalid_transition;
-    }
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+    scsi_set_state(next_state);
 
     /* SCSI standard says that the host should not request WRITE10 cmd
      * before requesting GET_CAPACITY cmd. In this very case, we have to
@@ -1580,6 +1545,7 @@ void scsi_exec_automaton(void)
         printf("%s: Unsupported command: %x  \n", __func__, local_cdb.operation);
 #endif
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE, ASCQ_NO_ADDITIONAL_SENSE);
+        break;
 	};
 
     return;
@@ -1588,12 +1554,6 @@ nothing_to_do:
     return;
 }
 
-
-typedef enum scsi_init_error {
-    SCSI_INIT_DONE = 0x00,
-    SCSI_INIT_CALLBACK_ERROR,
-    SCSI_INIT_BUFFER_ERROR,
-} scsi_init_error_t;
 
 /*
  * Resetting SCSI context. Should be executed as a trigger of BULK level
@@ -1615,21 +1575,14 @@ static void scsi_reset_context(void)
 }
 
 
-uint8_t scsi_early_init(uint8_t *buf, uint16_t len)
+mbed_error_t scsi_early_init(uint8_t *buf, uint16_t len)
 {
 
-    scsi_init_error_t error = -1;
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
 
     if ( !buf ) {
-        error = SCSI_INIT_BUFFER_ERROR;
-        goto init_error;
-    }
-
-    if ( len <= 0 ) {
-        error = SCSI_INIT_BUFFER_ERROR;
         goto init_error;
     }
 
@@ -1637,13 +1590,13 @@ uint8_t scsi_early_init(uint8_t *buf, uint16_t len)
     scsi_ctx.global_buf_len = len;
 
 	usb_bbb_early_init(scsi_parse_cdb, scsi_data_available, scsi_data_sent);
-    return 0;
+    return MBED_ERROR_NONE;
 
 init_error:
 #if SCSI_DEBUG
-    printf("%s: ERROR: Unable to initialize scsi stack : %x  \n", __func__, error);
+    printf("%s: ERROR: Unable to initialize scsi stack : %x  \n", __func__, MBED_ERROR_INVPARAM);
 #endif
-    return 1;
+    return MBED_ERROR_INVPARAM;
 }
 
 /*
@@ -1670,8 +1623,8 @@ mbed_error_t scsi_init(void)
         return MBED_ERROR_NOMEM;
     }
 
-	for(i = 0; i < scsi_ctx.global_buf_len; i++){
-		scsi_ctx.global_buf[i] = i;
+	for(i = 0; i < scsi_ctx.global_buf_len; i++) {
+		scsi_ctx.global_buf[i] = '\0';
 	}
 
 	/* Register our callbacks on the lower layer */
