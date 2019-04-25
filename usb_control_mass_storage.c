@@ -87,6 +87,7 @@ void mass_storage_class_rqst_handler(struct usb_setup_packet *packet)
 	default:
 		/* TODO: send error status */
 		printf("Unhandled class request (%x)\n", packet->bRequest);
+        break;
 	}
 }
 

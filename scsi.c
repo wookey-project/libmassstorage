@@ -325,8 +325,8 @@ static void scsi_data_sent(void)
 
 static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t mode)
 {
-    memset(response, 0x0, sizeof(u_mode_parameter));
     if (mode == SCSI_CMD_MODE_SENSE_6) {
+        memset(response, 0x0, sizeof(mode_parameter6_data_t));
         /* We only send back the mode parameter header with no data */
         response->mode6.header.mode_data_length = 3;        /* The number of bytes that follow. */
         response->mode6.header.medium_type = 0;             /* The media type SBC. */
@@ -345,6 +345,7 @@ static void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t m
         response->mode6.caching.NV_DIS = 0x1;
 #endif
     } else if (mode == SCSI_CMD_MODE_SENSE_10) {
+        memset(response, 0x0, sizeof(mode_parameter10_data_t));
         /* We only send back the mode parameter header with no data */
         response->mode10.header.mode_data_length = 3;        /* The number of bytes that follow. */
         response->mode10.header.medium_type = 0;             /* The media type SBC. */
@@ -467,12 +468,12 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
 
     /* empty char must be set with spaces */
     memset(response.vendor_info, 0x20, sizeof(response.vendor_info));
-    memcpy(response.vendor_info, CONFIG_USB_DEV_MANUFACTURER, sizeof(response.vendor_info));
+    memcpy(response.vendor_info, CONFIG_USB_DEV_MANUFACTURER, strlen(CONFIG_USB_DEV_MANUFACTURER));
     /* empty char must be set with spaces */
     memset(response.product_identification, 0x20, sizeof(response.product_identification));
-    memcpy(response.product_identification, CONFIG_USB_DEV_PRODNAME, sizeof(response.product_identification));
+    memcpy(response.product_identification, CONFIG_USB_DEV_PRODNAME, strlen(CONFIG_USB_DEV_PRODNAME));
 
-    memcpy(response.product_revision, CONFIG_USB_DEV_REVISION, sizeof(response.product_revision));
+    memcpy(response.product_revision, CONFIG_USB_DEV_REVISION, strlen(CONFIG_USB_DEV_REVISION));
 
 #if SCSI_DEBUG
     printf("%s: %s\n",__func__, response.product_revision);
@@ -1606,6 +1607,7 @@ init_error:
 
 mbed_error_t scsi_init(void)
 {
+	uint32_t i;
     #if SCSI_DEBUG
         printf("%s\n", __func__);
     #endif
@@ -1613,7 +1615,6 @@ mbed_error_t scsi_init(void)
     /* in USB High speed mode, the USB device is mapped (and enabled) just now */
     usb_driver_map();
 
-	unsigned int i;
 
     scsi_ctx.storage_size = 0;
     scsi_ctx.block_size = 4096; /* default */
