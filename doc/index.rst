@@ -10,7 +10,7 @@ This stack does not aim to implement the USB control stack or the USB driver, an
 these two components to exists. By now, this stack implement the BULK layer implementation
 of the USB stack.
 
-.. info::
+.. note::
    The BULK support is to be moved as an independent libbulk library in a near future
 
 The current implementation of libMassStorage is compatible with the

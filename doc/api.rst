@@ -35,7 +35,7 @@ DFU stack to hold data chunks during the READ and WRITE states.
 The buffer size depend on the task constraints but **must be a multiple of
 the endpoint USB URB size** (usually 512 bytes length).
 
-.. info::
+.. note::
    Bigger the buffer is, faster the DFU stack is
 
 Interacting with the storage backend
