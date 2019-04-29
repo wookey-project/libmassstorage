@@ -83,6 +83,7 @@ extern volatile bool reset_requested;
 
 static void usb_bbb_cmd_received(uint32_t size)
 {
+<<<<<<< HEAD
     if(reset_requested == true){
         while(reset_requested == true) {
 	    continue;
@@ -99,6 +100,24 @@ static void usb_bbb_cmd_received(uint32_t size)
 	    /* TODO: check that cbw.cdb_len and cbw.cdb are in accordance
 	     * with InferfaceSubClass
              */
+=======
+        if(reset_requested == true){
+                while(reset_requested == true){
+                        continue;
+                }
+                return;
+        }
+
+	if (size != sizeof(struct scsi_cbw) || cbw.sig != USB_BBB_CBW_SIG) {
+		aprintf("[USB BBB] %s: CBW not valid\n", __func__ );
+		return;
+	}
+	if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved || cbw.lun.lun) {
+		/* XXX: the only valid LUN for our device is 0 */
+		/* TODO: check that cbw.cdb_len and cbw.cdb are in accordance
+		 * with InferfaceSubClass
+		 */
+>>>>>>> [enhancement] First attempt (non fully functional) to handle usb reset.
 #if BBB_DEBUG
         aprintf("[USB BBB] %s: CBW not meaningful\n", __func__);
 #endif
@@ -199,6 +218,11 @@ void usb_bbb_init(void)
     bbb_state = READY;
     /* Read first command */
     read_next_cmd();
+}
+
+void usb_bbb_reinit(void)
+{
+        bbb_state = READY;
 }
 
 void usb_bbb_reinit(void)

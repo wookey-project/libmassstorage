@@ -452,15 +452,7 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
  */
 
 /* SCSI_CMD_INQUIRY */
-<<<<<<< HEAD
-static void scsi_cmd_inquiry(scsi_state_t current_state, cdb_t * cdb)
-=======
-/*@
-     ensures cdb != 0;
-     ensures current_state <= SCSI_ERROR;
-*/
 static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
->>>>>>> [enhancement] First attempt (non fully functional) to handle usb reset.
 {
     inquiry_data_t response;
     cdb6_inquiry_t *inq;
