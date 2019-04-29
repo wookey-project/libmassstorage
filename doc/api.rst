@@ -8,7 +8,7 @@ The DFU functional API
 Initializing the stack
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Initialize the massstorage library is made through two main functions::
+Initialize the massstorage library is made through two main functions ::
 
    #include "scsi.h"
 
@@ -22,7 +22,8 @@ This syscall declare all the requested ressources that can only be declared
 at initialization time. This include the USB device memory mapping.
 
 The init step initialize the DFU stack context. At the end of this function
-call, the SCSI stack is in SCSI_IDLE mode, ready to receive SCSI command blocks from the host.
+call, the SCSI stack is in SCSI_IDLE mode, ready to receive SCSI command blocks
+from the host.
 
 .. caution::
    Even if the SCSI stack internal is ready for handling DFU requests, these
@@ -41,7 +42,9 @@ the endpoint USB URB size** (usually 512 bytes length).
 Interacting with the storage backend
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Accessing the backend is not under the direct responsability of the DFU stack. Although, the stack need to request backend write and/or read access in DOWNLOAD and UPLOAD states.
+Accessing the backend is not under the direct responsability of the DFU stack.
+Although, the stack need to request backend write and/or read access in
+DOWNLOAD and UPLOAD states.
 
 To allow flexibility in how the storage backend is handled, the task has to
 decrlare the following functions::
@@ -50,35 +53,50 @@ decrlare the following functions::
    uint8_t scsi_storage_backend_read(uint32_t sector_addr, uint32_t num_sectors);
    uint8_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize);
 
-The *scsi_storage_backend_write()* function is called by the SCSI stack when a data chunk has been received. This function is then responsible of the communication with the storage manager (SDIO, EMMC or any storage backend), and should return 0 if the storage has acknowledge correctly the chunk write. The data chunk is at most of buflen size, but the associated SCSI WRITE command may request bigger write. The SCSI stack is responsible of the write split.
+The *scsi_storage_backend_write()* function is called by the SCSI stack when a
+data chunk has been received. This function is then responsible of the
+communication with the storage manager (SDIO, EMMC or any storage backend), and
+should return 0 if the storage has acknowledge correctly the chunk write. The
+data chunk is at most of buflen size, but the associated SCSI WRITE command may
+request bigger write. The SCSI stack is responsible of the write split.
 
-The *scsi_storage_backend_read()* function is called by the SCSI stack when the host is requesting data from the device. Again, the SCSI READ command may request more than the buffer capacity. The SCSI stack is also responsible of the data requests split.
+The *scsi_storage_backend_read()* function is called by the SCSI stack when the
+host is requesting data from the device. Again, the SCSI READ command may
+request more than the buffer capacity. The SCSI stack is also responsible of
+the data requests split.
 
-The *scsi_storage_backend_capacity()* is called when the SCSI stack is requesting the storage backend capacity. This is usually the consequence of a MODE SENSE SCSI request from the host, to which the SCSI stack return various informations about the device and the SCSI stack itself.
+The *scsi_storage_backend_capacity()* is called when the SCSI stack is
+requesting the storage backend capacity. This is usually the consequence of a
+MODE SENSE SCSI request from the host, to which the SCSI stack return various
+informations about the device and the SCSI stack itself.
 
 .. danger::
-   These functions **must** be defined by the application or the link step will fail to find these three symbols
-
+   These functions **must** be defined by the application or the link step will
+   fail to find these three symbols
 
 .. caution::
-   All address and size are in SCSI sectors unit. This information is generally shared with the storage manager, which also manipulate sectors. Althrough, sector size may be translated by the storage manager if needed (e.g. from 512 to 4096 bytes length). OSes usually support from 512 to 4096 bytes sector size.
+   All address and size are in SCSI sectors unit. This information is generally
+   shared with the storage manager, which also manipulate sectors. Althrough,
+   sector size may be translated by the storage manager if needed (e.g. from 512
+   to 4096 bytes length). OSes usually support from 512 to 4096 bytes sector size.
 
-Backend access, in the SCSI stack, is synchronous and not made for asynchronous read or write.
+Backend access, in the SCSI stack, is synchronous and not made for asynchronous
+read or write.
 
 Executing the SCSI automaton
 """"""""""""""""""""""""""""
 
-The DFU SCSI automaton is executed in main thread using the following function::
+The DFU SCSI automaton is executed in main thread using the following function ::
 
    #include "scsi.h"
-
    void scsi_exec_automaton(void);
 
-A basic usage of the automaton would be::
+A basic usage of the automaton would be ::
 
    while (1) {
        scsi_exec_automaton();
    }
+
 Supported SCSI commands
 """""""""""""""""""""""
 
