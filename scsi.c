@@ -419,13 +419,23 @@ static void scsi_forge_mode_sense_response(u_mode_parameter * response,
  * are executed through scsi_exec_automaton.
  */
 
+extern volatile bool reset_requested;
+
 
 /*
  * Enqueue any received SCSI command
  * this function is executed in a handler context when a command comes from USB.
  */
+
+/*@ requires cdb_len <= sizeof(cdb_t); */
 static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
 {
+        if(reset_requested == true){
+                while(reset_requested == true){
+                        continue;
+                }
+                return;
+        }
     /* Only up to 16 bytes commands are supported: bigger commands are truncated,
      * See cdb_t definition in scsi_cmd.h */
     memcpy((void *) &queued_cdb, (void *) cdb, cdb_len);
@@ -442,7 +452,15 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
  */
 
 /* SCSI_CMD_INQUIRY */
+<<<<<<< HEAD
 static void scsi_cmd_inquiry(scsi_state_t current_state, cdb_t * cdb)
+=======
+/*@
+     ensures cdb != 0;
+     ensures current_state <= SCSI_ERROR;
+*/
+static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
+>>>>>>> [enhancement] First attempt (non fully functional) to handle usb reset.
 {
     inquiry_data_t response;
     cdb6_inquiry_t *inq;
@@ -1760,4 +1778,9 @@ mbed_error_t scsi_init(void)
     /* initialize control plane, adding the reset event trigger for SCSI level */
     mass_storage_init(scsi_reset_context, scsi_reset_device);
     return MBED_ERROR_NONE;
+}
+
+void scsi_reinit(void){
+    usb_bbb_reinit();
+    scsi_reset_context();
 }

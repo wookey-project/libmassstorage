@@ -79,18 +79,26 @@ void read_next_cmd(void)
     usb_driver_setup_read(&cbw, sizeof(cbw), 1);
 }
 
+extern volatile bool reset_requested;
+
 static void usb_bbb_cmd_received(uint32_t size)
 {
-    if (size != sizeof(struct scsi_cbw) || cbw.sig != USB_BBB_CBW_SIG) {
-        aprintf("[USB BBB] %s: CBW not valid\n", __func__);
+    if(reset_requested == true){
+        while(reset_requested == true) {
+	    continue;
+        }
         return;
     }
-    if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved ||
-        cbw.lun.lun) {
-        /* XXX: the only valid LUN for our device is 0 */
-        /* TODO: check that cbw.cdb_len and cbw.cdb are in accordance
-         * with InferfaceSubClass
-         */
+
+    if (size != sizeof(struct scsi_cbw) || cbw.sig != USB_BBB_CBW_SIG) {
+	    aprintf("[USB BBB] %s: CBW not valid\n", __func__ );
+            return;
+    }
+    if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved || cbw.lun.lun) {
+	    /* XXX: the only valid LUN for our device is 0 */
+	    /* TODO: check that cbw.cdb_len and cbw.cdb are in accordance
+	     * with InferfaceSubClass
+             */
 #if BBB_DEBUG
         aprintf("[USB BBB] %s: CBW not meaningful\n", __func__);
 #endif
@@ -106,6 +114,13 @@ static void usb_bbb_cmd_received(uint32_t size)
 
 static void usb_bbb_data_received(uint32_t size)
 {
+        if(reset_requested == true){
+                while(reset_requested == true){
+                        continue;
+                }
+                return;
+        }
+
 #if BBB_DEBUG
     aprintf("[USB BBB] %s bbb_state: %x ... \n", __func__, bbb_state);
 #endif
@@ -127,8 +142,15 @@ static void usb_bbb_data_received(uint32_t size)
 
 static void usb_bbb_data_sent(void)
 {
+    if(reset_requested == true){
+        while(reset_requested == true){
+            continue;
+	}
+	return;
+    }
+
     switch (bbb_state) {
-        case STATUS:
+	    case STATUS:
 #if BBB_DEBUG
             aprintf("[USB BBB] %s: data sent while in STATUS state\n",
                     __func__);
@@ -177,6 +199,11 @@ void usb_bbb_init(void)
     bbb_state = READY;
     /* Read first command */
     read_next_cmd();
+}
+
+void usb_bbb_reinit(void)
+{
+        bbb_state = READY;
 }
 
 /* Command Status Wrapper */

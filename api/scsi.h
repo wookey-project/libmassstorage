@@ -108,6 +108,8 @@ mbed_error_t scsi_early_init(uint8_t*buf, uint16_t buflen);
 
 mbed_error_t scsi_init(void);
 
+void scsi_reinit(void);
+
 void scsi_send_data(void *data, uint32_t size);
 
 void scsi_get_data(void *buffer, uint32_t size);
