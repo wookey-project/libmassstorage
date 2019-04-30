@@ -51,102 +51,102 @@ static scsi_state_t state;
  * the transition handler has to handle this manually.
  */
 
-# define MAX_TRANSITION_STATE 17
+#define MAX_TRANSITION_STATE 17
 
 /*
  * Association between a request and a transition to a next state. This couple
  * depend on the current state and is use in the following structure
  */
 typedef struct scsi_operation_code_transition {
-    uint8_t    request;
-    uint8_t    target_state;
+    uint8_t request;
+    uint8_t target_state;
 } scsi_operation_code_transition_t;
 
 
 static const struct {
-    scsi_state_t          state;
-    scsi_operation_code_transition_t  req_trans[MAX_TRANSITION_STATE];
+    scsi_state_t state;
+    scsi_operation_code_transition_t req_trans[MAX_TRANSITION_STATE];
 } scsi_automaton[] = {
-    { SCSI_IDLE,               {
-                                {SCSI_CMD_INQUIRY,SCSI_IDLE},
-                                {SCSI_CMD_MODE_SELECT_10,SCSI_IDLE},
-                                {SCSI_CMD_MODE_SELECT_6,SCSI_IDLE},
-                                {SCSI_CMD_MODE_SENSE_10,SCSI_IDLE},
-                                {SCSI_CMD_MODE_SENSE_6,SCSI_IDLE},
-                                {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL,SCSI_IDLE},
-                                {SCSI_CMD_READ_6,SCSI_IDLE},
-                                {SCSI_CMD_READ_10,SCSI_IDLE},
-                                {SCSI_CMD_READ_CAPACITY_10,SCSI_IDLE},
-                                {SCSI_CMD_READ_CAPACITY_16,SCSI_IDLE},
-                                {SCSI_CMD_READ_FORMAT_CAPACITIES,SCSI_IDLE},
-                                {SCSI_CMD_REPORT_LUNS,SCSI_IDLE},
-                                {SCSI_CMD_REQUEST_SENSE,SCSI_IDLE},
-                                {SCSI_CMD_SEND_DIAGNOSTIC,SCSI_IDLE},
-                                {SCSI_CMD_TEST_UNIT_READY,SCSI_IDLE},
-                                {SCSI_CMD_WRITE_6,SCSI_IDLE},
-                                {SCSI_CMD_WRITE_10,SCSI_IDLE},
-                             }
-    },
-    { SCSI_READ,     {
-                                 {SCSI_CMD_READ_6,SCSI_IDLE},
-                                 {SCSI_CMD_READ_10,SCSI_IDLE},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
+    {SCSI_IDLE, {
+                 {SCSI_CMD_INQUIRY, SCSI_IDLE},
+                 {SCSI_CMD_MODE_SELECT_10, SCSI_IDLE},
+                 {SCSI_CMD_MODE_SELECT_6, SCSI_IDLE},
+                 {SCSI_CMD_MODE_SENSE_10, SCSI_IDLE},
+                 {SCSI_CMD_MODE_SENSE_6, SCSI_IDLE},
+                 {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL, SCSI_IDLE},
+                 {SCSI_CMD_READ_6, SCSI_IDLE},
+                 {SCSI_CMD_READ_10, SCSI_IDLE},
+                 {SCSI_CMD_READ_CAPACITY_10, SCSI_IDLE},
+                 {SCSI_CMD_READ_CAPACITY_16, SCSI_IDLE},
+                 {SCSI_CMD_READ_FORMAT_CAPACITIES, SCSI_IDLE},
+                 {SCSI_CMD_REPORT_LUNS, SCSI_IDLE},
+                 {SCSI_CMD_REQUEST_SENSE, SCSI_IDLE},
+                 {SCSI_CMD_SEND_DIAGNOSTIC, SCSI_IDLE},
+                 {SCSI_CMD_TEST_UNIT_READY, SCSI_IDLE},
+                 {SCSI_CMD_WRITE_6, SCSI_IDLE},
+                 {SCSI_CMD_WRITE_10, SCSI_IDLE},
+                 }
+     },
+    {SCSI_READ, {
+                 {SCSI_CMD_READ_6, SCSI_IDLE},
+                 {SCSI_CMD_READ_10, SCSI_IDLE},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
+                 {0xff, 0xff},
 
 
-                             }
-    },
-    { SCSI_WRITE,     {
-                                 {SCSI_CMD_WRITE_6,SCSI_IDLE},
-                                 {SCSI_CMD_WRITE_10,SCSI_IDLE},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                             }
-    },
-    { SCSI_ERROR,     {
-                                 {SCSI_CMD_MODE_SENSE_10, SCSI_IDLE},
-                                 {SCSI_CMD_MODE_SENSE_6, SCSI_IDLE},
-                                 {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL,SCSI_IDLE},
-                                 {SCSI_CMD_REQUEST_SENSE,SCSI_IDLE},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                                 {0xff,0xff},
-                             },
-    },
+                 }
+     },
+    {SCSI_WRITE, {
+                  {SCSI_CMD_WRITE_6, SCSI_IDLE},
+                  {SCSI_CMD_WRITE_10, SCSI_IDLE},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  }
+     },
+    {SCSI_ERROR, {
+                  {SCSI_CMD_MODE_SENSE_10, SCSI_IDLE},
+                  {SCSI_CMD_MODE_SENSE_6, SCSI_IDLE},
+                  {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL, SCSI_IDLE},
+                  {SCSI_CMD_REQUEST_SENSE, SCSI_IDLE},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  {0xff, 0xff},
+                  },
+     },
 
 };
 
@@ -169,7 +169,8 @@ void scsi_set_state(const scsi_state_t new_state)
 {
     if (new_state == 0xff) {
         aprintf("%s: PANIC! this should never arise !", __func__);
-        while (1) {}; //FIXME
+        while (1) {
+        };                      //FIXME
         return;
     }
 #if SCSI_DEBUG
@@ -195,7 +196,8 @@ void scsi_set_state(const scsi_state_t new_state)
  *
  * \return the next state, or 0xff
  */
-uint8_t scsi_next_state(scsi_state_t  current_state, scsi_operation_code_t    request)
+uint8_t scsi_next_state(scsi_state_t current_state,
+                        scsi_operation_code_t request)
 {
     for (uint8_t i = 0; i < MAX_TRANSITION_STATE; ++i) {
         if (scsi_automaton[current_state].req_trans[i].request == request) {
@@ -214,8 +216,8 @@ uint8_t scsi_next_state(scsi_state_t  current_state, scsi_operation_code_t    re
  *
  * \return true if the transition request is allowed for this state, or false
  */
-bool scsi_is_valid_transition(scsi_state_t             current_state,
-                              scsi_operation_code_t    request)
+bool scsi_is_valid_transition(scsi_state_t current_state,
+                              scsi_operation_code_t request)
 {
     for (uint8_t i = 0; i < MAX_TRANSITION_STATE; ++i) {
         if (scsi_automaton[current_state].req_trans[i].request == request) {
@@ -226,9 +228,8 @@ bool scsi_is_valid_transition(scsi_state_t             current_state,
      * Didn't find any request associated to current state. This is not a
      * valid transition. We should stall the request.
      */
-    printf("%s: invalid transition from state %d, request %d\n", __func__, current_state, request);
+    printf("%s: invalid transition from state %d, request %d\n", __func__,
+           current_state, request);
     scsi_set_state(SCSI_ERROR);
     return false;
 }
-
-

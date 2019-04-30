@@ -37,13 +37,13 @@
 /* Classes, subclasses and protocols for DFU Runtime */
 #define USB_CLASS_MASS_STORAGE    0x08
 #define USB_SUBCLASS_SCSI         0x06
-#define USB_PROTOCOL_BBB          0x50 /* Bulk only */
+#define USB_PROTOCOL_BBB          0x50  /* Bulk only */
 
 
 /* Microsoft Vendor Code used for OS Descriptor request */
 static uint8_t MSFT100_SIG[MSFT100_SIG_SIZE] = {
-            0x4D, 0x00, 0x53, 0x00, 0x46, 0x00, 0x54, 0x00,
-            0x31, 0x00, 0x30, 0x00, 0x30, 0x00
+    0x4D, 0x00, 0x53, 0x00, 0x46, 0x00, 0x54, 0x00,
+    0x31, 0x00, 0x30, 0x00, 0x30, 0x00
 };
 
 
@@ -58,20 +58,20 @@ static uint8_t MSFT100_SIG[MSFT100_SIG_SIZE] = {
  * The format of the device descriptor is defined below.
  */
 const usb_ctrl_device_descriptor_t usbmass_device_desc = {
-	.bLength = 18,
-	.bDescriptorType = USB_DESC_DEVICE,
-	.bcdUSB = 0x0200,       /* USB 2.0 */
-	.bDeviceClass = 0,
-	.bDeviceSubClass = 0,
-	.bDeviceProtocol = 0,
-	.bMaxPacketSize = 64,
-	.idVendor = CONFIG_USB_DEV_VENDORID,
-	.idProduct = CONFIG_USB_DEV_PRODUCTID,
-	.bcdDevice = 0x000,
-	.iManufacturer = CONFIG_USB_DEV_MANUFACTURER_INDEX,
-	.iProduct = CONFIG_USB_DEV_PRODNAME_INDEX,
-	.iSerialNumber = CONFIG_USB_DEV_SERIAL_INDEX,
-	.bNumConfigurations = 1, /* We only have 1 interface for the DFU app */
+    .bLength = 18,
+    .bDescriptorType = USB_DESC_DEVICE,
+    .bcdUSB = 0x0200,           /* USB 2.0 */
+    .bDeviceClass = 0,
+    .bDeviceSubClass = 0,
+    .bDeviceProtocol = 0,
+    .bMaxPacketSize = 64,
+    .idVendor = CONFIG_USB_DEV_VENDORID,
+    .idProduct = CONFIG_USB_DEV_PRODUCTID,
+    .bcdDevice = 0x000,
+    .iManufacturer = CONFIG_USB_DEV_MANUFACTURER_INDEX,
+    .iProduct = CONFIG_USB_DEV_PRODNAME_INDEX,
+    .iSerialNumber = CONFIG_USB_DEV_SERIAL_INDEX,
+    .bNumConfigurations = 1,    /* We only have 1 interface for the DFU app */
 };
 
 /**
@@ -79,53 +79,58 @@ const usb_ctrl_device_descriptor_t usbmass_device_desc = {
  *
  */
 const usb_ctrl_full_configuration_descriptor_t usbmass_configuration_desc = {
-	.config_desc = {
-    	.bLength = sizeof(usb_ctrl_configuration_descriptor_t),
-    	.bDescriptorType = USB_DESC_CONFIG,
-    	.wTotalLength = sizeof(usb_ctrl_full_configuration_descriptor_t),
-        .bNumInterfaces = USB_NB_INTERFACE,
-    	.bConfigurationValue = 1,
-    	.iConfiguration = 0,
-    	.bmAttributes.reserved7 = 1,
-    	.bmAttributes.self_powered = 1,
-    	.bmAttributes.remote_wakeup = 0,
-    	.bmAttributes.reserved = 0,
-    	.bMaxPower = 0,
-    },
-	.interface_desc = {
-    	.bLength = sizeof(usb_ctrl_interface_descriptor_t),
-    	.bDescriptorType = USB_DESC_INTERFACE,
-    	.bInterfaceNumber = 0,
-    	.bAlternateSetting = 0,
-    	.bNumEndpoints = 2,
-    	.bInterfaceClass = USB_CLASS_MASS_STORAGE,
-    	.bInterfaceSubClass = USB_SUBCLASS_SCSI,
-    	.bInterfaceProtocol = USB_PROTOCOL_BBB,
-    	.iInterface = 1,
-    },
+    .config_desc = {
+                    .bLength = sizeof(usb_ctrl_configuration_descriptor_t),
+                    .bDescriptorType = USB_DESC_CONFIG,
+                    .wTotalLength =
+                    sizeof(usb_ctrl_full_configuration_descriptor_t),
+                    .bNumInterfaces = USB_NB_INTERFACE,
+                    .bConfigurationValue = 1,
+                    .iConfiguration = 0,
+                    .bmAttributes.reserved7 = 1,
+                    .bmAttributes.self_powered = 1,
+                    .bmAttributes.remote_wakeup = 0,
+                    .bmAttributes.reserved = 0,
+                    .bMaxPower = 0,
+                    },
+    .interface_desc = {
+                       .bLength = sizeof(usb_ctrl_interface_descriptor_t),
+                       .bDescriptorType = USB_DESC_INTERFACE,
+                       .bInterfaceNumber = 0,
+                       .bAlternateSetting = 0,
+                       .bNumEndpoints = 2,
+                       .bInterfaceClass = USB_CLASS_MASS_STORAGE,
+                       .bInterfaceSubClass = USB_SUBCLASS_SCSI,
+                       .bInterfaceProtocol = USB_PROTOCOL_BBB,
+                       .iInterface = 1,
+                       },
     .ep = {
-	.ep_in = {
-        .bLength = sizeof(usb_ctrl_endpoint_descriptor_t),
-        .bDescriptorType = USB_DESC_EP,
-        .bEndpointAddress = 0x82,
-        .bmAttributes = (USB_EP_TYPE_BULK | USB_EP_ATTR_NO_SYNC | USB_EP_USAGE_DATA),
-        .wMaxPacketSize = MAX_DATA_PACKET_SIZE(2),
-        .bInterval = 0x00,
-        },
-	.ep_out = {
-        .bLength = sizeof(usb_ctrl_endpoint_descriptor_t),
-        .bDescriptorType = USB_DESC_EP,
-        .bEndpointAddress = 0x1,
-        .bmAttributes = (USB_EP_TYPE_BULK | USB_EP_ATTR_NO_SYNC | USB_EP_USAGE_DATA),
-        .wMaxPacketSize = MAX_DATA_PACKET_SIZE(1),
-        .bInterval = 0x00,
-        },
-    },
+           .ep_in = {
+                     .bLength = sizeof(usb_ctrl_endpoint_descriptor_t),
+                     .bDescriptorType = USB_DESC_EP,
+                     .bEndpointAddress = 0x82,
+                     .bmAttributes =
+                     (USB_EP_TYPE_BULK | USB_EP_ATTR_NO_SYNC |
+                      USB_EP_USAGE_DATA),
+                     .wMaxPacketSize = MAX_DATA_PACKET_SIZE(2),
+                     .bInterval = 0x00,
+                     },
+           .ep_out = {
+                      .bLength = sizeof(usb_ctrl_endpoint_descriptor_t),
+                      .bDescriptorType = USB_DESC_EP,
+                      .bEndpointAddress = 0x1,
+                      .bmAttributes =
+                      (USB_EP_TYPE_BULK | USB_EP_ATTR_NO_SYNC |
+                       USB_EP_USAGE_DATA),
+                      .wMaxPacketSize = MAX_DATA_PACKET_SIZE(1),
+                      .bInterval = 0x00,
+                      },
+           },
 };
 
 
 usb_ctrl_callbacks_t cb = {
-    .class_rqst_handler  = mass_storage_class_rqst_handler,
+    .class_rqst_handler = mass_storage_class_rqst_handler,
     .vendor_rqst_handler = NULL,
     .set_configuration_rqst_handler = NULL,
     .set_interface_rqst_handler = NULL,
@@ -134,5 +139,3 @@ usb_ctrl_callbacks_t cb = {
 };
 
 #endif /* !_USBMASS_DESC_H */
-
-

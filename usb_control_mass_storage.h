@@ -32,9 +32,11 @@
 typedef void (*mass_storage_reset_trigger_t)(void);
 typedef void (*device_reset_trigger_t)(void);
 
-void mass_storage_class_rqst_handler(struct usb_setup_packet *packet);
+void    mass_storage_class_rqst_handler(struct usb_setup_packet *packet);
 
-void mass_storage_init(mass_storage_reset_trigger_t upper_stack_ms_reset_trigger,
-                       device_reset_trigger_t       upper_stack_device_reset_trigger);
+void    mass_storage_init(mass_storage_reset_trigger_t
+                          upper_stack_ms_reset_trigger,
+                          device_reset_trigger_t
+                          upper_stack_device_reset_trigger);
 
 #endif /* _USB_CONTROL_MASS_STORAGE_H */
