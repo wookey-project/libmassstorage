@@ -1,6 +1,9 @@
 The SCSI stack
 ==============
 
+.. highlight:: c
+
+
 Overview
 --------
 
