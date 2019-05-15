@@ -1,8 +1,11 @@
-The SCSI stack
-==============
+.. _lib_massstorage:
 
 .. highlight:: c
 
+The SCSI stack
+==============
+
+.. contents::
 
 Overview
 --------
