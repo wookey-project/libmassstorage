@@ -1421,6 +1421,10 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
+	/* Wait until we have indeed received data from the USB lower layers */
+	while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
+		continue;
+	}
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
@@ -1441,6 +1445,10 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         /* num_sectors *must* be calculated before waiting for ISR, as
          * the ISR trigger decrement size_to_process */
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
+	/* Wait until we have indeed received data from the USB lower layers */
+	while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
+		continue;
+	}
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
@@ -1526,6 +1534,10 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
+	/* Wait until we have indeed received data from the USB lower layers */
+	while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
+		continue;
+	}
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
@@ -1546,6 +1558,10 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         /* num_sectors *must* be calculated before waiting for ISR, as
          * the ISR trigger decrement size_to_process */
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
+	/* Wait until we have indeed received data from the USB lower layers */
+	while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
+		continue;
+	}
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
