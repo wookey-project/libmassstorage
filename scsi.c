@@ -27,7 +27,7 @@
 #include "libc/string.h"
 #include "api/scsi.h"
 #include "libc/string.h"
-#include "usb.h"
+#include "libusbotghs.h"
 #include "usb_bbb.h"
 #include "autoconf.h"
 #include "libc/syscall.h"
@@ -51,6 +51,7 @@
  * As most micro-controlers are not multicore based, this should not be
  * a problem.
  */
+
 
 typedef enum {
     SCSI_TRANSMIT_LINE_READY = 0,
@@ -1593,8 +1594,6 @@ void scsi_exec_automaton(void)
         return;
     }
 
-    usb_ctrl_set_initphase_done();
-
     /* critical section part. This part of the code is handling
      * the command queue to get back the queued cdb block from it.
      */
@@ -1722,7 +1721,10 @@ static void scsi_reset_context(void)
 }
 
 
-mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
+/*
+ * At earlu init time, no usbctrl interaction, only local SCSI & BBB configuration
+ */
+mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len, usbctrl_context_t *ctx)
 {
 
 #if SCSI_DEBUG
@@ -1736,11 +1738,15 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
     scsi_ctx.global_buf = buf;
     scsi_ctx.global_buf_len = len;
 
+    usbctrl_declare(ctx);
     usb_bbb_early_init(scsi_parse_cdb, scsi_data_available, scsi_data_sent);
     /* Register our callbacks as valid ones */
     ADD_LOC_HANDLER(scsi_parse_cdb)
     ADD_LOC_HANDLER(scsi_data_available)
     ADD_LOC_HANDLER(scsi_data_sent)
+
+    /* TODO: push down to usb_bbb lower layer ? */
+
     return MBED_ERROR_NONE;
 
  init_error:
@@ -1755,7 +1761,12 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
  * Init
  */
 
-mbed_error_t scsi_init(void)
+/*
+ * Here, this is the effective initialization of the device, we:
+ * 1) configure the SCSI context and queue
+ * 2)
+ */
+mbed_error_t scsi_init(usbctrl_context_t *ctx)
 {
     uint32_t i;
 
@@ -1764,7 +1775,8 @@ mbed_error_t scsi_init(void)
 #endif
 
     /* in USB High speed mode, the USB device is mapped (and enabled) just now */
-    usb_driver_map();
+    /* declare interface to libusbctrl  */
+    //usb_driver_map();
 
 
     scsi_ctx.storage_size = 0;
@@ -1775,16 +1787,13 @@ mbed_error_t scsi_init(void)
         scsi_ctx.global_buf[i] = '\0';
     }
 
-    /* Register our callbacks on the lower layer */
-    usb_bbb_init();
+    /* Register our callbacks on the lower layer, declaring iface to
+     * usbctrl */
+    usb_bbb_init(ctx);
 
     scsi_set_state(SCSI_IDLE);
 
     /* initialize control plane, adding the reset event trigger for SCSI level */
-    mass_storage_init(scsi_reset_context, scsi_reset_device);
-    /* Resgister our callbacks as valid ones */
-    ADD_LOC_HANDLER(scsi_reset_context)
-    ADD_LOC_HANDLER(scsi_reset_device)
 
     return MBED_ERROR_NONE;
 }

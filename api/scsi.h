@@ -24,6 +24,7 @@
 #ifndef SCSI_H
 # define SCSI_H
 
+#include "libusbctrl.h"
 
 /**
  * SCSI stack implementation
@@ -104,9 +105,9 @@ void scsi_reset_device(void);
  * libSCSI API
  ***********************************************************/
 
-mbed_error_t scsi_early_init(uint8_t*buf, uint16_t buflen);
+mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len, usbctrl_context_t *ctx);
 
-mbed_error_t scsi_init(void);
+mbed_error_t scsi_init(usbctrl_context_t *ctx);
 
 void scsi_reinit(void);
 

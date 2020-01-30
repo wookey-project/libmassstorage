@@ -2,7 +2,7 @@ config USR_LIB_MASSSTORAGE
   bool  "userspace libmassstorage for USB stack"
   default y
   select USR_DRV_SDIO
-  select USR_DRV_USB
+  select USR_DRV_USBOTGHS
   ---help---
   Support for Mass-Storage class feature for USB stack.
 

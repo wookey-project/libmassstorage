@@ -25,6 +25,7 @@
 #define USB_BBB_H
 
 #include "libc/regutils.h"
+#include "libusbctrl.h"
 
 /**
  * usb_bbb_init - Initialize the bulk only layer
@@ -34,7 +35,7 @@
  * size of received data.
  * @data_sent: callback called when data has been sent
  */
-void    usb_bbb_init(void);
+void    usb_bbb_init(usbctrl_context_t *ctx);
 
 void usb_bbb_reinit(void);
 
