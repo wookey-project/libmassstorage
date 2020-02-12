@@ -32,7 +32,7 @@
 #include "usb_control_mass_storage.h"
 
 
-#define BBB_DEBUG 0
+#define BBB_DEBUG 1
 
 enum bbb_state {
     READY,
@@ -96,7 +96,7 @@ static void usb_bbb_cmd_received(uint32_t size)
     }
 
     if (size != sizeof(struct scsi_cbw) || cbw.sig != USB_BBB_CBW_SIG) {
-	    aprintf("[USB BBB] %s: CBW not valid\n", __func__ );
+	    printf("[USB BBB] %s: CBW not valid\n", __func__ );
             return;
     }
     if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved || cbw.lun.lun) {
@@ -105,7 +105,7 @@ static void usb_bbb_cmd_received(uint32_t size)
 	     * with InferfaceSubClass
              */
 #if BBB_DEBUG
-        aprintf("[USB BBB] %s: CBW not meaningful\n", __func__);
+        printf("[USB BBB] %s: CBW not meaningful\n", __func__);
 #endif
         return;
     }
@@ -126,12 +126,14 @@ static void usb_bbb_cmd_received(uint32_t size)
 
 static void usb_bbb_data_received(uint32_t size)
 {
+#if 0
         if(reset_requested == true){
                 while(reset_requested == true){
                         continue;
                 }
                 return;
         }
+#endif
 
 #if BBB_DEBUG
     aprintf("[USB BBB] %s bbb_state: %x ... \n", __func__, bbb_state);
@@ -233,20 +235,21 @@ void usb_bbb_init(usbctrl_context_t *ctx)
     iface.func_desc = 0;
     iface.func_desc_len = 0;
     iface.usb_ep_number = 2;
-    iface.eps[0].type = USB_EP_TYPE_BULK;
-    iface.eps[0].mode = USB_EP_MODE_READ;
-    iface.eps[0].attr = USB_EP_ATTR_NO_SYNC;
-    iface.eps[0].usage = USB_EP_USAGE_DATA;
+    iface.eps[0].type        = USB_EP_TYPE_BULK;
+    iface.eps[0].dir         = USB_EP_DIR_OUT;
+    iface.eps[0].attr        = USB_EP_ATTR_NO_SYNC;
+    iface.eps[0].usage       = USB_EP_USAGE_DATA;
     iface.eps[0].pkt_maxsize = 512; /* mpsize on EP1 */
-    iface.eps[0].ep_num = 1; /* this may be updated by libctrl */
-    iface.eps[0].handler = usb_bbb_data_received;
-    iface.eps[1].type = USB_EP_TYPE_BULK;
-    iface.eps[1].mode = USB_EP_MODE_WRITE;
-    iface.eps[1].attr = USB_EP_ATTR_NO_SYNC;
-    iface.eps[1].usage = USB_EP_USAGE_DATA;
-    iface.eps[1].pkt_maxsize = 512; /* mpsize on EP1 */
-    iface.eps[1].ep_num = 2; /* this may be updated by libctrl */
-    iface.eps[1].handler = usb_bbb_data_sent;
+    iface.eps[0].ep_num      = 1; /* this may be updated by libctrl */
+    iface.eps[0].handler     = usb_bbb_data_received;
+
+    iface.eps[1].type        = USB_EP_TYPE_BULK;
+    iface.eps[1].dir         = USB_EP_DIR_IN;
+    iface.eps[1].attr        = USB_EP_ATTR_NO_SYNC;
+    iface.eps[1].usage       = USB_EP_USAGE_DATA;
+    iface.eps[1].pkt_maxsize = 512; /* mpsize on EP2 */
+    iface.eps[1].ep_num      = 2; /* this may be updated by libctrl */
+    iface.eps[1].handler     = usb_bbb_data_sent;
 
 
     usbctrl_initialize(ctx);
@@ -255,7 +258,7 @@ void usb_bbb_init(usbctrl_context_t *ctx)
 
     bbb_state = READY;
     /* Read first command */
-    read_next_cmd();
+    //read_next_cmd();
 }
 
 void usb_bbb_reinit(void)

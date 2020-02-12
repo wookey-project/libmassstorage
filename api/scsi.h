@@ -109,6 +109,8 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len, usbctrl_context_t *ctx
 
 mbed_error_t scsi_init(usbctrl_context_t *ctx);
 
+mbed_error_t scsi_initialize_automaton(void);
+
 void scsi_reinit(void);
 
 void scsi_send_data(void *data, uint32_t size);

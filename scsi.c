@@ -1582,6 +1582,12 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
     return;
 }
 
+mbed_error_t scsi_initialize_automaton(void)
+{
+    read_next_cmd();
+    return MBED_ERROR_NONE;
+}
+
 /*
  * SCSI Automaton execution
  */
