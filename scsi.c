@@ -440,6 +440,10 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
      * See cdb_t definition in scsi_cmd.h */
     memcpy((void *) &queued_cdb, (void *) cdb, cdb_len);
     scsi_ctx.queue_empty = false;
+    // XXX: IN EP is deactivated until:
+    // 1. next cmd to read or data to read in main thread
+    //usbotghs_deactivate_endpoint(1, USBOTG_HS_EP_DIR_OUT);
+    //usbotghs_endpoint_set_nak(1, USBOTG_HS_EP_DIR_OUT);
     return;
 }
 
@@ -788,11 +792,13 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
     /* Sanity check */
     if (current_cdb == NULL) {
+        printf("current cdb is null\n");
         goto invalid_transition;
     }
 
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        printf("not valid transition from state %d\n", current_state);
         goto invalid_transition;
     }
     next_state = scsi_next_state(current_state, current_cdb->operation);
@@ -801,6 +807,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
      * before requesting GET_CAPACITY cmd. In this very case, we have to
      * send back INVALID to the host */
     if (scsi_ctx.storage_size == 0) {
+        printf("read capcity not yet set\n");
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
         return;
@@ -1558,10 +1565,10 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         /* num_sectors *must* be calculated before waiting for ISR, as
          * the ISR trigger decrement size_to_process */
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
-	/* Wait until we have indeed received data from the USB lower layers */
-	while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
-		continue;
-	}
+        /* Wait until we have indeed received data from the USB lower layers */
+        while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
+            continue;
+        }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
@@ -1584,6 +1591,7 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 
 mbed_error_t scsi_initialize_automaton(void)
 {
+    /* read first command */
     read_next_cmd();
     return MBED_ERROR_NONE;
 }
