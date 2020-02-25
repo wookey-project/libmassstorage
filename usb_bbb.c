@@ -243,8 +243,7 @@ void usb_bbb_init(usbctrl_context_t *ctx)
     iface.usb_protocol = 0x50; /* Protocol BBB (Bulk only) */
     iface.dedicated = false;
     iface.rqst_handler = mass_storage_class_rqst_handler;
-    iface.func_desc = 0;
-    iface.func_desc_len = 0;
+    iface.class_desc_handler = NULL;
     iface.usb_ep_number = 2;
 
     iface.eps[0].type        = USB_EP_TYPE_BULK;
@@ -264,13 +263,7 @@ void usb_bbb_init(usbctrl_context_t *ctx)
     iface.eps[1].handler     = usb_bbb_data_sent;
 
 
-    usbctrl_initialize(ctx);
     usbctrl_declare_interface(ctx, &iface);
-    usbctrl_start_device(ctx);
-
-    //bbb_state = READY;
-    /* Read first command */
-    //read_next_cmd();
 }
 
 void usb_bbb_reinit(void)

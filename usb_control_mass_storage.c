@@ -102,8 +102,8 @@ mbed_error_t mass_storage_class_rqst_handler(usbctrl_context_t *ctx __attribute_
             usbotghs_send_zlp(0);
             break;
         default:
-            printf("Unhandled class request (%x)\n", packet->bRequest);
-            usbotghs_endpoint_stall(0, USBOTG_HS_EP_DIR_IN);
+            printf("Unhandled class request (%x), not for me\n", packet->bRequest);
+            errcode = MBED_ERROR_INVPARAM;
             goto err;
             break;
     }
