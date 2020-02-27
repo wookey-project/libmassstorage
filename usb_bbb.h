@@ -35,14 +35,14 @@
  * size of received data.
  * @data_sent: callback called when data has been sent
  */
-void    usb_bbb_init(usbctrl_context_t *ctx);
+void    usb_bbb_configure(usbctrl_context_t *ctx);
 
-void usb_bbb_reinit(void);
+void usb_bbb_reconfigure(void);
 
-void    usb_bbb_early_init(void (*cmd_received)(uint8_t cdb[],
-                                                uint8_t cdb_len),
-                           void(*data_received)(uint32_t),
-                           void(*data_sent)(void));
+void    usb_bbb_declare(void (*cmd_received)(uint8_t cdb[],
+                                             uint8_t cdb_len),
+                       void(*data_received)(uint32_t),
+                       void(*data_sent)(void));
 
 enum csw_status {
     CSW_STATUS_SUCCESS = 0,
@@ -63,7 +63,7 @@ void    usb_bbb_send_csw(enum csw_status status, uint32_t data_residue);
  * @size: number of bytes to send.
  * @ep: endpoint on which send data.
  */
-void    usb_bbb_send(const uint8_t * src, uint32_t size, uint8_t ep);
+void    usb_bbb_send(const uint8_t * src, uint32_t size);
 
 /**
  * usb_bbb_read - Read data from USB layer
@@ -71,7 +71,7 @@ void    usb_bbb_send(const uint8_t * src, uint32_t size, uint8_t ep);
  * @size: number of bytes to read.
  * @ep: endpoint on which read data.
  */
-void    usb_bbb_read(void *dst, uint32_t size, uint8_t ep);
+void    usb_bbb_recv(void *dst, uint32_t size);
 
 void    read_next_cmd(void);
 

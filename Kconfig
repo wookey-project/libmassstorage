@@ -4,13 +4,13 @@ config USR_LIB_MASSSTORAGE
   select USR_DRV_SDIO
   select USR_DRV_USBOTGHS
   ---help---
-  Support for Mass-Storage class feature for USB stack.
+  Support for Mass-Storage class (USB_MSC) for USB stack.
 
 if USR_LIB_MASSSTORAGE
 
 menu "SCSI options"
 
-config USR_LIB_MASSSTORAGE_DEBUG
+config USR_LIB_MASSSTORAGE_SCSI_DEBUG
   int "SCSI stack debug informations level"
   default 0
   range 0 2
@@ -20,6 +20,16 @@ config USR_LIB_MASSSTORAGE_DEBUG
     * 1: command execution debug, list received and sent commands
     * 2: command dump debug, dumping complex commands content and
          received and sent data size
+
+config USR_LIB_MASSSTORAGE_BBB_DEBUG
+  int "BBB stack debug informations level"
+  default 0
+  range 0 1
+  ---help---
+  BBB stack debug level. Supported levels are:
+    * 0: no debug
+    * 1: command execution debug, list received and sent commands
+
 
 endmenu
 

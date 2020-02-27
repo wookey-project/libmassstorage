@@ -32,23 +32,48 @@
 #include "usb_control_mass_storage.h"
 
 
-#define BBB_DEBUG 0
+#define BBB_DEBUG CONFIG_USR_LIB_MASSSTORAGE_BBB_DEBUG
 
-enum bbb_state {
-    READY,
-    CMD,
-    DATA,
-    STATUS,
+#if BBB_DEBUG
+# define log_printf(...) printf(__VA_ARGS__)
+#else
+# define log_printf(...)
+#endif
+
+
+
+typedef enum bbb_state {
+    USB_BBB_STATE_READY,
+    USB_BBB_STATE_CMD,
+    USB_BBB_STATE_DATA,
+    USB_BBB_STATE_STATUS,
+} usb_bbb_state_t;
+
+typedef void (*usb_bbb_cb_cmd_received_t)(uint8_t cdb[], uint8_t cdb_len);
+typedef void (*usb_usb_cb_data_received_t)(uint32_t size);
+typedef void (*usb_usb_cb_data_sent_t)(void);
+
+/*
+ * This is the overall BBB context, set at initialization time.
+ */
+typedef struct {
+    usb_bbb_state_t             state;
+    usbctrl_interface_t         iface;
+    usb_bbb_cb_cmd_received_t   cb_cmd_received;
+    usb_usb_cb_data_received_t  cb_data_received;
+    usb_usb_cb_data_sent_t      cb_data_sent;
+    uint32_t                    tag;
+} usb_bbb_context_t;
+
+
+static volatile usb_bbb_context_t bbb_ctx = {
+    .state = USB_BBB_STATE_READY,
+    .iface = { 0 },
+    .cb_cmd_received = NULL,
+    .cb_data_received = NULL,
+    .cb_data_sent = NULL,
+    .tag = 0
 };
-
-static void (*callback_cmd_received)(uint8_t cdb[], uint8_t cdb_len);
-static void (*callback_data_received)(uint32_t size);
-static void (*callback_data_sent)(void);
-
-
-volatile enum bbb_state bbb_state;
-uint32_t current_tag;
-
 
 
 /* Command Block Wrapper */
@@ -76,33 +101,24 @@ static struct scsi_cbw cbw;
 
 void read_next_cmd(void)
 {
-#if BBB_DEBUG
-    printf("[USB BBB] %s: Reading a command\n", __func__);
-#endif
-    bbb_state = READY;
-    usbotghs_set_recv_fifo((uint8_t*)&cbw, sizeof(cbw), 1);
-    usbotghs_activate_endpoint(1, USBOTG_HS_EP_DIR_OUT);
+    log_printf("[USB BBB] %s\n", __func__);
+    bbb_ctx.state = USB_BBB_STATE_READY;
+    usb_backend_drv_set_recv_fifo((uint8_t*)&cbw, sizeof(cbw), bbb_ctx.iface.eps[0].ep_num);
+    usb_backend_drv_activate_endpoint(bbb_ctx.iface.eps[0].ep_num, USBOTG_HS_EP_DIR_OUT);
 }
 
 extern volatile bool reset_requested;
 
 static void usb_bbb_cmd_received(uint32_t size)
 {
-#if 0
-    if(reset_requested == true){
-        while(reset_requested == true) {
-	    continue;
-        }
-        return;
-    }
-#endif
+    log_printf("[USB BBB] %s: %dB\n", __func__, size);
 
     if (size != sizeof(struct scsi_cbw)) {
-	    printf("[USB BBB] %s: CBW not valid, size %d, should be %d\n", __func__ , size, sizeof(struct scsi_cbw));
+	    log_printf("[USB BBB] %s: CBW not valid, size %d, should be %d\n", __func__ , size, sizeof(struct scsi_cbw));
             return;
     }
     if (cbw.sig != USB_BBB_CBW_SIG) {
-	    printf("[USB BBB] %s: CBW not valid: signature is %x, should be %x\n", __func__ , cbw.sig, USB_BBB_CBW_SIG);
+	    log_printf("[USB BBB] %s: CBW not valid: signature is %x, should be %x\n", __func__ , cbw.sig, USB_BBB_CBW_SIG);
             return;
     }
 
@@ -111,164 +127,126 @@ static void usb_bbb_cmd_received(uint32_t size)
 	    /* TODO: check that cbw.cdb_len and cbw.cdb are in accordance
 	     * with InferfaceSubClass
              */
-#if BBB_DEBUG
-        printf("[USB BBB] %s: CBW not meaningful\n", __func__);
-#endif
+        log_printf("[USB BBB] %s: CBW not meaningful\n", __func__);
         return;
     }
-    current_tag = cbw.tag;
-    bbb_state = CMD;
-#if BBB_DEBUG
-    printf("[USB BBB] %s: Command received\n", __func__);
-#endif
-    /* Sanity check our callback before calling it */
-    if(handler_sanity_check((void*)callback_cmd_received)){
+    bbb_ctx.tag = cbw.tag;
+    bbb_ctx.state = USB_BBB_STATE_CMD;
+    if(handler_sanity_check((void*)bbb_ctx.cb_cmd_received)){
         sys_exit();
         return;
     }
-    else{
-        callback_cmd_received(cbw.cdb, cbw.cdb_len.cdb_len);
-    }
+    bbb_ctx.cb_cmd_received(cbw.cdb, cbw.cdb_len.cdb_len);
 }
 
 static mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)), uint32_t size, uint8_t ep __attribute__((unused)))
 {
-#if 0
-        if(reset_requested == true){
-                while(reset_requested == true){
-                        continue;
-                }
-                return;
-        }
-#endif
-
-#if BBB_DEBUG
-    printf("[USB BBB] %s bbb_state: %x ... \n", __func__, bbb_state);
-#endif
-    switch (bbb_state) {
-        case READY:
+    log_printf("[USB BBB] %s (state: %x)\n", __func__, bbb_ctx.state);
+    switch (bbb_ctx.state) {
+        case USB_BBB_STATE_READY:
             usb_bbb_cmd_received(size);
             break;
-        case STATUS:
-            bbb_state = READY;
+        case USB_BBB_STATE_STATUS:
+            bbb_ctx.state = USB_BBB_STATE_READY;
             break;
-        case DATA:
-            /* Sanity check our callback before calling it */
-            if(handler_sanity_check((void*)callback_data_received)){
-               sys_exit();
-               return;
+        case USB_BBB_STATE_DATA:
+            if(handler_sanity_check((void*)bbb_ctx.cb_data_received)){
+                sys_exit();
+                return;
             }
-            else{
-                callback_data_received(size);
-            }
+            bbb_ctx.cb_data_received(size);
             break;
         default:
-            printf("[USB BBB] %s: ERROR usb_bbb_data_received ... \n",
-                    __func__);
+            log_printf("[USB BBB] %s: ERROR usb_bbb_data_received ... \n", __func__);
     }
     return MBED_ERROR_NONE;
 }
 
 static mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)), uint32_t size __attribute__((unused)), uint8_t ep __attribute__((unused)))
 {
-#if 0
-    if(reset_requested == true){
-        while(reset_requested == true){
-            continue;
-	}
-	return;
-    }
-#endif
-
-    switch (bbb_state) {
-	    case STATUS:
-#if BBB_DEBUG
-            printf("[USB BBB] %s: data sent while in STATUS state\n",
-                    __func__);
-#endif
+    log_printf("[USB BBB] %s (state: %x)\n", __func__, bbb_ctx.state);
+    switch (bbb_ctx.state) {
+	    case USB_BBB_STATE_STATUS:
             read_next_cmd();
             break;
-        case DATA:
-#if BBB_DEBUG
-            printf("[USB BBB] %s: data sent while in DATA state\n", __func__);
-#endif
-	    /* Sanity check our callback before calling it */
-            if(handler_sanity_check((void*)callback_data_sent)){
+        case USB_BBB_STATE_DATA:
+
+            if(handler_sanity_check((void*)bbb_ctx.cb_data_sent)){
                 sys_exit();
                 return;
             }
-            else{
-                callback_data_sent();
-            }
+            bbb_ctx.cb_data_sent();
             break;
-        case READY:
-#if BBB_DEBUG
-            printf("[USB BBB] %s: data sent while in READY state\n", __func__);
-#endif
+        case USB_BBB_STATE_READY:
             break;
-        case CMD:
-#if BBB_DEBUG
-            printf("[USB BBB] %s: data sent while in CMD state\n", __func__);
-#endif
+        case USB_BBB_STATE_CMD:
             break;
         default:
-            printf("[USB BBB] %s: Unknown bbb_state\n", __func__);
+            log_printf("[USB BBB] %s: Unknown bbb_ctx.state\n", __func__);
     }
     return MBED_ERROR_NONE;
 }
 
-void usb_bbb_early_init(void (*cmd_received)(uint8_t cdb[], uint8_t cdb_len),
-                        void(*data_received)(uint32_t), void(*data_sent)(void))
+void usb_bbb_declare(void (*cmd_received)(uint8_t cdb[], uint8_t cdb_len),
+                     void(*data_received)(uint32_t), void(*data_sent)(void))
 {
-#if BBB_DEBUG
-    printf("[USB BBB] %s\n", __func__);
-#endif
-    callback_cmd_received = cmd_received;
-    callback_data_received = data_received;
-    callback_data_sent = data_sent;
-
-    // XXX: usb_driver_early_init(usb_bbb_data_received, usb_bbb_data_sent);
+    log_printf("[USB BBB] %s\n", __func__);
+    /*  sanitize */
+    if (cmd_received == NULL || data_received == NULL) {
+        log_printf("[BBB] invalid callbacks value\n");
+        goto err;
+    }
+    /*XXX: add to context instead */
+    bbb_ctx.cb_cmd_received = cmd_received;
+    bbb_ctx.cb_data_received = data_received;
+    bbb_ctx.cb_data_sent = data_sent;
+err:
+    return;
 }
 
-void usb_bbb_init(usbctrl_context_t *ctx)
+void usb_bbb_configure(usbctrl_context_t *ctx)
 {
+    log_printf("[USB BBB] %s\n", __func__);
+
     /* these are ioep_handlers, pushed to libxDCI */
     ADD_LOC_HANDLER(usb_bbb_data_received)
     ADD_LOC_HANDLER(usb_bbb_data_sent)
     ADD_LOC_HANDLER(mass_storage_class_rqst_handler)
 
-    usbctrl_interface_t iface = { 0 };
-    iface.usb_class = USB_CLASS_MSC_UMS;
-    iface.usb_subclass = 0x6; /* SCSI transparent cmd set (i.e. use INQUIRY) */
-    iface.usb_protocol = 0x50; /* Protocol BBB (Bulk only) */
-    iface.dedicated = false;
-    iface.rqst_handler = mass_storage_class_rqst_handler;
-    iface.class_desc_handler = NULL;
-    iface.usb_ep_number = 2;
+    bbb_ctx.iface.usb_class = USB_CLASS_MSC_UMS;
+    bbb_ctx.iface.usb_subclass = 0x6; /* SCSI transparent cmd set (i.e. use INQUIRY) */
+    bbb_ctx.iface.usb_protocol = 0x50; /* Protocol BBB (Bulk only) */
+    bbb_ctx.iface.dedicated = false;
+    bbb_ctx.iface.rqst_handler = mass_storage_class_rqst_handler;
+    bbb_ctx.iface.class_desc_handler = NULL;
+    bbb_ctx.iface.usb_ep_number = 2;
 
-    iface.eps[0].type        = USB_EP_TYPE_BULK;
-    iface.eps[0].dir         = USB_EP_DIR_OUT;
-    iface.eps[0].attr        = USB_EP_ATTR_NO_SYNC;
-    iface.eps[0].usage       = USB_EP_USAGE_DATA;
-    iface.eps[0].pkt_maxsize = 512; /* mpsize on EP1 */
-    iface.eps[0].ep_num      = 1; /* this may be updated by libctrl */
-    iface.eps[0].handler     = usb_bbb_data_received;
+    bbb_ctx.iface.eps[0].type        = USB_EP_TYPE_BULK;
+    bbb_ctx.iface.eps[0].dir         = USB_EP_DIR_OUT;
+    bbb_ctx.iface.eps[0].attr        = USB_EP_ATTR_NO_SYNC;
+    bbb_ctx.iface.eps[0].usage       = USB_EP_USAGE_DATA;
+    bbb_ctx.iface.eps[0].pkt_maxsize = 512; /* mpsize on EP1 */
+    bbb_ctx.iface.eps[0].ep_num      = 1; /* this may be updated by libctrl */
+    bbb_ctx.iface.eps[0].handler     = usb_bbb_data_received;
 
-    iface.eps[1].type        = USB_EP_TYPE_BULK;
-    iface.eps[1].dir         = USB_EP_DIR_IN;
-    iface.eps[1].attr        = USB_EP_ATTR_NO_SYNC;
-    iface.eps[1].usage       = USB_EP_USAGE_DATA;
-    iface.eps[1].pkt_maxsize = 512; /* mpsize on EP2 */
-    iface.eps[1].ep_num      = 2; /* this may be updated by libctrl */
-    iface.eps[1].handler     = usb_bbb_data_sent;
+    bbb_ctx.iface.eps[1].type        = USB_EP_TYPE_BULK;
+    bbb_ctx.iface.eps[1].dir         = USB_EP_DIR_IN;
+    bbb_ctx.iface.eps[1].attr        = USB_EP_ATTR_NO_SYNC;
+    bbb_ctx.iface.eps[1].usage       = USB_EP_USAGE_DATA;
+    bbb_ctx.iface.eps[1].pkt_maxsize = 512; /* mpsize on EP2 */
+    bbb_ctx.iface.eps[1].ep_num      = 2; /* this may be updated by libctrl */
+    bbb_ctx.iface.eps[1].handler     = usb_bbb_data_sent;
 
 
-    usbctrl_declare_interface(ctx, &iface);
+    usbctrl_declare_interface(ctx, (usbctrl_interface_t*)&(bbb_ctx.iface));
+    return;
 }
 
-void usb_bbb_reinit(void)
+void usb_bbb_reconfigure(void)
 {
-    bbb_state = READY;
+    log_printf("[USB BBB] %s\n", __func__);
+
+    bbb_ctx.state = USB_BBB_STATE_READY;
 }
 
 /* Command Status Wrapper */
@@ -283,41 +261,35 @@ struct __packed scsi_csw {
 
 void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
 {
+    log_printf("[USB BBB] %s: status %d\n", __func__, status);
     mbed_error_t errcode = MBED_ERROR_NONE;
     struct scsi_csw csw = {
         .sig = USB_BBB_CSW_SIG,
-        .tag = current_tag,
+        .tag = bbb_ctx.tag,
         .data_residue = data_residue,
         .status = status
     };
 
-    bbb_state = STATUS;
-#if BBB_DEBUG
-    aprintf("[USB BBB] %s: Sending CSW (%x, %x, %x, %x)\n", __func__, csw.sig,
+    bbb_ctx.state = USB_BBB_STATE_STATUS;
+    log_printf("[USB BBB] %s: Sending CSW (%x, %x, %x, %x)\n", __func__, csw.sig,
             csw.tag, csw.data_residue, csw.status);
-#endif
-    errcode = usbotghs_send_data((uint8_t *) & csw, sizeof(csw), 2);
+    errcode = usb_backend_drv_send_data((uint8_t *) & csw, sizeof(csw), bbb_ctx.iface.eps[1].ep_num);
     if (errcode != MBED_ERROR_NONE) {
-        printf("failure while sending data: err=%d\n", errcode);
+        log_printf("failure while sending data: err=%d\n", errcode);
     }
 }
 
-void usb_bbb_send(const uint8_t * src, uint32_t size, uint8_t ep)
+void usb_bbb_send(const uint8_t * src, uint32_t size)
 {
-#if BBB_DEBUG
-    aprintf("[USB BBB] %s\n", __func__);
-#endif
-    bbb_state = DATA;
-    usbotghs_send_data((uint8_t *)src, size, ep);
+    log_printf("[USB BBB] %s: %dB\n", __func__, size);
+    bbb_ctx.state = USB_BBB_STATE_DATA;
+    usb_backend_drv_send_data((uint8_t *)src, size, bbb_ctx.iface.eps[1].ep_num);
 }
 
-void usb_bbb_read(void *dst, uint32_t size, uint8_t ep)
+void usb_bbb_recv(void *dst, uint32_t size)
 {
-    ep = ep;
-#if BBB_DEBUG
-    aprintf("[USB BBB] %s\n", __func__);
-#endif
-    bbb_state = DATA;
-    usbotghs_set_recv_fifo(dst, size, 1);
-    usbotghs_activate_endpoint(1, USBOTG_HS_EP_DIR_OUT);
+    log_printf("[USB BBB] %s: %dB\n", __func__, size);
+    bbb_ctx.state = USB_BBB_STATE_DATA;
+    usb_backend_drv_set_recv_fifo(dst, size, bbb_ctx.iface.eps[0].ep_num);
+    usb_backend_drv_activate_endpoint(bbb_ctx.iface.eps[0].ep_num, USBOTG_HS_EP_DIR_OUT);
 }
