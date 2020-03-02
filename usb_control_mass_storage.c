@@ -33,7 +33,7 @@
 #include "usbmass_desc.h"
 #include "libc/syscall.h"
 #include "libc/sanhandlers.h"
-#include "libusbotghs.h"
+#include "libusbctrl.h"
 
 static mass_storage_reset_trigger_t ms_reset_trigger = NULL;
 static device_reset_trigger_t device_reset_trigger = NULL;
@@ -92,14 +92,14 @@ mbed_error_t mass_storage_class_rqst_handler(usbctrl_context_t *ctx __attribute_
     switch (packet->bRequest) {
         case USB_RQST_GET_MAX_LUN:
             printf("[classRqst] handling MSS max LUN\n");
-            usbotghs_send_data(&max_lun, sizeof(max_lun), EP0);
-            usbotghs_endpoint_clear_nak(0, USBOTG_HS_EP_DIR_OUT);
+            usb_backend_drv_send_data(&max_lun, sizeof(max_lun), EP0);
+            usb_backend_drv_ack(0, USB_BACKEND_DRV_EP_DIR_OUT);
             break;
         case USB_RQST_MS_RESET:
             printf("[classRqst] handling MSS MS RST\n");
             mass_storage_reset();       // FIXME We must use a callback function
             read_next_cmd();
-            usbotghs_send_zlp(0);
+            usb_backend_drv_send_zlp(0);
             break;
         default:
             printf("Unhandled class request (%x), not for me\n", packet->bRequest);

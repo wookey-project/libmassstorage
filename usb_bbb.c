@@ -104,7 +104,7 @@ void read_next_cmd(void)
     log_printf("[USB BBB] %s\n", __func__);
     bbb_ctx.state = USB_BBB_STATE_READY;
     usb_backend_drv_set_recv_fifo((uint8_t*)&cbw, sizeof(cbw), bbb_ctx.iface.eps[0].ep_num);
-    usb_backend_drv_activate_endpoint(bbb_ctx.iface.eps[0].ep_num, USBOTG_HS_EP_DIR_OUT);
+    usb_backend_drv_activate_endpoint(bbb_ctx.iface.eps[0].ep_num, USB_BACKEND_DRV_EP_DIR_OUT);
 }
 
 extern volatile bool reset_requested;
@@ -291,5 +291,5 @@ void usb_bbb_recv(void *dst, uint32_t size)
     log_printf("[USB BBB] %s: %dB\n", __func__, size);
     bbb_ctx.state = USB_BBB_STATE_DATA;
     usb_backend_drv_set_recv_fifo(dst, size, bbb_ctx.iface.eps[0].ep_num);
-    usb_backend_drv_activate_endpoint(bbb_ctx.iface.eps[0].ep_num, USBOTG_HS_EP_DIR_OUT);
+    usb_backend_drv_activate_endpoint(bbb_ctx.iface.eps[0].ep_num, USB_BACKEND_DRV_EP_DIR_OUT);
 }
