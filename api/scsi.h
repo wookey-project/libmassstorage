@@ -105,9 +105,9 @@ void scsi_reset_device(void);
  * libSCSI API
  ***********************************************************/
 
-mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len, usbctrl_context_t *ctx);
+mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len);
 
-mbed_error_t scsi_init(usbctrl_context_t *ctx);
+mbed_error_t scsi_init(uint32_t usbdci_handler);
 
 mbed_error_t scsi_initialize_automaton(void);
 

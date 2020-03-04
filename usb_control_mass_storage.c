@@ -82,7 +82,7 @@ static void full_device_reset(void)
  *
  * @param packet Setup packet
  */
-mbed_error_t mass_storage_class_rqst_handler(usbctrl_context_t *ctx __attribute__((unused)),
+mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((unused)),
                                              usbctrl_setup_pkt_t *packet)
 {
     uint8_t max_lun = 0;

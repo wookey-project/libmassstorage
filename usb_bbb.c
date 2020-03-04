@@ -204,7 +204,7 @@ err:
     return;
 }
 
-void usb_bbb_configure(usbctrl_context_t *ctx)
+void usb_bbb_configure(uint32_t usbdci_handler)
 {
     log_printf("[USB BBB] %s\n", __func__);
 
@@ -238,7 +238,7 @@ void usb_bbb_configure(usbctrl_context_t *ctx)
     bbb_ctx.iface.eps[1].handler     = usb_bbb_data_sent;
 
 
-    usbctrl_declare_interface(ctx, (usbctrl_interface_t*)&(bbb_ctx.iface));
+    usbctrl_declare_interface(usbdci_handler, (usbctrl_interface_t*)&(bbb_ctx.iface));
     return;
 }
 

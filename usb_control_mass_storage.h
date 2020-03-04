@@ -30,7 +30,7 @@
 typedef void (*mass_storage_reset_trigger_t)(void);
 typedef void (*device_reset_trigger_t)(void);
 
-mbed_error_t mass_storage_class_rqst_handler(usbctrl_context_t *ctx,
+mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((unused)),
                                              usbctrl_setup_pkt_t *packet);
 
 void    mass_storage_init(mass_storage_reset_trigger_t

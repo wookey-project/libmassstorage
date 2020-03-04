@@ -35,7 +35,7 @@
  * size of received data.
  * @data_sent: callback called when data has been sent
  */
-void    usb_bbb_configure(usbctrl_context_t *ctx);
+void    usb_bbb_configure(uint32_t usbdci_handler);
 
 void usb_bbb_reconfigure(void);
 
