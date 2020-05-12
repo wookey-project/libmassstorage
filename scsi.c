@@ -27,12 +27,12 @@
 #include "libc/string.h"
 #include "api/scsi.h"
 #include "libc/string.h"
-#include "libusbotghs.h"
 #include "usb_bbb.h"
 #include "autoconf.h"
 #include "libc/syscall.h"
 #include "libc/arpa/inet.h"
 #include "wookey_ipc.h"
+#include "libusbctrl.h"
 
 #include "usb_control_mass_storage.h"
 
