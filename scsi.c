@@ -41,6 +41,8 @@
 #include "scsi_log.h"
 #include "scsi_automaton.h"
 
+#include "libc/sanhandlers.h"
+
 #define SCSI_DEBUG CONFIG_USR_LIB_MASSSTORAGE_DEBUG
 
 /*
@@ -1735,6 +1737,10 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
     scsi_ctx.global_buf_len = len;
 
     usb_bbb_early_init(scsi_parse_cdb, scsi_data_available, scsi_data_sent);
+    /* Register our callbacks as valid ones */
+    ADD_LOC_HANDLER(scsi_parse_cdb)
+    ADD_LOC_HANDLER(scsi_data_available)
+    ADD_LOC_HANDLER(scsi_data_sent)
     return MBED_ERROR_NONE;
 
  init_error:
@@ -1776,6 +1782,10 @@ mbed_error_t scsi_init(void)
 
     /* initialize control plane, adding the reset event trigger for SCSI level */
     mass_storage_init(scsi_reset_context, scsi_reset_device);
+    /* Resgister our callbacks as valid ones */
+    ADD_LOC_HANDLER(scsi_reset_context)
+    ADD_LOC_HANDLER(scsi_reset_device)
+
     return MBED_ERROR_NONE;
 }
 

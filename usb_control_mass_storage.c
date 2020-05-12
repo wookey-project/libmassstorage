@@ -32,6 +32,8 @@
 #include "usb_bbb.h"
 #include "usb_control_mass_storage.h"
 #include "usbmass_desc.h"
+#include "libc/syscall.h"
+#include "libc/sanhandlers.h"
 
 static mass_storage_reset_trigger_t ms_reset_trigger = NULL;
 static device_reset_trigger_t device_reset_trigger = NULL;
@@ -44,7 +46,14 @@ static void mass_storage_reset(void)
 {
     aprintf("Bulk-Only Mass Storage Reset\n");
     if (ms_reset_trigger != NULL) {
-        ms_reset_trigger();
+        /* Sanity check our callback before calling it */
+        if(handler_sanity_check((void*)ms_reset_trigger)){
+            sys_exit();
+            return;
+        }
+        else{
+            ms_reset_trigger();
+        }
     }
 }
 
@@ -54,7 +63,16 @@ static void mass_storage_reset(void)
 static void full_device_reset(void)
 {
     aprintf("Bulk-Only Mass Storage Reset\n");
-    device_reset_trigger();
+    if(device_reset_trigger != NULL){
+        /* Sanity check our callback before calling it */
+        if(handler_sanity_check((void*)device_reset_trigger)){
+            sys_exit();
+            return;
+        }
+        else{
+            device_reset_trigger();
+        }
+    }
 }
 
 
@@ -135,6 +153,10 @@ void mass_storage_init(mass_storage_reset_trigger_t
                        upper_stack_ms_reset_trigger,
                        device_reset_trigger_t upper_stack_device_reset_trigger)
 {
+    /* Refister our callbacks */
+    ADD_LOC_HANDLER(mass_storage_class_rqst_handler)
+    ADD_LOC_HANDLER(mass_storage_mft_string_desc_rqst_handler)
+    ADD_LOC_HANDLER(full_device_reset)
     usb_ctrl_callbacks_t usbmass_usb_ctrl_callbacks = {
         .class_rqst_handler = mass_storage_class_rqst_handler,
         .vendor_rqst_handler = NULL,

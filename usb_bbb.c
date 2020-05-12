@@ -26,7 +26,8 @@
 #include "libc/regutils.h"
 #include "usb.h"
 #include "usb_bbb.h"
-
+#include "libc/syscall.h"
+#include "libc/sanhandlers.h"
 
 #define BBB_DEBUG 0
 
@@ -109,7 +110,14 @@ static void usb_bbb_cmd_received(uint32_t size)
 #if BBB_DEBUG
     aprintf("[USB BBB] %s: Command received\n", __func__);
 #endif
-    callback_cmd_received(cbw.cdb, cbw.cdb_len.cdb_len);
+    /* Sanity check our callback before calling it */
+    if(handler_sanity_check((void*)callback_cmd_received)){
+        sys_exit();
+        return;
+    }
+    else{
+        callback_cmd_received(cbw.cdb, cbw.cdb_len.cdb_len);
+    }
 }
 
 static void usb_bbb_data_received(uint32_t size)
@@ -132,7 +140,14 @@ static void usb_bbb_data_received(uint32_t size)
             bbb_state = READY;
             break;
         case DATA:
-            callback_data_received(size);
+            /* Sanity check our callback before calling it */
+            if(handler_sanity_check((void*)callback_data_received)){
+               sys_exit();
+               return;
+            }
+            else{
+                callback_data_received(size);
+            }
             break;
         default:
             aprintf("[USB BBB] %s: ERROR usb_bbb_data_received ... \n",
@@ -161,7 +176,14 @@ static void usb_bbb_data_sent(void)
 #if BBB_DEBUG
             aprintf("[USB BBB] %s: data sent while in DATA state\n", __func__);
 #endif
-            callback_data_sent();
+	    /* Sanity check our callback before calling it */
+            if(handler_sanity_check((void*)callback_data_sent)){
+                sys_exit();
+                return;
+            }
+            else{
+                callback_data_sent();
+            }
             break;
         case READY:
 #if BBB_DEBUG
@@ -188,6 +210,9 @@ void usb_bbb_early_init(void (*cmd_received)(uint8_t cdb[], uint8_t cdb_len),
     callback_data_received = data_received;
     callback_data_sent = data_sent;
 
+    /* Register our callbacks */
+    ADD_LOC_HANDLER(usb_bbb_data_received)
+    ADD_LOC_HANDLER(usb_bbb_data_sent)
     usb_driver_early_init(usb_bbb_data_received, usb_bbb_data_sent);
 
 }
