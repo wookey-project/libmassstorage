@@ -152,13 +152,14 @@ static mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)
         case USB_BBB_STATE_DATA:
             if(handler_sanity_check((void*)bbb_ctx.cb_data_received)){
                 sys_exit();
-                return;
+                goto err;
             }
             bbb_ctx.cb_data_received(size);
             break;
         default:
             log_printf("[USB BBB] %s: ERROR usb_bbb_data_received ... \n", __func__);
     }
+err:
     return MBED_ERROR_NONE;
 }
 
@@ -173,7 +174,7 @@ static mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)), u
 
             if(handler_sanity_check((void*)bbb_ctx.cb_data_sent)){
                 sys_exit();
-                return;
+                goto err;
             }
             bbb_ctx.cb_data_sent();
             break;
@@ -184,6 +185,7 @@ static mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)), u
         default:
             log_printf("[USB BBB] %s: Unknown bbb_ctx.state\n", __func__);
     }
+err:
     return MBED_ERROR_NONE;
 }
 
