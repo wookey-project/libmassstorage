@@ -47,8 +47,7 @@ static void mass_storage_reset(void)
     aprintf("Bulk-Only Mass Storage Reset\n");
     if (ms_reset_trigger != NULL) {
         /* Sanity check our callback before calling it */
-        if(handler_sanity_check((void*)ms_reset_trigger)){
-            sys_exit();
+        if(handler_sanity_check_with_panic((physaddr_t)ms_reset_trigger)){
             return;
         }
         else{
@@ -65,8 +64,7 @@ static void full_device_reset(void)
     aprintf("Bulk-Only Mass Storage Reset\n");
     if(device_reset_trigger != NULL){
         /* Sanity check our callback before calling it */
-        if(handler_sanity_check((void*)device_reset_trigger)){
-            sys_exit();
+        if(handler_sanity_check_with_panic((physaddr_t)device_reset_trigger)){
             return;
         }
         else{

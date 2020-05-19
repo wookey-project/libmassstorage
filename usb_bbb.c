@@ -111,8 +111,7 @@ static void usb_bbb_cmd_received(uint32_t size)
     aprintf("[USB BBB] %s: Command received\n", __func__);
 #endif
     /* Sanity check our callback before calling it */
-    if(handler_sanity_check((void*)callback_cmd_received)){
-        sys_exit();
+    if(handler_sanity_check_with_panic((physaddr_t)callback_cmd_received)){
         return;
     }
     else{
@@ -141,8 +140,7 @@ static void usb_bbb_data_received(uint32_t size)
             break;
         case DATA:
             /* Sanity check our callback before calling it */
-            if(handler_sanity_check((void*)callback_data_received)){
-               sys_exit();
+            if(handler_sanity_check_with_panic((physaddr_t)callback_data_received)){
                return;
             }
             else{
@@ -177,8 +175,7 @@ static void usb_bbb_data_sent(void)
             aprintf("[USB BBB] %s: data sent while in DATA state\n", __func__);
 #endif
 	    /* Sanity check our callback before calling it */
-            if(handler_sanity_check((void*)callback_data_sent)){
-                sys_exit();
+            if(handler_sanity_check_with_panic((physaddr_t)callback_data_sent)){
                 return;
             }
             else{
