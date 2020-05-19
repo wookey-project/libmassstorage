@@ -132,8 +132,7 @@ static void usb_bbb_cmd_received(uint32_t size)
     }
     bbb_ctx.tag = cbw.tag;
     bbb_ctx.state = USB_BBB_STATE_CMD;
-    if(handler_sanity_check((void*)bbb_ctx.cb_cmd_received)){
-        sys_exit();
+    if(handler_sanity_check_with_panic((physaddr_t)bbb_ctx.cb_cmd_received)){
         return;
     }
     bbb_ctx.cb_cmd_received(cbw.cdb, cbw.cdb_len.cdb_len);
@@ -150,8 +149,7 @@ static mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)
             bbb_ctx.state = USB_BBB_STATE_READY;
             break;
         case USB_BBB_STATE_DATA:
-            if(handler_sanity_check((void*)bbb_ctx.cb_data_received)){
-                sys_exit();
+            if(handler_sanity_check((physaddr_t)bbb_ctx.cb_data_received)){
                 goto err;
             }
             bbb_ctx.cb_data_received(size);
@@ -172,8 +170,7 @@ static mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)), u
             break;
         case USB_BBB_STATE_DATA:
 
-            if(handler_sanity_check((void*)bbb_ctx.cb_data_sent)){
-                sys_exit();
+            if(handler_sanity_check((physaddr_t)bbb_ctx.cb_data_sent)){
                 goto err;
             }
             bbb_ctx.cb_data_sent();
