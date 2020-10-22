@@ -202,7 +202,11 @@ typedef struct __attribute__((packed)) {
 
 /*
  * polymorphic SCSI command content, using a C union
- * type
+ * type.
+ * Each command is identified by an operation attribute before
+ * the command content used as segregation field:
+ *
+ * [cmd id][type-variable, length variable cmd content]
  */
 typedef union {
     /* CDB 6 bytes length */

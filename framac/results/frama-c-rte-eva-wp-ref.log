@@ -1,0 +1,57 @@
+usb_control_mass_storage.c:71:[wp] warning: Missing 'calls' for default behavior
+usb_control_mass_storage.c:54:[wp] warning: Missing 'calls' for default behavior
+usb_bbb.c:146:[wp] warning: Missing 'calls' for default behavior
+usb_bbb.c:166:[wp] warning: Missing 'calls' for default behavior
+usb_bbb.c:190:[wp] warning: Missing 'calls' for default behavior
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:66:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: uint32*)
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:74:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: uint16*)
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:65:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:680:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:716:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:699:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1757:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:278:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+usb_bbb.c:166:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+usb_bbb.c:166:[wp] warning: \valid_function not yet implemented
+(rte: function_pointer: \valid_function(bbb_ctx.cb_data_received))
+usb_bbb.c:166:[wp] warning: \valid_function not yet implemented
+(rte: pointer_value: \valid_function(bbb_ctx.cb_data_received))
+usb_bbb.c:166:[wp] warning: \valid_function not yet implemented
+(Eva: pointer_value: \valid_function(bbb_ctx.cb_data_received))
+usb_bbb.c:163:[wp] warning: \valid_function not yet implemented
+(rte: pointer_value: \valid_function(bbb_ctx.cb_data_received))
+usb_bbb.c:163:[wp] warning: \valid_function not yet implemented
+(Eva: pointer_value: \valid_function(bbb_ctx.cb_data_received))
+framac/entrypoint.c:231:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi_automaton.c:172:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi_automaton.c:202:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi_automaton.c:222:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/sanhandlers.h:29:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/sanhandlers.h:45:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:441:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:448:[wp] warning: Cast with incompatible pointers types (source: __anonstruct_cdb_t_97*)
+   (target: sint8*)
+scsi.c:448:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:733:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:729:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:752:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:750:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:716:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:842:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:838:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:861:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:859:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:825:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:919:[wp] warning: Cast with incompatible pointers types
+   (source: __anonstruct_read_capacity10_parameter_data_t_98*)
+   (target: uint8*)
+scsi.c:994:[wp] warning: Cast with incompatible pointers types
+   (source: __anonstruct_read_capacity16_parameter_data_t_99*)
+   (target: uint8*)
+scsi.c:975:[wp] warning: Cast with incompatible pointers types
+   (source: __anonstruct_read_capacity16_parameter_data_t_99*)
+   (target: sint8*)
+scsi.c:1053:[wp] warning: Cast with incompatible pointers types
+   (source: __anonstruct_report_luns_data_t_100*) (target: uint8*)
+scsi.c:1050:[wp] warning: Validity of unsized-array not implemented yet
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:216:[wp] user error: Undefined array-size (uint64[])

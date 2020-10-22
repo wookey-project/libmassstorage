@@ -76,6 +76,9 @@ static volatile usb_bbb_context_t bbb_ctx = {
 };
 
 
+#ifndef __FRAMAC__
+#define USB_BBB_CBW_SIG		0x43425355      /* "USBC" */
+
 /* Command Block Wrapper */
 struct __packed scsi_cbw {
     uint32_t sig;
@@ -95,9 +98,10 @@ struct __packed scsi_cbw {
     } cdb_len;
     uint8_t cdb[16];            // FIXME We must handle CDB6 CDB10 CDB12 CDB16 ?
 };
-static struct scsi_cbw cbw;
 
-#define USB_BBB_CBW_SIG		0x43425355      /* "USBC" */
+static
+#endif
+struct scsi_cbw cbw;
 
 void read_next_cmd(void)
 {
@@ -107,7 +111,11 @@ void read_next_cmd(void)
     usb_backend_drv_activate_endpoint(bbb_ctx.iface.eps[0].ep_num, USB_BACKEND_DRV_EP_DIR_OUT);
 }
 
+#ifndef __FRAMAC__
 extern volatile bool reset_requested;
+#else
+extern bool reset_requested;
+#endif
 
 static void usb_bbb_cmd_received(uint32_t size)
 {
@@ -138,7 +146,10 @@ static void usb_bbb_cmd_received(uint32_t size)
     bbb_ctx.cb_cmd_received(cbw.cdb, cbw.cdb_len.cdb_len);
 }
 
-static mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)), uint32_t size, uint8_t ep __attribute__((unused)))
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)), uint32_t size, uint8_t ep __attribute__((unused)))
 {
     log_printf("[USB BBB] %s (state: %x)\n", __func__, bbb_ctx.state);
     switch (bbb_ctx.state) {
@@ -161,7 +172,10 @@ err:
     return MBED_ERROR_NONE;
 }
 
-static mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)), uint32_t size __attribute__((unused)), uint8_t ep __attribute__((unused)))
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)), uint32_t size __attribute__((unused)), uint8_t ep __attribute__((unused)))
 {
     log_printf("[USB BBB] %s (state: %x)\n", __func__, bbb_ctx.state);
     switch (bbb_ctx.state) {

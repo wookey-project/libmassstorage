@@ -31,7 +31,6 @@
 #include "autoconf.h"
 #include "libc/syscall.h"
 #include "libc/arpa/inet.h"
-#include "wookey_ipc.h"
 #include "libusbctrl.h"
 
 #include "usb_control_mass_storage.h"
@@ -423,7 +422,11 @@ static void scsi_forge_mode_sense_response(u_mode_parameter * response,
  * are executed through scsi_exec_automaton.
  */
 
+#ifndef __FRAMAC__
 extern volatile bool reset_requested;
+#else
+extern bool reset_requested;
+#endif
 
 
 /*

@@ -75,4 +75,32 @@ void    usb_bbb_recv(void *dst, uint32_t size);
 
 void    read_next_cmd(void);
 
+#ifdef __FRAMAC__
+mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)), uint32_t size, uint8_t ep __attribute__((unused)));
+
+mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)), uint32_t size __attribute__((unused)), uint8_t ep __attribute__((unused)));
+
+#define USB_BBB_CBW_SIG		0x43425355      /* "USBC" */
+
+/* Command Block Wrapper exported for FramaC driver ISR emulation */
+struct __packed scsi_cbw {
+    uint32_t sig;
+    uint32_t tag;
+    uint32_t transfer_len;
+    struct {
+        uint8_t reserved:7;
+        uint8_t direction:1;
+    } flags;
+    struct {
+        uint8_t lun:4;
+        uint8_t reserved:4;
+    } lun;
+    struct {
+        uint8_t cdb_len:5;
+        uint8_t reserved:3;
+    } cdb_len;
+    uint8_t cdb[16];            // FIXME We must handle CDB6 CDB10 CDB12 CDB16 ?
+};
+#endif
+
 #endif /* USB_BBB_H */

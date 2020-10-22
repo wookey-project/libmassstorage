@@ -1,0 +1,507 @@
+[eva] Splitting return states on:
+\return(sys_cfg_CFG_DEV_MAP) == 0 (auto)
+\return(sys_lock) == 0 (auto)
+\return(usbotghs_send_data) == 0 (auto)
+\return(usbotghs_get_context) == 0 (auto)
+\return(usbotghs_write_epx_fifo) == 0 (auto)
+\return(usbotghs_set_xmit_fifo) == 0 (auto)
+\return(scsi_storage_backend_read) == 13 (auto)
+\return(scsi_storage_backend_write) == 12 (auto)
+\return(scsi_storage_backend_capacity) == 0 (auto)
+\return(memcpy) == 0 (auto)
+\return(memset) == 0 (auto)
+\return(prepare_ctrl_ctx) == 0 (auto)
+\return(scsi_is_valid_transition) == 0 (auto)
+\return(usbotghs_initialize_core) == 0 (auto)
+\return(usbotghs_initialize_device) == 0 (auto)
+\return(usbotghs_initialize_host) == 0 (auto)
+\return(usbotghs_ulpi_reset) == 0 (auto)
+\return(handler_sanity_check) == 0 (auto)
+\return(enter_critical_section) == 0 (auto)
+\return(scsi_is_ready_for_data_receive) == 0 (auto)
+\return(scsi_is_ready_for_data_send) == 0 (auto)
+\return(handler_sanity_check_0) == 0 (auto)
+\return(handler_sanity_check_with_panic_0) == 0 (auto)
+\return(handler_sanity_check_1) == 0 (auto)
+\return(get_reg_value_3) == 0 (auto)
+\return(get_reg_value_4) == 0 (auto)
+[eva] Analyzing a complete application starting at main
+[eva] Computing initial state
+[eva] Initial state computed
+[eva] using specification for function usbctrl_declare
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:365:[eva] warning: no 'assigns \result \from ...' clause specified for function usbctrl_declare
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:319:[eva] warning: no \from part
+for clause 'assigns *ctxh, num_ctx, usbotghs_ctx, GHOST_num_ctx,
+                    ctx_list[\old(num_ctx)];'
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:360:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_context_t
+scsi.c:1757:[eva] Trace partitioning superposing up to 100 states
+scsi.c:1757:[eva] Trace partitioning superposing up to 200 states
+scsi.c:1757:[eva] Trace partitioning superposing up to 300 states
+scsi.c:1757:[eva] Trace partitioning superposing up to 400 states
+scsi.c:1757:[eva] Trace partitioning superposing up to 500 states
+scsi.c:1757:[eva] starting to merge loop iterations
+[eva] using specification for function usbctrl_declare_interface
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:490:[eva] warning: no 'assigns \result \from ...' clause specified for
+function usbctrl_declare_interface
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:436:[eva] warning: no \from part for clause 'assigns *iface, ctx_list[ctxh];'
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:474:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_interface_t
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:455:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_interface_t
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:456:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_context_t
+[eva] using specification for function usbctrl_start_device
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:524:[eva] warning: no 'assigns \result \from ...' clause specified for
+function usbctrl_start_device
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl.h:505:[eva] warning: no \from part
+for clause 'assigns *((uint32_t *)(0x40040000 .. 0x40044000)),
+                    ctx_list[ctxh], usbotghs_ctx;'
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/sync.h:63:[eva:alarm] warning: function set_bool_with_membarrier__fc_inline: postcondition got status unknown.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:522:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:522:[eva:alarm] warning: assertion 'rte,division_by_zero' got status unknown.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:522:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:540:[eva:alarm] warning: assertion got status unknown.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:448:[eva:alarm] warning: function usbotghs_set_recv_fifo: postcondition got status unknown.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:452:[eva:alarm] warning: function usbotghs_set_recv_fifo: postcondition got status unknown.
+[eva] using specification for function usb_backend_drv_activate_endpoint
+[eva] using specification for function sys_lock
+[eva] using specification for function printf_va_1
+[eva] using specification for function printf_va_30
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/string.h:198:[eva] cannot evaluate ACSL term, unsupported ACSL construct: logic function memcmp
+[eva] using specification for function ntohs
+[eva] using specification for function printf_va_3
+[eva] using specification for function usbotghs_send_data
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:481:[eva] warning: no 'assigns \result \from ...' clause specified for
+function usbotghs_send_data
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:448:[eva] warning: no \from part
+for clause 'assigns *((uint32_t *)(0x40040000 .. 0x40044000)), usbotghs_ctx,
+                    usbotghs_ctx.in_eps[ep_id];'
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/string.h:236:[eva] cannot evaluate ACSL term, unsupported ACSL construct: logic function memset
+[eva] using specification for function printf_va_2
+[eva] using specification for function printf_va_11
+[eva] using specification for function scsi_storage_backend_capacity
+scsi.c:904:[eva:alarm] warning: unsigned downcast.
+assert tmp_0 ≤ 255;
+(tmp_0 from
+scsi_storage_backend_capacity(& scsi_ctx.storage_size, & scsi_ctx.block_size))
+scsi.c:916:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:916:[eva:alarm] warning: unsigned overflow. assert 0 ≤ scsi_ctx.storage_size - 1;
+[eva] using specification for function htonl
+scsi.c:959:[eva:alarm] warning: unsigned downcast.
+assert tmp_0 ≤ 255;
+(tmp_0 from
+scsi_storage_backend_capacity(& scsi_ctx.storage_size, & scsi_ctx.block_size))
+scsi.c:976:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:976:[eva:alarm] warning: unsigned overflow. assert 0 ≤ scsi_ctx.storage_size - 1;
+scsi.c:1035:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+[eva] using specification for function printf_va_15
+scsi.c:1050:[eva:alarm] warning: assertion 'rte,mem_access' got status invalid (stopping propagation).
+scsi.c:619:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status invalid (stopping propagation).
+[eva] using specification for function usbctrl_get_context
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl_framac.h:227:[eva] warning: no 'assigns \result \from ...' clause specified for
+function usbctrl_get_context
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl_framac.h:203:[eva] warning: no \from part for clause 'assigns *ctx, GHOST_idx_ctx;'
+/home/phil/Travail/FIDO/u2f2//libs/usbctrl/api/libusbctrl_framac.h:222:[eva] warning: function usbctrl_get_context, behavior found: this postcondition evaluates to
+false in this context. If it is valid, either a precondition was not verified
+for this call, or some assigns/from clauses are incomplete (or incorrect).
+framac/entrypoint.c:175:[eva:alarm] warning: assertion got status unknown.
+framac/entrypoint.c:182:[eva:alarm] warning: assertion 'rte,pointer_value' got status unknown.
+framac/entrypoint.c:182:[eva:alarm] warning: assertion 'rte,mem_access' got status unknown.
+framac/entrypoint.c:182:[eva:alarm] warning: invalid pointer creation. assert \object_pointer(ctx);
+framac/entrypoint.c:209:[eva:alarm] warning: assertion 'rte,mem_access' got status unknown.
+framac/entrypoint.c:210:[eva:alarm] warning: assertion 'rte,mem_access' got status unknown.
+usb_bbb.c:163:[eva:alarm] warning: assertion 'rte,pointer_value' got status unknown.
+usb_bbb.c:163:[eva:alarm] warning: invalid pointer creation. assert \valid_function(bbb_ctx.cb_data_received);
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/sanhandlers.h:29:[eva:alarm] warning: pointer comparison. assert \pointer_comparable((void *)start, (void *)end);
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/sanhandlers.h:30:[eva:alarm] warning: assertion 'rte,mem_access' got status invalid (stopping propagation).
+usb_bbb.c:166:[eva:alarm] warning: assertion 'rte,pointer_value' got status unknown.
+usb_bbb.c:166:[eva:alarm] warning: assertion 'rte,function_pointer' got status unknown.
+usb_bbb.c:166:[eva:alarm] warning: invalid pointer creation. assert \valid_function(bbb_ctx.cb_data_received);
+scsi.c:321:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:321:[eva:alarm] warning: unsigned overflow. assert 0 ≤ scsi_ctx.size_to_process - size;
+scsi.c:699:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+scsi.c:707:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:707:[eva:alarm] warning: unsigned overflow.
+assert scsi_ctx.block_size * (uint32_t)rw_size ≤ 4294967295;
+scsi.c:709:[eva:alarm] warning: assertion 'rte,division_by_zero' got status unknown.
+[eva] using specification for function scsi_storage_backend_read
+scsi.c:733:[eva] Trace partitioning superposing up to 100 states
+scsi.c:733:[eva] Trace partitioning superposing up to 200 states
+scsi.c:733:[eva] Trace partitioning superposing up to 300 states
+scsi.c:733:[eva] Trace partitioning superposing up to 400 states
+scsi.c:733:[eva] Trace partitioning superposing up to 500 states
+scsi.c:733:[eva] starting to merge loop iterations
+scsi.c:733:[eva] Trace partitioning superposing up to 600 states
+scsi.c:733:[eva] Trace partitioning superposing up to 700 states
+scsi.c:733:[eva] Trace partitioning superposing up to 800 states
+scsi.c:733:[eva] Trace partitioning superposing up to 900 states
+scsi.c:733:[eva] Trace partitioning superposing up to 1000 states
+scsi.c:716:[eva] starting to merge loop iterations
+scsi.c:731:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:731:[eva:alarm] warning: unsigned overflow.
+assert
+rw_lba + (uint32_t)((uint32_t)scsi_ctx.global_buf_len / scsi_ctx.block_size)
+≤ 4294967295;
+[eva] using specification for function ntohl
+scsi.c:816:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:816:[eva:alarm] warning: unsigned overflow.
+assert scsi_ctx.block_size * (uint32_t)rw_size ≤ 4294967295;
+scsi.c:818:[eva:alarm] warning: assertion 'rte,division_by_zero' got status unknown.
+scsi.c:840:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:840:[eva:alarm] warning: unsigned overflow.
+assert
+rw_lba + (uint32_t)((uint32_t)scsi_ctx.global_buf_len / scsi_ctx.block_size)
+≤ 4294967295;
+scsi.c:619:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:619:[eva:alarm] warning: unsigned overflow. assert 0 ≤ scsi_ctx.storage_size - 1;
+scsi.c:622:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+scsi.c:627:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+[eva] using specification for function printf_va_6
+scsi.c:1379:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+scsi.c:1387:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:1387:[eva:alarm] warning: unsigned overflow.
+assert scsi_ctx.block_size * (uint32_t)rw_size ≤ 4294967295;
+scsi.c:1399:[eva:alarm] warning: assertion 'rte,division_by_zero' got status unknown.
+[eva] using specification for function scsi_storage_backend_write
+scsi.c:1401:[eva] Trace partitioning superposing up to 100 states
+scsi.c:1401:[eva] Trace partitioning superposing up to 200 states
+scsi.c:1401:[eva] Trace partitioning superposing up to 300 states
+scsi.c:1401:[eva] Trace partitioning superposing up to 400 states
+scsi.c:1401:[eva] Trace partitioning superposing up to 500 states
+scsi.c:1401:[eva] starting to merge loop iterations
+scsi.c:1411:[eva] starting to merge loop iterations
+scsi.c:1401:[eva] Trace partitioning superposing up to 600 states
+scsi.c:1401:[eva] Trace partitioning superposing up to 700 states
+scsi.c:1401:[eva] Trace partitioning superposing up to 800 states
+scsi.c:1401:[eva] Trace partitioning superposing up to 900 states
+scsi.c:1401:[eva] Trace partitioning superposing up to 1000 states
+scsi.c:1397:[eva] starting to merge loop iterations
+scsi.c:1410:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:1410:[eva:alarm] warning: unsigned overflow.
+assert
+rw_lba + (uint32_t)((uint32_t)scsi_ctx.global_buf_len / scsi_ctx.block_size)
+≤ 4294967295;
+[eva] using specification for function printf_va_36
+scsi.c:1423:[eva:alarm] warning: assertion 'rte,division_by_zero' got status unknown.
+scsi.c:1498:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:1498:[eva:alarm] warning: unsigned overflow.
+assert scsi_ctx.block_size * (uint32_t)rw_size ≤ 4294967295;
+scsi.c:1510:[eva:alarm] warning: assertion 'rte,division_by_zero' got status unknown.
+scsi.c:1521:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:1521:[eva:alarm] warning: unsigned overflow.
+assert
+rw_lba + (uint32_t)((uint32_t)scsi_ctx.global_buf_len / scsi_ctx.block_size)
+≤ 4294967295;
+scsi.c:1534:[eva:alarm] warning: assertion 'rte,division_by_zero' got status unknown.
+[eva] done for function main
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1259:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1259:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1260:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1260:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1261:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1261:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1262:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1262:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1263:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1263:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1264:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1264:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1265:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1265:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1267:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1267:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1271:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1271:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1271:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1275:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1275:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1275:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1286:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1286:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1286:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1289:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1292:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1292:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1292:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1293:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1293:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1293:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1295:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1295:[eva] assertion 'rte,shift' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1295:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1306:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1306:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1307:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1307:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1308:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1308:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1309:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1309:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1310:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1310:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1311:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1311:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1312:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1312:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1314:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1314:[eva] assertion 'rte,index_bound' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1319:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1319:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1319:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1330:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1330:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1330:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1334:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1334:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1334:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1338:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1338:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1338:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1340:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1342:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1342:[eva] assertion 'rte,shift' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1342:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs.c:1342:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:256:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:289:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:292:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:292:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:292:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:292:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:298:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:301:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:305:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:305:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:311:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:311:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:311:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:311:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:312:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:312:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:312:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:316:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:317:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:318:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:319:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:320:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:321:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:473:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:478:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:478:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:496:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:504:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:505:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:506:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:507:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:511:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:522:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:522:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:522:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:522:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:522:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:523:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:523:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:523:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:524:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:524:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:524:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:534:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:534:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:534:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:535:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:535:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:535:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:535:[eva] assertion 'rte,signed_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:142:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:142:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:142:[eva] assertion 'rte,shift' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:142:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:142:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:142:[eva] assertion 'rte,shift' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:199:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:199:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:215:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:215:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/regutils.h:230:[eva] assertion 'rte,mem_access' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/sanhandlers.h:33:[eva] assertion 'rte,pointer_value' got final status valid.
+/home/phil/Travail/FIDO/u2f2//libs/std/api/libc/sync.h:67:[eva] assertion 'rte,mem_access' got final status valid.
+framac/entrypoint.c:182:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:182:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:209:[eva] assertion 'rte,pointer_value' got final status valid.
+framac/entrypoint.c:209:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:209:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:210:[eva] assertion 'rte,pointer_value' got final status valid.
+framac/entrypoint.c:210:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:210:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:233:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+framac/entrypoint.c:233:[eva] assertion 'rte,signed_overflow' got final status valid.
+framac/entrypoint.c:234:[eva] assertion 'rte,index_bound' got final status valid.
+scsi.c:109:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:109:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi.c:109:[eva] assertion 'rte,shift' got final status valid.
+scsi.c:109:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:321:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:365:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:366:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:367:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:384:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:385:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:386:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:387:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:476:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:480:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:484:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:492:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:492:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:497:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:497:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:516:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:517:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:520:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:522:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:525:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:531:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:533:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:534:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:569:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:573:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:606:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:609:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:613:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:625:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:637:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:639:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:640:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:680:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:683:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:699:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:699:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:699:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi.c:700:[eva] assertion 'rte,signed_downcast' got final status valid.
+scsi.c:702:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:703:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:707:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:721:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:729:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:731:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:731:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:743:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:750:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:791:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:795:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:810:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:811:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:812:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:816:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:830:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:838:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:840:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:840:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:852:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:859:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:893:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:896:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:905:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:904:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:948:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:951:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:960:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:959:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:969:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:993:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:995:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:995:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1025:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1029:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1033:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1035:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1039:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1039:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1050:[eva] assertion 'rte,mem_access' got final status invalid.
+scsi.c:1104:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1107:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1158:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1162:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1204:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1208:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1247:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1250:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1279:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1283:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1313:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1316:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1359:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1363:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1379:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1379:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1379:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi.c:1380:[eva] assertion 'rte,signed_downcast' got final status valid.
+scsi.c:1381:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1382:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1387:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1398:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1410:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1410:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1420:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1474:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1478:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1491:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1492:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1493:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1498:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1509:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1521:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1521:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1531:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1757:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1758:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1758:[eva] assertion 'rte,mem_access' got final status valid.
+scsi_automaton.c:202:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi_automaton.c:202:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi_automaton.c:203:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:203:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:204:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:204:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:222:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi_automaton.c:222:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi_automaton.c:223:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:223:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_log.h:106:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi_log.h:111:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+usb_bbb.c:254:[eva] assertion 'rte,pointer_value' got final status valid.
+[eva] ====== VALUES COMPUTED ======
+[eva] ####### Value execution feedback #########
+Long running functions (does not include current running time):
+===============================================================
++ main: executed: 1x total: 13.725s
+    | test_fcn_driver_eva 1x 13.148s (95.8%) | 3 others: 0.572s (4.2%) | self: 0.006s (0.0%)|
++ scsi_exec_automaton: executed: 3x total: 13.382s
+    | scsi_cmd_read_data6 3x 7.059s (52.7%) | scsi_write_data6 3x 5.679s (42.4%) | 20 others: 0.612s (4.6%) | self: 0.033s (0.2%)|
++ test_fcn_driver_eva: executed: 1x total: 13.148s
+    | scsi_exec_automaton 2x 13.063s (99.4%) | 6 others: 0.068s (0.5%) | self: 0.017s (0.1%)|
++ scsi_cmd_read_data6: executed: 3x total: 7.059s
+    | scsi_send_data 1016x 2.706s (38.3%) | 7 others: 0.179s (2.5%) | self: 4.173s (59.1%)|
++ scsi_write_data6: executed: 3x total: 5.679s
+    | 8 others: 0.402s (7.1%) | self: 5.277s (92.9%)|
++ scsi_send_data: executed: 1024x total: 2.728s
+    | usb_bbb_send 1024x 2.382s (87.3%) | self: 0.346s (12.7%)|
++ usb_bbb_send: executed: 1060x total: 2.468s
+    | usbotghs_send_data 1060x 1.872s (75.9%) | self: 0.596s (24.1%)|
++ usbotghs_send_data: executed: 1131x total: 2.002s
+    | self: 2.002s (100.0%)|
++ test_fcn_massstorage: executed: 1x total: 0.320s
+    | scsi_exec_automaton 1x 0.320s (99.8%) | self: 0.001s (0.2%)|
++ prepare_ctrl_ctx: executed: 1x total: 0.251s
+    | scsi_init 1x 0.195s (77.6%) | scsi_initialize_automaton 1x 0.044s (17.4%) | 3 others: 0.011s (4.4%) | self: 0.002s (0.6%)|
+
+Execution time per callstack (includes current running time):
+=============================================================
++ main: executed: 1x total: 13.725s
+| + test_fcn_driver_eva: executed: 1x total: 13.148s
+| | + scsi_exec_automaton: executed: 2x total: 13.063s
+| | | + scsi_cmd_read_data6: executed: 2x total: 7.044s
+| | | | + scsi_send_data: executed: 1012x total: 2.696s
+| | | | | + usb_bbb_send: executed: 1012x total: 2.354s
+| | | | | | + usbotghs_send_data: executed: 1012x total: 1.787s
+| | | + scsi_write_data6: executed: 2x total: 5.658s
+| + test_fcn_massstorage: executed: 1x total: 0.320s
+| | + scsi_exec_automaton: executed: 1x total: 0.320s
+| + prepare_ctrl_ctx: executed: 1x total: 0.251s
+################
