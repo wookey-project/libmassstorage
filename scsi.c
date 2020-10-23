@@ -274,10 +274,12 @@ void scsi_get_data(void *buffer, uint32_t size)
     log_printf("%s: size: %d \n", __func__, size);
 #endif
     while (!scsi_is_ready_for_data_receive()) {
+        request_data_membarrier();
         continue;
     }
 
     set_u8_with_membarrier(&scsi_ctx.direction, SCSI_DIRECTION_RECV);
+
     set_u8_with_membarrier(&scsi_ctx.line_state, SCSI_TRANSMIT_LINE_BUSY);
     scsi_ctx.addr = 0;
     request_data_membarrier();
@@ -438,11 +440,11 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
 {
         if(reset_requested == true){
                 while(reset_requested == true){
-                    request_data_membarrier();
 #ifdef __FRAMAC__
                     /* simulating concurent trigger when using framaC, to avoid endless loops */
                     reset_request = false;
 #endif
+                    request_data_membarrier();
                     continue;
                 }
                 return;
@@ -733,6 +735,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         /* active wait for data to be sent */
         while (!scsi_is_ready_for_data_send()) {
+            request_data_membarrier();
             continue;
         }
     }
@@ -752,6 +755,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
         /* active wait for data to be sent */
         while (!scsi_is_ready_for_data_send()) {
+            request_data_membarrier();
             continue;
         }
     }
@@ -842,6 +846,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         /* active wait for data to be sent */
         while (!scsi_is_ready_for_data_send()) {
+            request_data_membarrier();
             continue;
         }
     }
@@ -861,6 +866,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
         /* active wait for data to be sent */
         while (!scsi_is_ready_for_data_send()) {
+            request_data_membarrier();
             continue;
         }
     }
@@ -1405,6 +1411,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         /* emulating asynchronous trigger */
         scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 #endif
+        request_data_membarrier();
 		continue;
 	}
         error = scsi_storage_backend_write(rw_lba, num_sectors);
@@ -1415,6 +1422,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         while (!scsi_is_ready_for_data_receive()) {
+            request_data_membarrier();
             continue;
         }
 
@@ -1433,6 +1441,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         /* emulating asynchronous trigger */
         scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 #endif
+        request_data_membarrier();
 		continue;
 	}
         error = scsi_storage_backend_write(rw_lba, num_sectors);
@@ -1442,6 +1451,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
             goto end;
         }
         while (!scsi_is_ready_for_data_receive()) {
+            request_data_membarrier();
             continue;
         }
     }
@@ -1524,6 +1534,7 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         /* emulating asynchronous trigger */
         scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 #endif
+        request_data_membarrier();
 		continue;
 	}
         error = scsi_storage_backend_write(rw_lba, num_sectors);
@@ -1534,6 +1545,7 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         while (!scsi_is_ready_for_data_receive()) {
+            request_data_membarrier();
             continue;
         }
 
@@ -1549,9 +1561,10 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         /* Wait until we have indeed received data from the USB lower layers */
         while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
 #ifdef __FRAMAC__
-        /* emulating asynchronous trigger */
-        scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
+            /* emulating asynchronous trigger */
+            scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 #endif
+            request_data_membarrier();
             continue;
         }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
@@ -1561,6 +1574,7 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
             goto end;
         }
         while (!scsi_is_ready_for_data_receive()) {
+            request_data_membarrier();
             continue;
         }
     }
@@ -1590,6 +1604,7 @@ void scsi_exec_automaton(void)
     cdb_t   local_cdb;
 
     if (scsi_ctx.queue_empty == true) {
+        request_data_membarrier();
         return;
     }
 
@@ -1705,12 +1720,12 @@ static void scsi_reset_context(void)
 {
     log_printf("[reset] clearing USB context\n");
     /* resetting the context in a known, empty, idle state */
-    scsi_ctx.direction = SCSI_DIRECTION_IDLE;
-    scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
-    scsi_ctx.size_to_process = 0;
+    set_u8_with_membarrier(&scsi_ctx.direction, SCSI_DIRECTION_IDLE);
+    set_u8_with_membarrier(&scsi_ctx.line_state, SCSI_TRANSMIT_LINE_READY);
+    set_u32_with_membarrier(&scsi_ctx.size_to_process, 0);
     scsi_ctx.addr = 0;
     scsi_ctx.error = 0;
-    scsi_ctx.queue_empty = true;
+    set_bool_with_membarrier(&scsi_ctx.queue_empty, true);
     scsi_ctx.block_size = 0;
     scsi_ctx.storage_size = 0;
     scsi_set_state(SCSI_IDLE);
@@ -1768,7 +1783,6 @@ mbed_error_t scsi_init(uint32_t usbdci_handler)
 
     /* in USB High speed mode, the USB device is mapped (and enabled) just now */
     /* declare interface to libusbctrl  */
-    //usb_driver_map();
 
 
     scsi_ctx.storage_size = 0;
