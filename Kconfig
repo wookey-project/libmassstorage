@@ -31,6 +31,15 @@ config USR_LIB_MASSSTORAGE_BBB_DEBUG
     * 1: command execution debug, list received and sent commands
 
 
+config USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS
+  int "Max number of SCSI luns supported"
+  default 1
+  range 1 15
+  ---help---
+  Max number of LUNs (Logical Units) supported by the SCSI device.
+  For usual USB mass storage devices, this number is 1, but can be set to more than
+  1 when handling more complex SCSI devices.
+
 endmenu
 
 

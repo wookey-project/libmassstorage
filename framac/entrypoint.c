@@ -5,6 +5,7 @@
 #include "libc/types.h"
 #include "libc/string.h"
 #include "usb_bbb.h"
+#include "scsi_cmd.h"
 #include "framac/entrypoint.h"
 
 
@@ -120,6 +121,39 @@ mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
     return MBED_ERROR_NONE;
 }
 
+/* TODO: The 2 following functions may fails in case of storage error (read error/write error).
+ * This should be tested (i.e. returning non-zero value in case of error) to check
+ * resiliency on bad storage cases */
+mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unused)),
+                                       uint32_t num_sectors __attribute__((unused)))
+{
+    return MBED_ERROR_NONE;
+}
+
+mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unused)),
+                                        uint32_t num_sectors __attribute__((unused)))
+{
+    return MBED_ERROR_NONE;
+}
+
+/*@
+  @ requires \valid(numblocks);
+  @ requires \valid(blocksize);
+  @ requires separation:
+  @    \separated(numblocks, blocksize);
+*/
+mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize)
+{
+    /* 4GB backend storage size */
+    *numblocks = 1024*1024;
+    *blocksize = 4096;
+    return MBED_ERROR_NONE;
+}
+
+/*********************************************************************
+ * Effective tests functions
+ */
+
 uint32_t usbxdci_handler = 0;
 
 mbed_error_t prepare_ctrl_ctx(void)
@@ -162,6 +196,21 @@ void test_fcn_massstorage_errorcases(){
  * the *slave* stack implementation).
  * Most of the coverage should be handled here.
  */
+
+static inline void launch_data_recv_and_exec(struct scsi_cbw *cbw)
+{
+    // garbage on cdb
+    for (uint8_t i = 1; i < 16; ++i) {
+        cbw->cdb[i] = Frama_C_interval_8(0,255);
+    }
+    // triggering reception
+    usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
+    // parsing content
+    scsi_exec_automaton();
+
+    return;
+}
+
 void test_fcn_driver_eva() {
 
 
@@ -224,19 +273,88 @@ void test_fcn_driver_eva() {
     // To do that, the cbw structure must be set accordingly with any garbage
     // (or real cbw content) for each test.
     // Fixing cbw header
-    cbw.sig == USB_BBB_CBW_SIG;
+    cbw.sig = USB_BBB_CBW_SIG;
     cbw.flags.reserved = 0;
     cbw.lun.reserved = 0;
     cbw.lun.lun = 0;
     cbw.cdb_len.reserved = 0;
-    // garbage on cdb
-    for (uint8_t i = 0; i < 16; ++i) {
-        cbw.cdb[i] = Frama_C_interval_8(0,255);
-    }
-    // triggering reception
-    usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
-    // parsing content
-    scsi_exec_automaton();
+
+    // a) inquiry
+    cbw.cdb_len.cdb_len = sizeof(cdb6_inquiry_t);
+    cbw.cdb[0] = SCSI_CMD_INQUIRY;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) read capacity16
+    cbw.cdb_len.cdb_len = sizeof(cdb16_read_capacity_16_t);
+    cbw.cdb[0] = SCSI_CMD_READ_CAPACITY_16;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) read capacity10
+    cbw.cdb_len.cdb_len = sizeof(cdb10_t);
+    cbw.cdb[0] = SCSI_CMD_READ_CAPACITY_10;
+    launch_data_recv_and_exec(&cbw);
+
+    // b) mode_select6
+    cbw.cdb_len.cdb_len = sizeof(cdb6_mode_select_t);
+    cbw.cdb[0] = SCSI_CMD_MODE_SELECT_6;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) mode_select10
+    cbw.cdb_len.cdb_len = sizeof(cdb10_mode_select_t);
+    cbw.cdb[0] = SCSI_CMD_MODE_SELECT_10;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) mode_sense6
+    cbw.cdb_len.cdb_len = sizeof(cdb6_mode_sense_t);
+    cbw.cdb[0] = SCSI_CMD_MODE_SENSE_6;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) mode_sense10
+    cbw.cdb_len.cdb_len = sizeof(cdb10_mode_sense_t);
+    cbw.cdb[0] = SCSI_CMD_MODE_SENSE_10;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) read format capacity12
+    cbw.cdb_len.cdb_len = sizeof(cdb12_read_format_capacities_t);
+    cbw.cdb[0] = SCSI_CMD_READ_FORMAT_CAPACITIES;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) read 10
+    cbw.cdb_len.cdb_len = sizeof(cdb10_t);
+    cbw.cdb[0] = SCSI_CMD_READ_10;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) read 6
+    cbw.cdb_len.cdb_len = sizeof(cdb6_t);
+    cbw.cdb[0] = SCSI_CMD_READ_6;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) write 10
+    cbw.cdb_len.cdb_len = sizeof(cdb10_t);
+    cbw.cdb[0] = SCSI_CMD_WRITE_10;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) write 6
+    cbw.cdb_len.cdb_len = sizeof(cdb6_t);
+    cbw.cdb[0] = SCSI_CMD_WRITE_6;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) report luns
+    cbw.cdb_len.cdb_len = sizeof(cdb12_report_luns_t);
+    cbw.cdb[0] = SCSI_CMD_REPORT_LUNS;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) request sense
+    cbw.cdb_len.cdb_len = sizeof(cdb10_request_sense_t);
+    cbw.cdb[0] = SCSI_CMD_REQUEST_SENSE;
+    launch_data_recv_and_exec(&cbw);
+
+    // c) prevent allow removal
+    cbw.cdb_len.cdb_len = sizeof(cdb10_prevent_allow_removal_t);
+    cbw.cdb[0] = SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL;
+    launch_data_recv_and_exec(&cbw);
+
+
 err:
     return;
 }

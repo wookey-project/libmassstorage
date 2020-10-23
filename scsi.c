@@ -128,11 +128,14 @@ static inline mbed_error_t enter_critical_section(void)
 {
     uint8_t ret;
 
+#ifndef __FRAMAC__
+    /* this is a syscall requiring the kernel to lock ISR for a short time */
     ret = sys_lock(LOCK_ENTER); /* Enter in critical section */
     if (ret != SYS_E_DONE) {
         log_printf("%s: Error: failed entering critical section!\n", __func__);
         return MBED_ERROR_BUSY;
     }
+#endif
     return MBED_ERROR_NONE;
 }
 
@@ -143,8 +146,10 @@ static inline mbed_error_t enter_critical_section(void)
  */
 static inline void leave_critical_section(void)
 {
+#ifndef __FRAMAC__
     sys_lock(LOCK_EXIT);        /* Exit from critical section, should not
                                    fail */
+#endif
     return;
 }
 

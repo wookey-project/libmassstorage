@@ -88,7 +88,7 @@ typedef struct __packed request_sense_parameter_data {
 typedef struct __attribute__((packed)) {
     uint32_t lun_list_length;
     uint32_t reserved;
-    uint64_t luns[];
+    uint64_t luns[CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS];
 } report_luns_data_t;
 
 /* READ FORMAT CAPACITIES response structure */
