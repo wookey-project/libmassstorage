@@ -28,6 +28,7 @@
 #include "libc/stdio.h"
 #include "libc/nostd.h"
 #include "libc/regutils.h"
+#include "scsi.h"
 #include "usb_bbb.h"
 #include "usb_control_mass_storage.h"
 #include "usbmass_desc.h"
@@ -44,15 +45,19 @@ static device_reset_trigger_t device_reset_trigger = NULL;
  */
 static void mass_storage_reset(void)
 {
-    aprintf("Bulk-Only Mass Storage Reset\n");
+    log_printf("Bulk-Only Mass Storage Reset\n");
     if (ms_reset_trigger != NULL) {
         /* Sanity check our callback before calling it */
+#ifndef __FRAMAC__
         if(handler_sanity_check((physaddr_t)ms_reset_trigger)){
             return;
         }
         else{
             ms_reset_trigger();
         }
+#else
+        ms_reset_trigger();
+#endif
     }
 }
 
@@ -61,15 +66,18 @@ static void mass_storage_reset(void)
  */
 static void full_device_reset(void)
 {
-    aprintf("Bulk-Only Mass Storage Reset\n");
+    log_printf("Bulk-Only Mass Storage Reset\n");
     if(device_reset_trigger != NULL){
+#ifndef __FRAMAC__
         /* Sanity check our callback before calling it */
         if(handler_sanity_check((physaddr_t)device_reset_trigger)){
             return;
-        }
-        else{
+        } else {
             device_reset_trigger();
         }
+#else
+        device_reset_trigger();
+#endif
     }
 }
 
@@ -86,21 +94,21 @@ mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute
     uint8_t max_lun = 0;
     mbed_error_t errcode = MBED_ERROR_NONE;
 
-    printf("[classRqst] handling MSS class rqst\n");
+    log_printf("[classRqst] handling MSS class rqst\n");
     switch (packet->bRequest) {
         case USB_RQST_GET_MAX_LUN:
-            printf("[classRqst] handling MSS max LUN\n");
+            log_printf("[classRqst] handling MSS max LUN\n");
             usb_backend_drv_send_data(&max_lun, sizeof(max_lun), EP0);
             usb_backend_drv_ack(0, USB_BACKEND_DRV_EP_DIR_OUT);
             break;
         case USB_RQST_MS_RESET:
-            printf("[classRqst] handling MSS MS RST\n");
+            log_printf("[classRqst] handling MSS MS RST\n");
             mass_storage_reset();       // FIXME We must use a callback function
             read_next_cmd();
             usb_backend_drv_send_zlp(0);
             break;
         default:
-            printf("Unhandled class request (%x), not for me\n", packet->bRequest);
+            log_printf("Unhandled class request (%x), not for me\n", packet->bRequest);
             errcode = MBED_ERROR_INVPARAM;
             goto err;
             break;
