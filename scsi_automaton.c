@@ -228,7 +228,7 @@ bool scsi_is_valid_transition(scsi_state_t current_state,
      * Didn't find any request associated to current state. This is not a
      * valid transition. We should stall the request.
      */
-    printf("%s: invalid transition from state %d, request %d\n", __func__,
+    log_printf("%s: invalid transition from state %d, request %d\n", __func__,
            current_state, request);
     scsi_set_state(SCSI_ERROR);
     return false;

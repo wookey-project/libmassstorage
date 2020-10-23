@@ -442,7 +442,7 @@ static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
                 while(reset_requested == true){
 #ifdef __FRAMAC__
                     /* simulating concurent trigger when using framaC, to avoid endless loops */
-                    reset_request = false;
+                    reset_requested = false;
 #endif
                     request_data_membarrier();
                     continue;
