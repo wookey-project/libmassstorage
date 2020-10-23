@@ -8,6 +8,7 @@
 #include "scsi_cmd.h"
 #include "scsi.h"
 #include "usbmass_desc.h"
+#include "usb_control_mass_storage.h"
 #include "framac/entrypoint.h"
 
 

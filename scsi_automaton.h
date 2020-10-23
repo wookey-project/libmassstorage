@@ -29,8 +29,6 @@
 
 typedef enum scsi_state {
     SCSI_IDLE = 0x00,
-    SCSI_READ,
-    SCSI_WRITE,
     SCSI_ERROR,
 } scsi_state_t;
 

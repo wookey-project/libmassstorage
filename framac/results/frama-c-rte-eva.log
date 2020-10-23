@@ -49,6 +49,7 @@ usb_bbb.c:261:[eva:invalid-assigns] Completely invalid destination for assigns c
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:474:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_interface_t
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:455:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_interface_t
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:456:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_context_t
+scsi_automaton.c:141:[eva:alarm] warning: function scsi_set_state, behavior setstate: postcondition got status unknown.
 [eva] using specification for function usbctrl_start_device
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:524:[eva] warning: no 'assigns \result \from ...' clause specified for
 function usbctrl_start_device
@@ -70,12 +71,12 @@ function usbctrl_get_context
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl_framac.h:219:[eva] warning: function usbctrl_get_context, behavior found: this postcondition evaluates to
 false in this context. If it is valid, either a precondition was not verified
 for this call, or some assigns/from clauses are incomplete (or incorrect).
-framac/entrypoint.c:290:[eva:alarm] warning: assertion got status unknown.
-framac/entrypoint.c:297:[eva:alarm] warning: assertion 'rte,pointer_value' got status unknown.
-framac/entrypoint.c:297:[eva:alarm] warning: assertion 'rte,mem_access' got status unknown.
-framac/entrypoint.c:297:[eva:alarm] warning: invalid pointer creation. assert \object_pointer(ctx);
-framac/entrypoint.c:324:[eva:alarm] warning: assertion 'rte,mem_access' got status unknown.
+framac/entrypoint.c:291:[eva:alarm] warning: assertion got status unknown.
+framac/entrypoint.c:298:[eva:alarm] warning: assertion 'rte,pointer_value' got status unknown.
+framac/entrypoint.c:298:[eva:alarm] warning: assertion 'rte,mem_access' got status unknown.
+framac/entrypoint.c:298:[eva:alarm] warning: invalid pointer creation. assert \object_pointer(ctx);
 framac/entrypoint.c:325:[eva:alarm] warning: assertion 'rte,mem_access' got status unknown.
+framac/entrypoint.c:326:[eva:alarm] warning: assertion 'rte,mem_access' got status unknown.
 [eva] using specification for function usbotghs_send_data
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs.c:481:[eva] warning: no 'assigns \result \from ...' clause specified for
 function usbotghs_send_data
@@ -85,8 +86,12 @@ for clause 'assigns *((uint32_t *)(0x40040000 .. 0x40044000)), usbotghs_ctx,
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs.c:999:[eva:alarm] warning: function usbotghs_endpoint_clear_nak, behavior dir_in_out_MBED_ERROR_INVSTATE: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs.c:1006:[eva:alarm] warning: function usbotghs_endpoint_clear_nak, behavior dir_in_out_configured_MBED_ERROR_NONE: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/string.h:198:[eva] cannot evaluate ACSL term, unsupported ACSL construct: logic function memcmp
+scsi_automaton.c:234:[eva:alarm] warning: function scsi_is_valid_transition, behavior trans_invalid: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi_automaton.c:187:[eva:alarm] warning: function scsi_next_state, behavior req_not_found: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 [eva] using specification for function ntohs
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/string.h:236:[eva] cannot evaluate ACSL term, unsupported ACSL construct: logic function memset
+scsi_automaton.c:247:[eva:alarm] warning: loop invariant got status unknown.
+scsi_automaton.c:201:[eva:alarm] warning: loop invariant got status unknown.
 [eva] using specification for function htonl
 scsi.c:633:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
 scsi.c:633:[eva:alarm] warning: unsigned overflow. assert 0 ≤ scsi_ctx.storage_size - 1;
@@ -270,25 +275,25 @@ function usbotghs_send_zlp
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sync.h:56:[eva] assertion 'rte,mem_access' got final status valid.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sync.h:67:[eva] assertion 'rte,mem_access' got final status valid.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sync.h:67:[eva] assertion 'rte,mem_access' got final status valid.
-framac/entrypoint.c:150:[eva] assertion 'rte,mem_access' got final status valid.
 framac/entrypoint.c:151:[eva] assertion 'rte,mem_access' got final status valid.
-framac/entrypoint.c:212:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-framac/entrypoint.c:212:[eva] assertion 'rte,signed_overflow' got final status valid.
-framac/entrypoint.c:213:[eva] assertion 'rte,mem_access' got final status valid.
-framac/entrypoint.c:213:[eva] assertion 'rte,index_bound' got final status valid.
-framac/entrypoint.c:297:[eva] assertion 'rte,index_bound' got final status valid.
-framac/entrypoint.c:297:[eva] assertion 'rte,index_bound' got final status valid.
-framac/entrypoint.c:324:[eva] assertion 'rte,pointer_value' got final status valid.
-framac/entrypoint.c:324:[eva] assertion 'rte,index_bound' got final status valid.
-framac/entrypoint.c:324:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:152:[eva] assertion 'rte,mem_access' got final status valid.
+framac/entrypoint.c:213:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+framac/entrypoint.c:213:[eva] assertion 'rte,signed_overflow' got final status valid.
+framac/entrypoint.c:214:[eva] assertion 'rte,mem_access' got final status valid.
+framac/entrypoint.c:214:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:298:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:298:[eva] assertion 'rte,index_bound' got final status valid.
 framac/entrypoint.c:325:[eva] assertion 'rte,pointer_value' got final status valid.
 framac/entrypoint.c:325:[eva] assertion 'rte,index_bound' got final status valid.
 framac/entrypoint.c:325:[eva] assertion 'rte,index_bound' got final status valid.
-framac/entrypoint.c:357:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-framac/entrypoint.c:357:[eva] assertion 'rte,signed_overflow' got final status valid.
+framac/entrypoint.c:326:[eva] assertion 'rte,pointer_value' got final status valid.
+framac/entrypoint.c:326:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:326:[eva] assertion 'rte,index_bound' got final status valid.
 framac/entrypoint.c:358:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-framac/entrypoint.c:358:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:358:[eva] assertion 'rte,signed_overflow' got final status valid.
+framac/entrypoint.c:359:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 framac/entrypoint.c:359:[eva] assertion 'rte,index_bound' got final status valid.
+framac/entrypoint.c:360:[eva] assertion 'rte,index_bound' got final status valid.
 scsi.c:109:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 scsi.c:109:[eva] assertion 'rte,signed_overflow' got final status valid.
 scsi.c:109:[eva] assertion 'rte,shift' got final status valid.
@@ -436,16 +441,16 @@ scsi.c:1738:[eva] assertion 'rte,pointer_value' got final status valid.
 scsi.c:1812:[eva] assertion 'rte,unsigned_overflow' got final status valid.
 scsi.c:1813:[eva] assertion 'rte,pointer_value' got final status valid.
 scsi.c:1813:[eva] assertion 'rte,mem_access' got final status valid.
-scsi_automaton.c:203:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi_automaton.c:203:[eva] assertion 'rte,signed_overflow' got final status valid.
-scsi_automaton.c:204:[eva] assertion 'rte,index_bound' got final status valid.
-scsi_automaton.c:204:[eva] assertion 'rte,index_bound' got final status valid.
-scsi_automaton.c:205:[eva] assertion 'rte,index_bound' got final status valid.
-scsi_automaton.c:205:[eva] assertion 'rte,index_bound' got final status valid.
-scsi_automaton.c:223:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi_automaton.c:223:[eva] assertion 'rte,signed_overflow' got final status valid.
-scsi_automaton.c:224:[eva] assertion 'rte,index_bound' got final status valid.
-scsi_automaton.c:224:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:205:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi_automaton.c:205:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi_automaton.c:206:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:206:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:207:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:207:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:251:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi_automaton.c:251:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi_automaton.c:252:[eva] assertion 'rte,index_bound' got final status valid.
+scsi_automaton.c:252:[eva] assertion 'rte,index_bound' got final status valid.
 scsi_log.h:106:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 scsi_log.h:111:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 usb_bbb.c:110:[eva] assertion 'rte,pointer_value' got final status valid.
@@ -466,26 +471,24 @@ usb_control_mass_storage.c:98:[eva] assertion 'rte,mem_access' got final status 
 [eva] ####### Value execution feedback #########
 Long running functions (does not include current running time):
 ===============================================================
-+ main: executed: 1x total: 52.205s
-    | test_fcn_driver_eva 1x 51.724s (99.1%) | 4 others: 0.480s (0.9%) | self: 0.002s (0.0%)|
-+ test_fcn_driver_eva: executed: 1x total: 51.724s
-    | launch_data_recv_and_exec 40x 51.632s (99.8%) | 6 others: 0.060s (0.1%) | self: 0.031s (0.1%)|
-+ launch_data_recv_and_exec: executed: 40x total: 51.632s
-    | scsi_exec_automaton 101x 50.840s (98.5%) | 3 others: 0.464s (0.9%) | self: 0.327s (0.6%)|
-+ scsi_exec_automaton: executed: 102x total: 50.842s
-    | scsi_write_data6 18x 47.667s (93.8%) | 22 others: 2.962s (5.8%) | self: 0.212s (0.4%)|
-+ scsi_write_data6: executed: 18x total: 47.667s
-    | 10 others: 1.335s (2.8%) | self: 46.333s (97.2%)|
-+ usbotghs_send_data: executed: 680x total: 1.123s
-    | self: 1.123s (100.0%)|
-+ usb_bbb_send_csw: executed: 299x total: 0.884s
-    | usbotghs_send_data 299x 0.502s (56.8%) | 1 others: 0.015s (1.6%) | self: 0.368s (41.6%)|
++ main: executed: 1x total: 56.487s
+    | test_fcn_driver_eva 1x 55.992s (99.1%) | 4 others: 0.492s (0.9%) | self: 0.003s (0.0%)|
++ test_fcn_driver_eva: executed: 1x total: 55.992s
+    | launch_data_recv_and_exec 40x 55.897s (99.8%) | 6 others: 0.062s (0.1%) | self: 0.033s (0.1%)|
++ launch_data_recv_and_exec: executed: 40x total: 55.897s
+    | scsi_exec_automaton 101x 55.079s (98.5%) | 3 others: 0.465s (0.8%) | self: 0.354s (0.6%)|
++ scsi_exec_automaton: executed: 102x total: 55.080s
+    | scsi_write_data6 18x 51.711s (93.9%) | 22 others: 3.158s (5.7%) | self: 0.212s (0.4%)|
++ scsi_write_data6: executed: 18x total: 51.711s
+    | 10 others: 1.369s (2.6%) | self: 50.342s (97.4%)|
++ usbotghs_send_data: executed: 680x total: 1.127s
+    | self: 1.127s (100.0%)|
 
 Execution time per callstack (includes current running time):
 =============================================================
-+ main: executed: 1x total: 52.205s
-| + test_fcn_driver_eva: executed: 1x total: 51.724s
-| | + launch_data_recv_and_exec: executed: 40x total: 51.632s
-| | | + scsi_exec_automaton: executed: 101x total: 50.840s
-| | | | + scsi_write_data6: executed: 18x total: 47.667s
++ main: executed: 1x total: 56.487s
+| + test_fcn_driver_eva: executed: 1x total: 55.992s
+| | + launch_data_recv_and_exec: executed: 40x total: 55.897s
+| | | + scsi_exec_automaton: executed: 101x total: 55.079s
+| | | | + scsi_write_data6: executed: 18x total: 51.711s
 ################
