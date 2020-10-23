@@ -37,6 +37,7 @@
 #include "usb_control_mass_storage.h"
 
 #include "scsi.h"
+#include "scsi_dbg.h"
 
 #include "scsi_cmd.h"
 #include "scsi_resp.h"
@@ -54,6 +55,7 @@
  */
 
 
+#ifndef __FRAMAC__
 typedef enum {
     SCSI_TRANSMIT_LINE_READY = 0,
     SCSI_TRANSMIT_LINE_BUSY,
@@ -65,7 +67,6 @@ typedef enum {
     SCSI_DIRECTION_SEND,
     SCSI_DIRECTION_RECV,
 } transmission_direction_t;
-
 
 typedef struct {
     uint8_t  direction;
@@ -93,6 +94,7 @@ scsi_context_t scsi_ctx = {
     .block_size = 0,
     .storage_size = 0,
 };
+#endif
 
 static
 #ifndef __FRAMAC__
@@ -339,7 +341,10 @@ static void scsi_data_available(uint32_t size)
 /*
  * Trigger on data sent by IP
  */
-static void scsi_data_sent(void)
+#ifndef __FRAMAC__
+static
+#endif
+void scsi_data_sent(void)
 {
 #if SCSI_DEBUG > 1
     /* this function is triggered, printing trigger events is done only
@@ -1749,6 +1754,16 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
     if (!buf) {
         goto init_error;
     }
+    scsi_ctx.direction = SCSI_DIRECTION_IDLE,
+    scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY,
+    scsi_ctx.size_to_process = 0,
+    scsi_ctx.addr = 0,
+    scsi_ctx.error = 0,
+    scsi_ctx.queue_empty = true,
+    scsi_ctx.global_buf = NULL,
+    scsi_ctx.global_buf_len = 0,
+    scsi_ctx.block_size = 0,
+    scsi_ctx.storage_size = 0,
 
     scsi_ctx.global_buf = buf;
     scsi_ctx.global_buf_len = len;
@@ -1783,6 +1798,7 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
 mbed_error_t scsi_init(uint32_t usbdci_handler)
 {
     uint32_t i;
+    mbed_error_t errcode = MBED_ERROR_NONE;
 
     log_printf("%s\n", __func__);
 
@@ -1792,7 +1808,6 @@ mbed_error_t scsi_init(uint32_t usbdci_handler)
 
     scsi_ctx.storage_size = 0;
     scsi_ctx.block_size = 4096; /* default */
-    scsi_set_state(SCSI_IDLE);
 
     for (i = 0; i < scsi_ctx.global_buf_len; i++) {
         scsi_ctx.global_buf[i] = '\0';
@@ -1800,13 +1815,17 @@ mbed_error_t scsi_init(uint32_t usbdci_handler)
 
     /* Register our callbacks on the lower layer, declaring iface to
      * usbctrl */
-    usb_bbb_configure(usbdci_handler);
+    errcode = usb_bbb_configure(usbdci_handler);
+    if (errcode != MBED_ERROR_NONE) {
+        goto err;
+    }
 
     scsi_set_state(SCSI_IDLE);
 
     /* initialize control plane, adding the reset event trigger for SCSI level */
 
-    return MBED_ERROR_NONE;
+err:
+    return errcode;
 }
 
 void scsi_reinit(void)

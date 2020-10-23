@@ -24,14 +24,42 @@
 #ifndef SCSI_H_
 #define SCSI_H_
 
-/* only for SCSI level (i.e. this header must not be included by usb_bbb files) */
+#ifdef __FRAMAC__
+/* here we need to access scsi_ctx in ACSL content of entrypoint.c to assert its
+ * state at various point. To do that, in FRAMAC mode only, we move the global and
+ * its definition from the scsi.c to the scsi.h file. In non-framaC case, this global
+ * is keeped in scsi.c */
+typedef enum {
+    SCSI_TRANSMIT_LINE_READY = 0,
+    SCSI_TRANSMIT_LINE_BUSY,
+    SCSI_TRANSMIT_LINE_ERROR,
+} transmition_line_state_t;
 
-#define SCSI_DEBUG CONFIG_USR_LIB_MASSSTORAGE_SCSI_DEBUG
-#if SCSI_DEBUG
-# define log_printf(...) printf(__VA_ARGS__)
-#else
-# define log_printf(...)
+typedef enum {
+    SCSI_DIRECTION_IDLE = 0,
+    SCSI_DIRECTION_SEND,
+    SCSI_DIRECTION_RECV,
+} transmission_direction_t;
+
+
+
+typedef struct {
+    uint8_t  direction;
+    uint8_t  line_state;
+    uint32_t size_to_process;
+    uint32_t addr;
+    uint32_t error;
+    bool     queue_empty;
+    uint8_t *global_buf;
+    uint16_t global_buf_len;
+    uint32_t block_size;
+    uint32_t storage_size;
+} scsi_context_t;
+
+
+scsi_context_t scsi_ctx;
+
+void scsi_data_sent(void);
 #endif
-
 
 #endif/*!SCSI_H_*/

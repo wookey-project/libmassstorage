@@ -28,7 +28,7 @@
 #include "libc/stdio.h"
 #include "libc/nostd.h"
 #include "libc/regutils.h"
-#include "scsi.h"
+#include "scsi_dbg.h"
 #include "usb_bbb.h"
 #include "usb_control_mass_storage.h"
 #include "usbmass_desc.h"

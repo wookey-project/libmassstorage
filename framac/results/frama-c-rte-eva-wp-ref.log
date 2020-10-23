@@ -1,120 +1,149 @@
 usb_control_mass_storage.c:79:[wp] warning: Missing 'calls' for default behavior
 usb_control_mass_storage.c:59:[wp] warning: Missing 'calls' for default behavior
-usb_bbb.c:149:[wp] warning: Missing 'calls' for default behavior
-usb_bbb.c:171:[wp] warning: Missing 'calls' for default behavior
-usb_bbb.c:196:[wp] warning: Missing 'calls' for default behavior
+usb_bbb.c:143:[wp] warning: Missing 'calls' for default behavior
+usb_bbb.c:165:[wp] warning: Missing 'calls' for default behavior
+usb_bbb.c:190:[wp] warning: Missing 'calls' for default behavior
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:66:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: uint32*)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:74:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: uint16*)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:65:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:682:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:718:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs_fifos.c:701:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1797:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:281:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi_automaton.c:172:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi_automaton.c:202:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi_automaton.c:222:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-framac/entrypoint.c:203:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1812:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:283:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+framac/entrypoint.c:357:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi_automaton.c:173:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi_automaton.c:203:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi_automaton.c:223:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+framac/entrypoint.c:212:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:29:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:45:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:447:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:459:[wp] warning: Cast with incompatible pointers types (source: __anonstruct_cdb_t_97*)
+scsi.c:452:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:464:[wp] warning: Cast with incompatible pointers types (source: __anonstruct_cdb_t_97*)
    (target: sint8*)
-scsi.c:459:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
-scsi.c:742:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:738:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
-scsi.c:762:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:760:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
-scsi.c:725:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:853:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:849:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
-scsi.c:873:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:871:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
-scsi.c:836:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1066:[wp] warning: Cast with incompatible pointers types
-   (source: __anonstruct_report_luns_data_t_100*) (target: uint8*)
-scsi.c:1429:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1414:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1411:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
-scsi.c:1458:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1444:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1439:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
-scsi.c:1410:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1552:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1537:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1534:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
-scsi.c:1581:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1567:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:1562:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
-scsi.c:1533:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:464:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:652:[wp] warning: Cast with incompatible pointers types
+   (source: __anonstruct_capacity_list_t_108*) (target: uint8*)
+scsi.c:657:[wp] warning: Cast with incompatible pointers types
+   (source: __anonstruct_capacity_list_t_108*) (target: uint8*)
+scsi.c:747:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:743:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:767:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:765:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:730:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:858:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:854:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:878:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:876:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:841:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1071:[wp] warning: Cast with incompatible pointers types
+   (source: __anonstruct_report_luns_data_t_103*) (target: uint8*)
+scsi.c:1434:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1419:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1416:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:1463:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1449:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1444:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:1415:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1557:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1542:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1539:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:1586:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1572:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1567:[wp] warning: Cast with incompatible pointers types (source: uint8*) (target: sint8*)
+scsi.c:1538:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:29:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:45:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:29:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:45:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs.c:82:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-[wp] 1192 goals scheduled
+[wp] 1171 goals scheduled
 [wp] [Failed] Goal typed_ref_lemma_u16_and_is_u16
 Z3 4.4.1: Timeout (15s) (cached)
 CVC4 1.6: Unknown (cached)
 Alt-Ergo 2.3.2: Timeout (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_read_data10_assert_rte_unsigned_overflow (Stronger)
-Z3 4.4.1: Timeout (Qed:28ms) (15s)
-CVC4 1.6: Unknown (Qed:28ms)
-Alt-Ergo 2.3.2: Timeout (Qed:28ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_assert_rte_unsigned_downcast
-Z3 4.4.1: Timeout (Qed:10ms) (15s)
-CVC4 1.6: Unknown (Qed:10ms)
-Alt-Ergo 2.3.2: Timeout (Qed:10ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assert_rte_unsigned_overflow (Stronger)
-Z3 4.4.1: Timeout (Qed:54ms) (15s)
-CVC4 1.6: Unknown (Qed:54ms)
-Alt-Ergo 2.3.2: Timeout (Qed:54ms) (15s)
-[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert
-Z3 4.4.1: Timeout (Qed:24ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:24ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:24ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_Eva_pointer_value
-Z3 4.4.1: Timeout (Qed:13ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:13ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:13ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_rte_mem_access
-Z3 4.4.1: Timeout (Qed:23ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:23ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:23ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_rte_pointer_value
-Z3 4.4.1: Timeout (Qed:16ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:27ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:27ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:27ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_data6_assert_rte_unsigned_downcast
+Z3 4.4.1: Timeout (Qed:7ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:7ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:7ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_assert_rte_unsigned
+Z3 4.4.1: Timeout (Qed:11ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:11ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:11ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_assert_rte_unsigned_2
+Z3 4.4.1: Unknown (Qed:16ms) (cached)
 CVC4 1.6: Unknown (Qed:16ms) (cached)
 Alt-Ergo 2.3.2: Timeout (Qed:16ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_assert_rte_unsigned_3
+Z3 4.4.1: Unknown (Qed:19ms) (cached)
+CVC4 1.6: Unknown (Qed:19ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:19ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_assert_rte_unsigned_downcast
+Z3 4.4.1: Timeout (Qed:9ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:9ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:9ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_write_data10_assert_rte_unsigned_overflow (Stronger)
+Z3 4.4.1: Timeout (Qed:22ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:22ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:22ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_write_data6_assert_rte_unsigned_downcast
+Z3 4.4.1: Timeout (Qed:6ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:6ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:6ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_write_data6_assert_rte_unsigned_overflow (Stronger)
+Z3 4.4.1: Timeout (Qed:30ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:30ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:30ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert
+Z3 4.4.1: Timeout (Qed:52ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:52ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:52ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_Eva_pointer_value
+Z3 4.4.1: Timeout (Qed:54ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:54ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:54ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_rte_mem_access
+Z3 4.4.1: Timeout (Qed:60ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:60ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:60ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_rte_pointer_value
+Z3 4.4.1: Timeout (Qed:63ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:63ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:63ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_rte_mem_access_2
-Z3 4.4.1: Timeout (Qed:45ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:45ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:45ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:127ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:127ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:127ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_usbotghs_set_recv_fifo_ensures
-Z3 4.4.1: Timeout (Qed:891ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:891ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:891ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:884ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:884ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:884ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_usbotghs_set_recv_fifo_assert
-Z3 4.4.1: Timeout (Qed:224ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:224ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:224ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:197ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:197ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:197ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_usbotghs_set_xmit_fifo_fifo_not_null_ensures
-Z3 4.4.1: Timeout (Qed:35ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:35ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:35ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:32ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:32ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:32ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_usbotghs_write_epx_fifo_ensures_2
-Z3 4.4.1: Timeout (Qed:111ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:111ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:111ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:93ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:93ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:93ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_usbotghs_write_epx_fifo_ensures_3
 Z3 4.4.1: Timeout (Qed:90ms) (15s) (cached)
 CVC4 1.6: Unknown (Qed:90ms) (cached)
 Alt-Ergo 2.3.2: Timeout (Qed:90ms) (15s) (cached)
-[wp] [Cache] found:828, updated:16
-[wp] Proved goals: 1178 / 1192
-Qed:             854  (0.05ms-70ms-7.9s)
-Alt-Ergo 2.3.2:  319  (12ms-753ms-2s) (851) (interrupted: 14) (cached: 330)
-CVC4 1.6:        265  (50ms-127ms-2s) (unknown: 15) (cached: 274)
-Z3 4.4.1:        217  (20ms-1s-2s) (interrupted: 14) (cached: 224)
+[wp] [Cache] found:876, updated:1
+[wp] Proved goals: 1151 / 1171
+Qed:             826  (0.05ms-71ms-7.5s)
+Alt-Ergo 2.3.2:  322  (12ms-754ms-2s) (851) (interrupted: 20) (cached: 342)
+CVC4 1.6:        272  (50ms-125ms-2s) (unknown: 21) (cached: 293)
+Z3 4.4.1:        222  (20ms-2s) (interrupted: 18) (unknown: 2) (cached: 241)
 [wp] warning: Memory model hypotheses for function 'usbotghs_configure':
 /*@
    behavior typed_ref:
@@ -238,6 +267,10 @@ __inline static void set_bool_with_membarrier__fc_inline(bool *target,
    requires \separated(\union(&reset_requested,&scsi_ctx),cdb+(..));
    */
 static void scsi_parse_cdb(uint8_t *cdb, uint8_t cdb_len);
+[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_format_capacities':
+/*@ behavior typed_ref: requires \separated(&scsi_ctx,current_cdb+(..)); */
+static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
+                                            cdb_t *current_cdb);
 [wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data6':
 /*@ behavior typed_ref: requires \separated(&scsi_ctx,current_cdb+(..)); */
 static void scsi_cmd_read_data6(scsi_state_t current_state,

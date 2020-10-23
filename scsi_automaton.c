@@ -25,6 +25,7 @@
 #include "libc/stdio.h"
 #include "libc/nostd.h"
 #include "libc/string.h"
+#include "scsi_dbg.h"
 
 
 /****************************************************************

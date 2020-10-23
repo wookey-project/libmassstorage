@@ -112,12 +112,6 @@ void read_next_cmd(void)
     usb_backend_drv_activate_endpoint(bbb_ctx.iface.eps[0].ep_num, USB_BACKEND_DRV_EP_DIR_OUT);
 }
 
-#ifndef __FRAMAC__
-extern volatile bool reset_requested;
-#else
-extern bool reset_requested;
-#endif
-
 static void usb_bbb_cmd_received(uint32_t size)
 {
     log_printf("[USB BBB] %s: %dB\n", __func__, size);
@@ -226,9 +220,10 @@ err:
     return;
 }
 
-void usb_bbb_configure(uint32_t usbdci_handler)
+mbed_error_t usb_bbb_configure(uint32_t usbdci_handler)
 {
     log_printf("[USB BBB] %s\n", __func__);
+    mbed_error_t errcode = MBED_ERROR_NONE;
 
     /* these are ioep_handlers, pushed to libxDCI */
 #ifndef __FRAMAC__
@@ -263,12 +258,12 @@ void usb_bbb_configure(uint32_t usbdci_handler)
     bbb_ctx.iface.eps[1].ep_num      = 2; /* this may be updated by libctrl */
     bbb_ctx.iface.eps[1].handler     = usb_bbb_data_sent;
 
-    usbctrl_declare_interface(usbdci_handler, (usbctrl_interface_t*)&(bbb_ctx.iface));
+    errcode = usbctrl_declare_interface(usbdci_handler, (usbctrl_interface_t*)&(bbb_ctx.iface));
     /* the following should not be requested (init phase, no async events) but
      * keeped for protection */
     request_data_membarrier();
 
-    return;
+    return errcode;
 }
 
 void usb_bbb_reconfigure(void)
