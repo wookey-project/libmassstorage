@@ -449,19 +449,15 @@ extern bool reset_requested;
  *@ assigns reset_requested, scsi_ctx.queue_empty, queued_cdb ;*/
 static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
 {
-    if (reset_requested == true){
-        /*@
-          @ loop invariant reset_request;
-          */
-        while (reset_requested == true) {
+    if (reset_requested == true) {
+        /* a cdb is received while the main thread as not yet cleared the reset trigger */
 #ifdef __FRAMAC__
-            /* simulating concurent trigger when using framaC, to avoid endless loops */
-            reset_requested = false;
+        /* simulating concurent trigger when using framaC. Not done in entrypoint.  */
+        reset_requested = false;
 #endif
-            set_bool_with_membarrier(&scsi_ctx.queue_empty, true);
-            request_data_membarrier();
-            continue;
-        }
+        /* waiting for main thread to clear reset trigger */
+        set_bool_with_membarrier(&scsi_ctx.queue_empty, true);
+        request_data_membarrier();
         goto err;
     }
     uint32_t len = sizeof(cdb_t);
