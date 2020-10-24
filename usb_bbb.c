@@ -27,6 +27,7 @@
 #include "libusbotghs.h"
 #include "libusbctrl.h"
 #include "usb_bbb.h"
+#include "scsi.h" /* framac content */
 #include "libc/syscall.h"
 #include "libc/sanhandlers.h"
 #include "libc/sync.h"
@@ -104,6 +105,18 @@ static
 #endif
 struct scsi_cbw cbw;
 
+#ifdef __FRAMAC__
+/* required for ACSL */
+extern bool reset_requested;
+#endif
+
+
+
+/*@
+  @ requires \separated(((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&bbb_ctx,&usbotghs_ctx);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns bbb_ctx.state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx;
+  */
 void read_next_cmd(void)
 {
     log_printf("[USB BBB] %s\n", __func__);
@@ -112,17 +125,34 @@ void read_next_cmd(void)
     usb_backend_drv_activate_endpoint(bbb_ctx.iface.eps[0].ep_num, USB_BACKEND_DRV_EP_DIR_OUT);
 }
 
-static void usb_bbb_cmd_received(uint32_t size)
+/*@
+  @ requires \separated(&cbw, &bbb_ctx);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+
+  @behavior invinput:
+  @   assumes (size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun != 0);
+  @   assigns \nothing;
+  @   ensures \result == MBED_ERROR_INVPARAM;
+
+  @behavior ok:
+  @   assumes !(size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun != 0);
+  @   assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx, queued_cdb, reset_requested;
+  @   ensures \result == MBED_ERROR_NONE;
+  */
+static mbed_error_t usb_bbb_cmd_received(uint32_t size)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     log_printf("[USB BBB] %s: %dB\n", __func__, size);
 
     if (size != sizeof(struct scsi_cbw)) {
 	    log_printf("[USB BBB] %s: CBW not valid, size %d, should be %d\n", __func__ , size, sizeof(struct scsi_cbw));
-            return;
+        errcode = MBED_ERROR_INVPARAM;
+        goto err;
     }
     if (cbw.sig != USB_BBB_CBW_SIG) {
 	    log_printf("[USB BBB] %s: CBW not valid: signature is %x, should be %x\n", __func__ , cbw.sig, USB_BBB_CBW_SIG);
-            return;
+        errcode = MBED_ERROR_INVPARAM;
+        goto err;
     }
 
     if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved || cbw.lun.lun) {
@@ -131,16 +161,21 @@ static void usb_bbb_cmd_received(uint32_t size)
 	     * with InferfaceSubClass
              */
         log_printf("[USB BBB] %s: CBW not meaningful\n", __func__);
-        return;
+        errcode = MBED_ERROR_INVPARAM;
+        goto err;
     }
     set_u32_with_membarrier(&bbb_ctx.tag, cbw.tag);
     set_u8_with_membarrier(&bbb_ctx.state, USB_BBB_STATE_CMD);
 #ifndef __FRAMAC__
     if(handler_sanity_check_with_panic((physaddr_t)bbb_ctx.cb_cmd_received)){
-        return;
+        goto err;
     }
 #endif
+    /*@ assert bbb_ctx.cb_cmd_received \in {scsi_parse_cdb} ;*/
+    /*@ calls scsi_parse_cdb ; */
     bbb_ctx.cb_cmd_received(cbw.cdb, cbw.cdb_len.cdb_len);
+err:
+    return errcode;
 }
 
 #ifndef __FRAMAC__
@@ -148,10 +183,12 @@ static
 #endif
 mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)), uint32_t size, uint8_t ep __attribute__((unused)))
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
+
     log_printf("[USB BBB] %s (state: %x)\n", __func__, bbb_ctx.state);
     switch (bbb_ctx.state) {
         case USB_BBB_STATE_READY:
-            usb_bbb_cmd_received(size);
+            errcode = usb_bbb_cmd_received(size);
             break;
         case USB_BBB_STATE_STATUS:
             bbb_ctx.state = USB_BBB_STATE_READY;
@@ -168,7 +205,7 @@ mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)), uint
             log_printf("[USB BBB] %s: ERROR usb_bbb_data_received ... \n", __func__);
     }
 err:
-    return MBED_ERROR_NONE;
+    return errcode;
 }
 
 #ifndef __FRAMAC__

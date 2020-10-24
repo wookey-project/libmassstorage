@@ -165,8 +165,21 @@ FRAMAC_GEN_FLAGS:=\
 	        -warn-invalid-pointer \
 			-kernel-msg-key pp \
 			-cpp-extra-args="-nostdinc -I framac/include  -I $(LIBUSB_API_DIR)  -I $(LIBSTD_API_DIR) -I $(USBOTGHS_DIR) -I $(USBOTGHS_DIR)/api -I $(USBOTGHS_DEVHEADER_PATH) -I $(EWOK_API_DIR)"  \
-		    -rte \
-		    -instantiate
+		    -rte
+
+FRAMAC_INS_FLAGS:=\
+	        -warn-left-shift-negative \
+	        -warn-right-shift-negative \
+	        -warn-signed-downcast \
+	        -warn-signed-overflow \
+	        -warn-unsigned-downcast \
+	        -warn-unsigned-overflow \
+	        -warn-invalid-pointer \
+			-kernel-msg-key pp \
+			-cpp-extra-args="-I framac/include  -I $(LIBUSB_API_DIR)  -I $(LIBSTD_API_DIR) -I $(USBOTGHS_DIR) -I $(USBOTGHS_DIR)/api -I $(USBOTGHS_DEVHEADER_PATH) -I $(EWOK_API_DIR)"  \
+			-instantiate \
+			-print \
+		    -rte
 
 FRAMAC_EVA_FLAGS:=\
 		    -eva \
@@ -221,9 +234,8 @@ frama-c:
    			-time $(TIMESTAMP)
 
 frama-c-instantiate:
-	frama-c framac/entrypoint.c -c11 -machdep x86_32 \
-			$(FRAMAC_GEN_FLAGS) \
-			-instantiate
+	frama-c  scsi.c $(FRAMAC_INS_FLAGS) -machdep x86_32 \
+			-save framac/results/frama-c-instanciate.session
 
 frama-c-gui:
 	frama-c-gui -load $(SESSION)

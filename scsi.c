@@ -445,24 +445,37 @@ extern bool reset_requested;
  * this function is executed in a handler context when a command comes from USB.
  */
 
-/*@ requires cdb_len <= sizeof(cdb_t); */
+/*@ requires cdb_len <= sizeof(cdb_t);
+ *@ assigns reset_requested, scsi_ctx.queue_empty, queued_cdb ;*/
 static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
 {
-        if(reset_requested == true){
-                while(reset_requested == true){
+    if (reset_requested == true){
+        /*@
+          @ loop invariant reset_request;
+          */
+        while (reset_requested == true) {
 #ifdef __FRAMAC__
-                    /* simulating concurent trigger when using framaC, to avoid endless loops */
-                    reset_requested = false;
+            /* simulating concurent trigger when using framaC, to avoid endless loops */
+            reset_requested = false;
 #endif
-                    request_data_membarrier();
-                    continue;
-                }
-                return;
+            set_bool_with_membarrier(&scsi_ctx.queue_empty, true);
+            request_data_membarrier();
+            continue;
         }
+        goto err;
+    }
+    uint32_t len = sizeof(cdb_t);
+    if ((uint32_t)cdb_len > len) {
+        goto err;
+    }
+    /*@ assert (unsigned int)cdb_len ≤ len; */
+    /*@ assert cdb_len ≤ sizeof(queued_cdb); */
+
     /* Only up to 16 bytes commands are supported: bigger commands are truncated,
      * See cdb_t definition in scsi_cmd.h */
     memcpy((void *) &queued_cdb, (void *) cdb, cdb_len);
     set_bool_with_membarrier(&scsi_ctx.queue_empty, false);
+err:
     return;
 }
 

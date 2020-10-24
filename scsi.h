@@ -25,6 +25,9 @@
 #define SCSI_H_
 
 #ifdef __FRAMAC__
+
+#include "scsi_cmd.h"
+
 /* here we need to access scsi_ctx in ACSL content of entrypoint.c to assert its
  * state at various point. To do that, in FRAMAC mode only, we move the global and
  * its definition from the scsi.c to the scsi.h file. In non-framaC case, this global
@@ -59,7 +62,11 @@ typedef struct {
 
 scsi_context_t scsi_ctx;
 
+static cdb_t queued_cdb = { 0 };
+
 void scsi_data_sent(void);
+
+void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len);
 #endif
 
 #endif/*!SCSI_H_*/
