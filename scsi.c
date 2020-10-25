@@ -94,13 +94,9 @@ scsi_context_t scsi_ctx = {
     .block_size = 0,
     .storage_size = 0,
 };
-#endif
 
-static
-#ifndef __FRAMAC__
-volatile
+static volatile cdb_t queued_cdb = { 0 };
 #endif
-cdb_t queued_cdb = { 0 };
 
 static void scsi_error(scsi_sense_key_t sensekey, uint8_t asc, uint8_t ascq)
 {
@@ -446,8 +442,12 @@ extern bool reset_requested;
  */
 
 /*@ requires cdb_len <= sizeof(cdb_t);
- *@ assigns reset_requested, scsi_ctx.queue_empty, queued_cdb ;*/
-static void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
+  @ assigns reset_requested, scsi_ctx.queue_empty, queued_cdb ;
+ */
+#ifndef __FRAMAC__
+static
+#endif
+void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
 {
     if (reset_requested == true) {
         /* a cdb is received while the main thread as not yet cleared the reset trigger */

@@ -102,6 +102,10 @@ uint32_t Frama_C_interval_32(uint32_t min, uint32_t max)
  * Callbacks implementations that are required by libmassstorage API
  */
 
+
+/*@
+  @ assigns \nothing;
+  */
 void usbctrl_configuration_set(void)
 {
 }
@@ -112,12 +116,18 @@ void scsi_reset_device(void)
     scsi_reinit();
 }
 
+/*@
+  @ assigns \nothing;
+  */
 mbed_error_t storage_read(uint32_t sector_address __attribute__((unused)),
                           uint32_t num_sectors    __attribute__((unused)))
 {
     return MBED_ERROR_NONE;
 }
 
+/*@
+  @ assigns \nothing;
+  */
 mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
                            uint32_t num_sectors    __attribute__((unused)))
 {
@@ -127,12 +137,19 @@ mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
 /* TODO: The 2 following functions may fails in case of storage error (read error/write error).
  * This should be tested (i.e. returning non-zero value in case of error) to check
  * resiliency on bad storage cases */
+
+/*@
+  @ assigns \nothing;
+  */
 mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unused)),
                                        uint32_t num_sectors __attribute__((unused)))
 {
     return MBED_ERROR_NONE;
 }
 
+/*@
+  @ assigns \nothing;
+  */
 mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unused)),
                                         uint32_t num_sectors __attribute__((unused)))
 {
