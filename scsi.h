@@ -66,6 +66,8 @@ static cdb_t queued_cdb = { 0 };
 
 void scsi_data_sent(void);
 
+void scsi_data_available(uint32_t size);
+
 void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len);
 #endif
 

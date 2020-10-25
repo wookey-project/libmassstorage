@@ -33,6 +33,11 @@
 #include "libc/sync.h"
 #include "usb_control_mass_storage.h"
 
+#ifdef __FRAMAC__
+# include "usb_bbb_framac.h"
+# include "scsi_automaton.h"
+#endif
+
 
 #define BBB_DEBUG CONFIG_USR_LIB_MASSSTORAGE_BBB_DEBUG
 
@@ -44,6 +49,7 @@
 
 
 
+#ifndef __FRAMAC__
 typedef enum bbb_state {
     USB_BBB_STATE_READY,
     USB_BBB_STATE_CMD,
@@ -78,7 +84,6 @@ static usb_bbb_context_t bbb_ctx = {
 };
 
 
-#ifndef __FRAMAC__
 #define USB_BBB_CBW_SIG		0x43425355      /* "USBC" */
 
 /* Command Block Wrapper */
@@ -102,8 +107,9 @@ struct __packed scsi_cbw {
 };
 
 static
-#endif
+
 struct scsi_cbw cbw;
+#endif
 
 #ifdef __FRAMAC__
 /* required for ACSL */
@@ -126,7 +132,7 @@ void read_next_cmd(void)
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
 
   @behavior invinput:
@@ -178,6 +184,11 @@ err:
     return errcode;
 }
 
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx, queued_cdb, reset_requested;
+  */
 #ifndef __FRAMAC__
 static
 #endif
@@ -199,6 +210,8 @@ mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)), uint
                 goto err;
             }
 #endif
+            /*@ assert bbb_ctx.cb_data_received \in {scsi_data_available} ;*/
+            /*@ calls scsi_data_available ; */
             bbb_ctx.cb_data_received(size);
             break;
         default:
@@ -208,6 +221,11 @@ err:
     return errcode;
 }
 
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, scsi_ctx, state;
+  */
 #ifndef __FRAMAC__
 static
 #endif
@@ -224,6 +242,8 @@ mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)), uint32_t
                 goto err;
             }
 #endif
+            /*@ assert bbb_ctx.cb_data_sent \in {scsi_data_sent} ;*/
+            /*@ calls scsi_data_sent ; */
             bbb_ctx.cb_data_sent();
             break;
         case USB_BBB_STATE_READY:
@@ -320,6 +340,11 @@ struct __packed scsi_csw {
 
 #define USB_BBB_CSW_SIG			0x53425355      /* "USBS" */
 
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
+  */
 void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
 {
     log_printf("[USB BBB] %s: status %d\n", __func__, status);

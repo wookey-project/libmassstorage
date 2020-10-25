@@ -36,13 +36,17 @@
 
 #include "usb_control_mass_storage.h"
 
-#include "scsi.h"
 #include "scsi_dbg.h"
 
 #include "scsi_cmd.h"
 #include "scsi_resp.h"
 #include "scsi_log.h"
 #include "scsi_automaton.h"
+
+#ifdef __FRAMAC__
+# include "scsi.h"
+# include "usb_bbb_framac.h"
+#endif
 
 #include "libc/sanhandlers.h"
 
@@ -271,7 +275,7 @@ static inline bool scsi_is_ready_for_data_send(void)
  * This function is sending an asynchronous read request. The
  * read terminaison is acknowledge by a trigger on scsi_data_available()
  */
-void scsi_get_data(void *buffer, uint32_t size)
+void scsi_get_data(uint8_t *buffer, uint32_t size)
 {
 #if SCSI_DEBUG > 1
     log_printf("%s: size: %d \n", __func__, size);
@@ -295,7 +299,7 @@ void scsi_get_data(void *buffer, uint32_t size)
  * This function is sending an asynchronous write request. The
  * transmission terminaison is acknowledge by a trigger on scsi_data_sent()
  */
-void scsi_send_data(void *data, uint32_t size)
+void scsi_send_data(uint8_t *data, uint32_t size)
 {
 #if SCSI_DEBUG > 1
     log_printf("%s: size: %d \n", __func__, size);
@@ -311,12 +315,20 @@ void scsi_send_data(void *data, uint32_t size)
 /*
  * Trigger on input data available
  */
-static void scsi_data_available(uint32_t size)
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, scsi_ctx, state;
+  */
+#ifndef __FRAMAC__
+static
+#endif
+void scsi_data_available(uint32_t size)
 {
 #if SCSI_DEBUG > 1
     /* this function is triggered, printing trigger events is done only
      * on debug level 2 */
-    aprintf("%s: %d\n", __func__, size);
+    log_printf("%s: %d\n", __func__, size);
 #endif
 
     if (size >= scsi_ctx.size_to_process) {
@@ -337,6 +349,11 @@ static void scsi_data_available(uint32_t size)
 /*
  * Trigger on data sent by IP
  */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, scsi_ctx, state;
+  */
 #ifndef __FRAMAC__
 static
 #endif
@@ -442,7 +459,7 @@ extern bool reset_requested;
  */
 
 /*@ requires cdb_len <= sizeof(cdb_t);
-  @ assigns reset_requested, scsi_ctx.queue_empty, queued_cdb ;
+  @ assigns scsi_ctx.queue_empty, queued_cdb ;
  */
 #ifndef __FRAMAC__
 static
@@ -451,10 +468,6 @@ void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
 {
     if (reset_requested == true) {
         /* a cdb is received while the main thread as not yet cleared the reset trigger */
-#ifdef __FRAMAC__
-        /* simulating concurent trigger when using framaC. Not done in entrypoint.  */
-        reset_requested = false;
-#endif
         /* waiting for main thread to clear reset trigger */
         set_bool_with_membarrier(&scsi_ctx.queue_empty, true);
         request_data_membarrier();

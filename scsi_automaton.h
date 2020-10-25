@@ -42,4 +42,9 @@ uint8_t scsi_next_state(scsi_state_t current_state,
 bool    scsi_is_valid_transition(scsi_state_t current_state,
                                  scsi_operation_code_t request);
 
+#ifdef __FRAMAC__
+/* moved state definition here to allow ACSL usage in assigns */
+scsi_state_t state;
+#endif
+
 #endif /*!SCSI_AUTOMATON_H_ */

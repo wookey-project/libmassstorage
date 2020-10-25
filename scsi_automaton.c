@@ -33,7 +33,11 @@
  * functions
  ***************************************************************/
 
+#ifndef __FRAMAC__
+/* in FramaC case, state must be handled in ACSL content in usb_bbb.c, and as a
+ * consequence must be exported. */
 static scsi_state_t state;
+#endif
 
 /*
  * all allowed transitions and target states for each current state

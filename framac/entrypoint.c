@@ -6,11 +6,15 @@
 #include "libc/string.h"
 #include "usb_bbb.h"
 #include "scsi_cmd.h"
-#include "scsi.h"
 #include "usbmass_desc.h"
 #include "usb_control_mass_storage.h"
 #include "framac/entrypoint.h"
 
+/* massstorage specific exports for framac */
+#include "scsi.h"
+#include "usb_bbb_framac.h"
+
+bool reset_requested = false;
 
 #define USB_BUF_SIZE 16384
 
