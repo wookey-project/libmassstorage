@@ -134,15 +134,14 @@ void read_next_cmd(void)
 /*@
   @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx, queued_cdb, reset_requested;
 
   @behavior invinput:
   @   assumes (size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun != 0);
-  @   assigns \nothing;
   @   ensures \result == MBED_ERROR_INVPARAM;
 
   @behavior ok:
   @   assumes !(size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun != 0);
-  @   assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx, queued_cdb, reset_requested;
   @   ensures \result == MBED_ERROR_NONE;
   */
 static mbed_error_t usb_bbb_cmd_received(uint32_t size)
@@ -257,6 +256,18 @@ err:
     return MBED_ERROR_NONE;
 }
 
+/*@
+  @ assigns bbb_ctx;
+
+  @ behavior invparam:
+  @   assumes (cmd_received == NULL || data_received == NULL);
+
+  @ behavior ok:
+  @   assumes !(cmd_received == NULL || data_received == NULL);
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+  */
 void usb_bbb_declare(void (*cmd_received)(uint8_t cdb[], uint8_t cdb_len),
                      void(*data_received)(uint32_t), void(*data_sent)(void))
 {
@@ -277,6 +288,10 @@ err:
     return;
 }
 
+/*@
+  @ requires \separated(&usbotghs_ctx,&bbb_ctx);
+  @ assigns ctx_list[usbdci_handler], bbb_ctx.iface;
+  */
 mbed_error_t usb_bbb_configure(uint32_t usbdci_handler)
 {
     log_printf("[USB BBB] %s\n", __func__);

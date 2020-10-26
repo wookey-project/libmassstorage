@@ -13,6 +13,7 @@
 /* massstorage specific exports for framac */
 #include "scsi.h"
 #include "usb_bbb_framac.h"
+#include "scsi_automaton.h"
 
 bool reset_requested = false;
 
@@ -382,12 +383,24 @@ void test_fcn_driver_eva() {
         launch_data_recv_and_exec(&cbw);
     }
 
+    /* checking invalid transition */
+    scsi_set_state(SCSI_ERROR);
+
+    cbw.cdb_len.cdb_len = sizeof(cdb6_t);
+    cbw.cdb[0]  = SCSI_CMD_READ_6;
+    launch_data_recv_and_exec(&cbw);
+
+    scsi_set_state(SCSI_IDLE);
+    /* inexistant next state */
+    scsi_next_state(SCSI_ERROR, SCSI_CMD_READ_6);
 err:
     return;
 }
 
 
 void test_fcn_driver_eva_reset() {
+
+    extern struct scsi_cbw cbw;
     // 1) step1: GetMaxLun command (class request)
     usbctrl_setup_pkt_t pkt = { 0 };
     pkt.wIndex = Frama_C_interval_16(0,65535);
@@ -397,6 +410,26 @@ void test_fcn_driver_eva_reset() {
     pkt.bmRequestType = Frama_C_interval_8(0,255);
 
     mass_storage_class_rqst_handler(usbxdci_handler, &pkt);
+
+    scsi_reinit();
+
+    reset_requested = true;
+
+    /* read while reset */
+    cbw.sig = USB_BBB_CBW_SIG;
+    cbw.flags.reserved = 0;
+    cbw.lun.reserved = 0;
+    cbw.lun.lun = 0;
+    cbw.cdb_len.reserved = 0;
+    cbw.cdb_len.cdb_len = sizeof(cdb6_t);
+    cbw.cdb[0]  = SCSI_CMD_READ_6;
+    launch_data_recv_and_exec(&cbw);
+
+    reset_requested = false;
+
+    scsi_ctx.global_buf_len = 2048;
+    scsi_ctx.size_to_process = 4096;
+    scsi_data_sent();
 
     scsi_reinit();
 

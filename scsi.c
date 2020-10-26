@@ -350,7 +350,7 @@ void scsi_data_available(uint32_t size)
  * Trigger on data sent by IP
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state, &scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
   @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, scsi_ctx, state;
   */
@@ -458,13 +458,32 @@ extern bool reset_requested;
  * this function is executed in a handler context when a command comes from USB.
  */
 
-/*@ requires cdb_len <= sizeof(cdb_t);
-  @ assigns scsi_ctx.queue_empty, queued_cdb ;
+/*@
+  @ requires cdb_len <= sizeof(cdb_t);
+  @ requires \separated(&queued_cdb, &scsi_ctx, &cdb[0 .. cdb_len-1]);
+  @ assigns scsi_ctx, queued_cdb ;
+
+  @ behavior reset_req:
+  @    assumes reset_requested == true;
+  @    ensures queued_cdb == \old(queued_cdb);
+  @    ensures scsi_ctx.queue_empty == \true;
+
+  @ behavior invlen:
+  @    assumes reset_requested != true;
+  @    assumes cdb_len > sizeof(cdb_t);
+  @    ensures queued_cdb == \old(queued_cdb);
+  @    ensures scsi_ctx.queue_empty == \old(scsi_ctx.queue_empty);
+
+  @behavior ok:
+  @    assumes reset_requested != true;
+  @    assumes cdb_len <= sizeof(cdb_t);
+  @    ensures scsi_ctx.queue_empty == \false;
+
  */
 #ifndef __FRAMAC__
 static
 #endif
-void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len)
+void scsi_parse_cdb(uint8_t cdb[] __attribute__((unused)), uint8_t cdb_len)
 {
     if (reset_requested == true) {
         /* a cdb is received while the main thread as not yet cleared the reset trigger */
