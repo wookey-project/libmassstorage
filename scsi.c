@@ -102,6 +102,11 @@ scsi_context_t scsi_ctx = {
 static volatile cdb_t queued_cdb = { 0 };
 #endif
 
+/*@
+  @ requires \separated(&scsi_ctx,((uint32_t *)(USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx, &bbb_ctx);
+  @ assigns scsi_ctx.error,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ ensures state == SCSI_IDLE;
+  */
 static void scsi_error(scsi_sense_key_t sensekey, uint8_t asc, uint8_t ascq)
 {
     log_printf("%s: %s: status=%d\n", __func__, __func__, sensekey);
@@ -126,6 +131,9 @@ static void scsi_error(scsi_sense_key_t sensekey, uint8_t asc, uint8_t ascq)
  * Critical sections must be as short as possible to avoid border
  * effects such as latency increase and ISR queue overloading.
  */
+/*@
+  @ assigns \nothing;
+  */
 static inline mbed_error_t enter_critical_section(void)
 {
     uint8_t ret;
@@ -146,6 +154,9 @@ static inline mbed_error_t enter_critical_section(void)
  *
  * Reallow the execution of the previously postponed task ISR.
  */
+/*@
+  @ assigns \nothing;
+  */
 static inline void leave_critical_section(void)
 {
 #ifndef __FRAMAC__
@@ -458,24 +469,20 @@ extern bool reset_requested;
  * this function is executed in a handler context when a command comes from USB.
  */
 
+
 /*@
   @ requires cdb_len <= sizeof(cdb_t);
-  @ requires \separated(&queued_cdb, &scsi_ctx, &cdb[0 .. cdb_len-1]);
+  @ requires \valid_read(cdb + (0 .. cdb_len-1));
+  @ requires \separated(((uint8_t*)&queued_cdb + (0 .. cdb_len-1)), &scsi_ctx, &cdb[0 .. cdb_len-1]);
   @ assigns scsi_ctx, queued_cdb ;
 
   @ behavior reset_req:
-  @    assumes reset_requested == true;
-  @    ensures queued_cdb == \old(queued_cdb);
+  @    assumes reset_requested == \true;
+  @    ensures queued_cdb == \old(queued_cdb) ; // ensures \forall integer i ; 0 <= i < cdb_len ==> ((uint8_t*)queued_cdb)[i] == \old(((uint8_t*)queued_cdb)[i]);
   @    ensures scsi_ctx.queue_empty == \true;
 
-  @ behavior invlen:
-  @    assumes reset_requested != true;
-  @    assumes cdb_len > sizeof(cdb_t);
-  @    ensures queued_cdb == \old(queued_cdb);
-  @    ensures scsi_ctx.queue_empty == \old(scsi_ctx.queue_empty);
-
-  @behavior ok:
-  @    assumes reset_requested != true;
+  @ behavior ok:
+  @    assumes reset_requested != \true;
   @    assumes cdb_len <= sizeof(cdb_t);
   @    ensures scsi_ctx.queue_empty == \false;
 
@@ -483,7 +490,7 @@ extern bool reset_requested;
 #ifndef __FRAMAC__
 static
 #endif
-void scsi_parse_cdb(uint8_t cdb[] __attribute__((unused)), uint8_t cdb_len)
+void scsi_parse_cdb(uint8_t *cdb, uint8_t cdb_len)
 {
     if (reset_requested == true) {
         /* a cdb is received while the main thread as not yet cleared the reset trigger */
@@ -492,11 +499,6 @@ void scsi_parse_cdb(uint8_t cdb[] __attribute__((unused)), uint8_t cdb_len)
         request_data_membarrier();
         goto err;
     }
-    uint32_t len = sizeof(cdb_t);
-    if ((uint32_t)cdb_len > len) {
-        goto err;
-    }
-    /*@ assert (unsigned int)cdb_len ≤ len; */
     /*@ assert cdb_len ≤ sizeof(queued_cdb); */
 
     /* Only up to 16 bytes commands are supported: bigger commands are truncated,
@@ -516,25 +518,74 @@ err:
  */
 
 /* SCSI_CMD_INQUIRY */
-static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
+
+/*@ ghost
+    bool GHOST_invalid_transition = false;
+    bool GHOST_invalid_cmd = false;
+  */
+
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, cdb);
+  @ requires \valid_read(cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+  @ assigns state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  @ behavior badstate:
+  @    assumes current_state == SCSI_ERROR;
+  @    ensures GHOST_invalid_transition == \true;
+  @    ensures GHOST_invalid_cmd == \false;
+
+  @ behavior badinput:
+  @    assumes current_state != SCSI_ERROR;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures GHOST_invalid_cmd == \true;
+  @    ensures state == SCSI_IDLE;
+  // pth: need to find a way to handle allocation_length check in this funcion (tried ghost args, without results :'( )
+  //@    assumes ((cdb->payload.cdb6_inquiry.EVPD == 0 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 5) ||
+  //              (cdb->payload.cdb6_inquiry.EVPD == 1 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 4));
+
+  @ behavior inq_without_response:
+  @    assumes current_state != SCSI_ERROR;
+  @    ensures cdb->payload.cdb6_inquiry.allocation_length == 0;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures GHOST_invalid_cmd == \false;
+  @    ensures state == SCSI_IDLE;
+  //@    assumes !((cdb->payload.cdb6_inquiry.EVPD == 0 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 5) ||
+  //               (cdb->payload.cdb6_inquiry.EVPD == 1 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 4)); //ensures alloc_len == 0;
+
+  @ behavior inq_with_response:
+  @    assumes current_state != SCSI_ERROR;
+  @    ensures cdb->payload.cdb6_inquiry.allocation_length != 0;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures GHOST_invalid_cmd == \false;
+  @    ensures state == SCSI_IDLE;
+  //@    assumes !((cdb->payload.cdb6_inquiry.EVPD == 0 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 5) ||
+  //               (cdb->payload.cdb6_inquiry.EVPD == 1 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 4)); //    ensures alloc_len != 0;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+  */
+static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cdb)
 {
     inquiry_data_t response;
-    cdb6_inquiry_t *inq;
+    cdb6_inquiry_t const * inq;
     uint8_t next_state;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+        GHOST_invalid_cmd = false;
+      */
 
     log_printf("%s:\n", __func__);
-    /* Sanity check */
-    if (cdb == NULL) {
-        goto invalid_transition;
-    }
-
     /* Sanity check and next state detection */
 
     if (!scsi_is_valid_transition(current_state, cdb->operation)) {
         goto invalid_transition;
     }
 
+    /* @ assert state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
 
     /* effective transition execution (if needed) */
@@ -545,13 +596,16 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
     scsi_debug_dump_cmd(cdb, SCSI_CMD_INQUIRY);
 #endif
 
+    uint16_t alen = ntohs(inq->allocation_length);
+    // /*@ assert alen == alloc_len; */
+
     /* sanitize received cmd in conformity with SCSI standard */
-    if (inq->EVPD == 0 && ntohs(inq->allocation_length) < 5) {
+    if (inq->EVPD == 0 && alen < 5) {
         /* invalid: additional fields parameter can't be send */
         goto invalid_cmd;
     }
 
-    if (inq->EVPD == 1 && ntohs(inq->allocation_length) < 4) {
+    if (inq->EVPD == 1 && alen < 4) {
         /* invalid: additional fields parameter can't be send */
         goto invalid_cmd;
     }
@@ -560,7 +614,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
      * version is 0 because the device does not claim conformance to any
      * standard
      */
-    memset((void *) &response, 0, sizeof(response));
+    memset((void *) &response, 0, sizeof(inquiry_data_t));
 
     response.periph_device_type = 0x0;  /* direct access block device */
     response.RMB = 1;           /* Removable media */
@@ -597,12 +651,18 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t * cdb)
     return;
 
  invalid_cmd:
+    /*@ ghost
+        GHOST_invalid_cmd = true;
+      */
     log_printf("%s: malformed cmd\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
     return;
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1681,7 +1741,7 @@ void scsi_exec_automaton(void)
 
     switch (local_cdb.operation) {
         case SCSI_CMD_INQUIRY:
-            scsi_cmd_inquiry(current_state, &local_cdb);
+            scsi_cmd_inquiry(current_state, &local_cdb); // ghost(alloc_len) */;
             break;
 
         case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:

@@ -33,17 +33,17 @@
 for clause 'assigns *ctxh, num_ctx, usbotghs_ctx, GHOST_num_ctx,
                     ctx_list[\old(num_ctx)];'
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:360:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_context_t
-scsi.c:1853:[eva] Trace partitioning superposing up to 100 states
-scsi.c:1853:[eva] Trace partitioning superposing up to 200 states
-scsi.c:1853:[eva] Trace partitioning superposing up to 300 states
-scsi.c:1853:[eva] Trace partitioning superposing up to 400 states
-scsi.c:1853:[eva] Trace partitioning superposing up to 500 states
-scsi.c:1853:[eva] starting to merge loop iterations
+scsi.c:1914:[eva] Trace partitioning superposing up to 100 states
+scsi.c:1914:[eva] Trace partitioning superposing up to 200 states
+scsi.c:1914:[eva] Trace partitioning superposing up to 300 states
+scsi.c:1914:[eva] Trace partitioning superposing up to 400 states
+scsi.c:1914:[eva] Trace partitioning superposing up to 500 states
+scsi.c:1914:[eva] starting to merge loop iterations
 [eva] using specification for function usbctrl_declare_interface
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:490:[eva] warning: no 'assigns \result \from ...' clause specified for
 function usbctrl_declare_interface
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:436:[eva] warning: no \from part for clause 'assigns *iface, ctx_list[ctxh];'
-usb_bbb.c:333:[eva:invalid-assigns] Completely invalid destination for assigns clause ctx_list[ctxh]. Ignoring.
+usb_bbb.c:332:[eva:invalid-assigns] Completely invalid destination for assigns clause ctx_list[ctxh]. Ignoring.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:440:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_interface_t
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:441:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_context_t
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:474:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_interface_t
@@ -90,43 +90,45 @@ scsi_automaton.c:277:[eva:alarm] warning: function scsi_is_valid_transition, beh
 scsi_automaton.c:212:[eva:alarm] warning: function scsi_next_state, behavior req_not_found: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 [eva] using specification for function ntohs
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/string.h:236:[eva] cannot evaluate ACSL term, unsupported ACSL construct: logic function memset
+scsi.c:543:[eva:alarm] warning: function scsi_cmd_inquiry, behavior badinput: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:551:[eva:alarm] warning: function scsi_cmd_inquiry, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 [eva] using specification for function htonl
 scsi_automaton.c:298:[eva:alarm] warning: loop invariant got status unknown.
 scsi_automaton.c:231:[eva:alarm] warning: loop invariant got status unknown.
-scsi.c:674:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
-scsi.c:674:[eva:alarm] warning: unsigned overflow. assert 0 ≤ scsi_ctx.storage_size - 1;
-scsi.c:677:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
-scsi.c:682:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
-scsi.c:1094:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+scsi.c:719:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:719:[eva:alarm] warning: unsigned overflow. assert 0 ≤ scsi_ctx.storage_size - 1;
+scsi.c:722:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+scsi.c:727:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+scsi.c:1139:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
 [eva] using specification for function ntohl
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sync.h:69:[eva:alarm] warning: function set_u32_with_membarrier__fc_inline: postcondition got status unknown.
-scsi.c:897:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
-scsi.c:897:[eva:alarm] warning: unsigned overflow.
+scsi.c:942:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:942:[eva:alarm] warning: unsigned overflow.
 assert
 rw_lba + (uint32_t)((uint32_t)scsi_ctx.global_buf_len / scsi_ctx.block_size)
 ≤ 4294967295;
-scsi.c:754:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
-scsi.c:1597:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
-scsi.c:1597:[eva:alarm] warning: unsigned overflow.
+scsi.c:799:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+scsi.c:1642:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:1642:[eva:alarm] warning: unsigned overflow.
 assert
 rw_lba + (uint32_t)((uint32_t)scsi_ctx.global_buf_len / scsi_ctx.block_size)
 ≤ 4294967295;
-scsi.c:1438:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
-scsi.c:1460:[eva] Trace partitioning superposing up to 100 states
-scsi.c:1460:[eva] Trace partitioning superposing up to 200 states
-scsi.c:1460:[eva] Trace partitioning superposing up to 300 states
-scsi.c:1460:[eva] Trace partitioning superposing up to 400 states
-scsi.c:1460:[eva] Trace partitioning superposing up to 500 states
-scsi.c:1460:[eva] starting to merge loop iterations
-scsi.c:1460:[eva] Trace partitioning superposing up to 600 states
-scsi.c:1460:[eva] Trace partitioning superposing up to 700 states
-scsi.c:1460:[eva] Trace partitioning superposing up to 800 states
-scsi.c:1460:[eva] Trace partitioning superposing up to 900 states
-scsi.c:1460:[eva] Trace partitioning superposing up to 1000 states
-scsi.c:1456:[eva] starting to merge loop iterations
-scsi.c:1475:[eva] starting to merge loop iterations
-scsi.c:1474:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
-scsi.c:1474:[eva:alarm] warning: unsigned overflow.
+scsi.c:1483:[eva:alarm] warning: assertion 'rte,unsigned_downcast' got status unknown.
+scsi.c:1505:[eva] Trace partitioning superposing up to 100 states
+scsi.c:1505:[eva] Trace partitioning superposing up to 200 states
+scsi.c:1505:[eva] Trace partitioning superposing up to 300 states
+scsi.c:1505:[eva] Trace partitioning superposing up to 400 states
+scsi.c:1505:[eva] Trace partitioning superposing up to 500 states
+scsi.c:1505:[eva] starting to merge loop iterations
+scsi.c:1505:[eva] Trace partitioning superposing up to 600 states
+scsi.c:1505:[eva] Trace partitioning superposing up to 700 states
+scsi.c:1505:[eva] Trace partitioning superposing up to 800 states
+scsi.c:1505:[eva] Trace partitioning superposing up to 900 states
+scsi.c:1505:[eva] Trace partitioning superposing up to 1000 states
+scsi.c:1501:[eva] starting to merge loop iterations
+scsi.c:1520:[eva] starting to merge loop iterations
+scsi.c:1519:[eva:alarm] warning: assertion 'rte,unsigned_overflow' got status unknown.
+scsi.c:1519:[eva:alarm] warning: unsigned overflow.
 assert
 rw_lba + (uint32_t)((uint32_t)scsi_ctx.global_buf_len / scsi_ctx.block_size)
 ≤ 4294967295;
@@ -134,8 +136,8 @@ rw_lba + (uint32_t)((uint32_t)scsi_ctx.global_buf_len / scsi_ctx.block_size)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs.c:771:[eva] warning: no 'assigns \result \from ...' clause specified for
 function usbotghs_send_zlp
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs.c:754:[eva] warning: no \from part for clause 'assigns *((uint32_t *)(0x40040000 .. 0x40044000));'
-scsi.c:468:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type cdb_t
-scsi.c:468:[eva:alarm] warning: function scsi_parse_cdb, behavior reset_req: postcondition got status unknown.
+scsi.c:481:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type cdb_t
+scsi.c:481:[eva:alarm] warning: function scsi_parse_cdb, behavior reset_req: postcondition got status unknown.
 [eva] done for function main
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs.c:1040:[eva] assertion 'rte,mem_access' got final status valid.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/usbotghs.c:1040:[eva] assertion 'rte,index_bound' got final status valid.
@@ -296,156 +298,164 @@ framac/entrypoint.c:380:[eva] assertion 'rte,signed_overflow' got final status v
 framac/entrypoint.c:381:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 framac/entrypoint.c:381:[eva] assertion 'rte,index_bound' got final status valid.
 framac/entrypoint.c:382:[eva] assertion 'rte,index_bound' got final status valid.
-scsi.c:109:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:109:[eva] assertion 'rte,signed_overflow' got final status valid.
-scsi.c:109:[eva] assertion 'rte,shift' got final status valid.
-scsi.c:109:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:288:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:290:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:308:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:309:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:369:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:369:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:371:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:373:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:377:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:389:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:390:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:391:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:408:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:409:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:410:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:411:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:491:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:505:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:533:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:537:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:541:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:549:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:549:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:554:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:554:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:573:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:574:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:577:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:579:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:582:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:114:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:114:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi.c:114:[eva] assertion 'rte,shift' got final status valid.
+scsi.c:114:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:299:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:301:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:319:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:320:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:380:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:380:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:382:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:384:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:388:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:400:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:401:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:402:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:419:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:420:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:421:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:422:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:498:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:507:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:570:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:575:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:580:[eva] assertion 'rte,pointer_value' got final status valid.
 scsi.c:588:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:590:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:591:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:626:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:588:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:593:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:593:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:612:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:613:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:616:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:618:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:621:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:627:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:629:[eva] assertion 'rte,mem_access' got final status valid.
 scsi.c:630:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:661:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:664:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:668:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:680:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:692:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:694:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:695:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:735:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:738:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:754:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:754:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:754:[eva] assertion 'rte,signed_overflow' got final status valid.
-scsi.c:755:[eva] assertion 'rte,signed_downcast' got final status valid.
-scsi.c:757:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:758:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:762:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:762:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:764:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:776:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:784:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:786:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:786:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:799:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:806:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:848:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:852:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:867:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:868:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:869:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:873:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:873:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:875:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:887:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:895:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:897:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:897:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:910:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:917:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:952:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:955:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:964:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:963:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:975:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1007:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1010:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1019:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1018:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1028:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1035:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:671:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:675:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:706:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:709:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:713:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:725:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:737:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:739:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:740:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:780:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:783:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:799:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:799:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:799:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi.c:800:[eva] assertion 'rte,signed_downcast' got final status valid.
+scsi.c:802:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:803:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:807:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:807:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:809:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:821:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:829:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:831:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:831:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:844:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:851:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:893:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:897:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:912:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:913:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:914:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:918:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:918:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:920:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:932:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:940:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:942:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:942:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:955:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:962:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:997:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1000:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1009:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1008:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1020:[eva] assertion 'rte,unsigned_overflow' got final status valid.
 scsi.c:1052:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1054:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1054:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1084:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1088:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1092:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1094:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1098:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:1098:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1113:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:1113:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1114:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:1114:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1163:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1166:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1217:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1221:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1263:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1267:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1306:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1309:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1338:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1342:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1372:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1375:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1418:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1422:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1438:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1438:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:1438:[eva] assertion 'rte,signed_overflow' got final status valid.
-scsi.c:1439:[eva] assertion 'rte,signed_downcast' got final status valid.
-scsi.c:1440:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1441:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1446:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1446:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1457:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1458:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1474:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1474:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1485:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1488:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1545:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1549:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1562:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1563:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1564:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1569:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1569:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1580:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1581:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1597:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1597:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1608:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1611:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1673:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1774:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1775:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1776:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1779:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1853:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1854:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1854:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1055:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1064:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1063:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1073:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1080:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1097:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1099:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1099:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1129:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1133:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1137:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1139:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1143:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1143:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1158:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1158:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1159:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1159:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1208:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1211:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1262:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1266:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1308:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1312:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1351:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1354:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1383:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1387:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1417:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1420:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1463:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1467:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1483:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1483:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1483:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi.c:1484:[eva] assertion 'rte,signed_downcast' got final status valid.
+scsi.c:1485:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1486:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1491:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1491:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1502:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1503:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1519:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1519:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1530:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1533:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1590:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1594:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1607:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1608:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1609:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1614:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1614:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1625:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1626:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1642:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1642:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1653:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1656:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1718:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1738:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1739:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1739:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi.c:1739:[eva] assertion 'rte,shift' got final status valid.
+scsi.c:1740:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1741:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1741:[eva] assertion 'rte,shift' got final status valid.
+scsi.c:1742:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1835:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1836:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1837:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1840:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1914:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1915:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1915:[eva] assertion 'rte,mem_access' got final status valid.
 scsi_automaton.c:227:[eva] assertion 'rte,index_bound' got final status valid.
 scsi_automaton.c:235:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 scsi_automaton.c:235:[eva] assertion 'rte,signed_overflow' got final status valid.
@@ -464,41 +474,41 @@ scsi_automaton.c:303:[eva] assertion 'rte,pointer_value' got final status valid.
 scsi_log.h:106:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 scsi_log.h:111:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 usb_bbb.c:129:[eva] assertion 'rte,pointer_value' got final status valid.
+usb_bbb.c:171:[eva] assertion 'rte,pointer_value' got final status valid.
 usb_bbb.c:172:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_bbb.c:173:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_bbb.c:181:[eva] assertion 'rte,function_pointer' got final status valid.
-usb_bbb.c:181:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_bbb.c:181:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_bbb.c:246:[eva] assertion 'rte,function_pointer' got final status valid.
-usb_bbb.c:246:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_bbb.c:333:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_bbb.c:345:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_bbb.c:374:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_bbb.c:386:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_bbb.c:393:[eva] assertion 'rte,pointer_value' got final status valid.
+usb_bbb.c:180:[eva] assertion 'rte,function_pointer' got final status valid.
+usb_bbb.c:180:[eva] assertion 'rte,pointer_value' got final status valid.
+usb_bbb.c:180:[eva] assertion 'rte,pointer_value' got final status valid.
+usb_bbb.c:245:[eva] assertion 'rte,function_pointer' got final status valid.
+usb_bbb.c:245:[eva] assertion 'rte,pointer_value' got final status valid.
+usb_bbb.c:332:[eva] assertion 'rte,pointer_value' got final status valid.
+usb_bbb.c:344:[eva] assertion 'rte,pointer_value' got final status valid.
+usb_bbb.c:373:[eva] assertion 'rte,pointer_value' got final status valid.
+usb_bbb.c:390:[eva] assertion 'rte,pointer_value' got final status valid.
+usb_bbb.c:397:[eva] assertion 'rte,pointer_value' got final status valid.
 usb_control_mass_storage.c:98:[eva] assertion 'rte,mem_access' got final status valid.
 [eva] ====== VALUES COMPUTED ======
 [eva] ####### Value execution feedback #########
 Long running functions (does not include current running time):
 ===============================================================
-+ main: executed: 1x total: 59.980s
-    | test_fcn_driver_eva 1x 59.488s (99.2%) | 4 others: 0.491s (0.8%) | self: 0.001s (0.0%)|
-+ test_fcn_driver_eva: executed: 1x total: 59.488s
-    | launch_data_recv_and_exec 41x 59.395s (99.8%) | 8 others: 0.060s (0.1%) | self: 0.033s (0.1%)|
-+ launch_data_recv_and_exec: executed: 42x total: 59.410s
-    | scsi_exec_automaton 105x 58.508s (98.5%) | 3 others: 0.536s (0.9%) | self: 0.366s (0.6%)|
-+ scsi_exec_automaton: executed: 106x total: 58.509s
-    | scsi_write_data6 18x 54.737s (93.6%) | 22 others: 3.554s (6.1%) | self: 0.219s (0.4%)|
-+ scsi_write_data6: executed: 18x total: 54.737s
-    | 10 others: 1.461s (2.7%) | self: 53.275s (97.3%)|
-+ usbotghs_send_data: executed: 681x total: 1.188s
-    | self: 1.188s (100.0%)|
++ main: executed: 1x total: 57.704s
+    | test_fcn_driver_eva 1x 57.167s (99.1%) | 4 others: 0.535s (0.9%) | self: 0.002s (0.0%)|
++ test_fcn_driver_eva: executed: 1x total: 57.167s
+    | launch_data_recv_and_exec 42x 57.057s (99.8%) | 9 others: 0.071s (0.1%) | self: 0.039s (0.1%)|
++ launch_data_recv_and_exec: executed: 43x total: 57.072s
+    | scsi_exec_automaton 107x 56.103s (98.3%) | 3 others: 0.597s (1.0%) | self: 0.372s (0.7%)|
++ scsi_exec_automaton: executed: 108x total: 56.104s
+    | scsi_write_data6 18x 52.373s (93.3%) | 22 others: 3.478s (6.2%) | self: 0.253s (0.5%)|
++ scsi_write_data6: executed: 18x total: 52.373s
+    | 10 others: 1.437s (2.7%) | self: 50.935s (97.3%)|
++ usbotghs_send_data: executed: 699x total: 1.153s
+    | self: 1.153s (100.0%)|
 
 Execution time per callstack (includes current running time):
 =============================================================
-+ main: executed: 1x total: 59.980s
-| + test_fcn_driver_eva: executed: 1x total: 59.488s
-| | + launch_data_recv_and_exec: executed: 40x total: 59.366s
-| | | + scsi_exec_automaton: executed: 101x total: 58.494s
-| | | | + scsi_write_data6: executed: 18x total: 54.737s
++ main: executed: 1x total: 57.704s
+| + test_fcn_driver_eva: executed: 1x total: 57.167s
+| | + launch_data_recv_and_exec: executed: 40x total: 56.997s
+| | | + scsi_exec_automaton: executed: 101x total: 56.071s
+| | | | + scsi_write_data6: executed: 18x total: 52.373s
 ################

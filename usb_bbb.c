@@ -137,11 +137,11 @@ void read_next_cmd(void)
   @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx, queued_cdb, reset_requested;
 
   @behavior invinput:
-  @   assumes (size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun != 0);
+  @   assumes (size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS);
   @   ensures \result == MBED_ERROR_INVPARAM;
 
   @behavior ok:
-  @   assumes !(size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun != 0);
+  @   assumes !(size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun  >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS);
   @   ensures \result == MBED_ERROR_NONE;
   */
 static mbed_error_t usb_bbb_cmd_received(uint32_t size)
@@ -160,8 +160,7 @@ static mbed_error_t usb_bbb_cmd_received(uint32_t size)
         goto err;
     }
 
-    if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved || cbw.lun.lun) {
-	    /* XXX: the only valid LUN for our device is 0 */
+    if (cbw.flags.reserved || cbw.lun.reserved || cbw.cdb_len.reserved || (cbw.lun.lun >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS)) {
 	    /* TODO: check that cbw.cdb_len and cbw.cdb are in accordance
 	     * with InferfaceSubClass
              */
@@ -380,6 +379,11 @@ void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
     }
 }
 
+/*@
+  @ requires \separated(src, &cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
+  */
 void usb_bbb_send(const uint8_t * src, uint32_t size)
 {
     log_printf("[USB BBB] %s: %dB\n", __func__, size);

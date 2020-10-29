@@ -390,9 +390,46 @@ void test_fcn_driver_eva() {
     cbw.cdb[0]  = SCSI_CMD_READ_6;
     launch_data_recv_and_exec(&cbw);
 
+    scsi_set_state(SCSI_ERROR);
+
+    /* INQUIRY is not valid in ERROR state */
+    cbw.cdb_len.cdb_len = sizeof(cdb6_inquiry_t);
+    cbw.cdb[0]  = SCSI_CMD_INQUIRY;
+    launch_data_recv_and_exec(&cbw);
+
     scsi_set_state(SCSI_IDLE);
     /* inexistant next state */
     scsi_next_state(SCSI_ERROR, SCSI_CMD_READ_6);
+
+
+    /* invalid size */
+    usb_bbb_data_received(7, sizeof(struct scsi_cbw)+1, 2);
+
+    /* invalid sig */
+    cbw.sig = USB_BBB_CBW_SIG-1;
+    usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
+    cbw.sig = USB_BBB_CBW_SIG;
+
+    /* invalid flags */
+    cbw.flags.reserved = 1;
+    usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
+    cbw.flags.reserved = 0;
+
+    /* invalid lun */
+    cbw.lun.reserved = 1;
+    usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
+    cbw.lun.reserved = 0;
+
+    /* invalid cdb_len */
+    cbw.cdb_len.reserved = 1;
+    usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
+    cbw.cdb_len.reserved = 0;
+
+    /* invalid lun id */
+    cbw.lun.lun = CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS;
+    usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
+    cbw.lun.lun = 0;
+
 err:
     return;
 }
