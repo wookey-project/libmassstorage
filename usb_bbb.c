@@ -391,6 +391,11 @@ void usb_bbb_send(const uint8_t * src, uint32_t size)
     usb_backend_drv_send_data((uint8_t *)src, size, bbb_ctx.iface.eps[1].ep_num);
 }
 
+/*@
+  @ requires \separated(((uint8_t*)dst + (0 .. size -1)), &cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx;
+  */
 void usb_bbb_recv(void *dst, uint32_t size)
 {
     log_printf("[USB BBB] %s: %dB\n", __func__, size);

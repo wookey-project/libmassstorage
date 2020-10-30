@@ -190,7 +190,6 @@ FRAMAC_EVA_FLAGS:=\
 		    -eva-split-return auto \
 		    -eva-partition-history 3 \
 		    -eva-use-spec ntohs \
-		    -eva-use-spec htons \
 		    -eva-use-spec usbctrl_declare \
 		    -eva-use-spec usbctrl_initialize \
 		    -eva-use-spec usbctrl_declare_interface \

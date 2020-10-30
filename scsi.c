@@ -169,6 +169,7 @@ static inline void leave_critical_section(void)
 /********* About debugging and pretty printing **************/
 
 #if SCSI_DEBUG
+/* Frama-C info: not required here as out of Frama-C proof */
 static void scsi_debug_dump_cmd(cdb_t * current_cdb, uint8_t scsi_cmd)
 {
     if (!current_cdb) {
@@ -263,6 +264,9 @@ static void scsi_debug_dump_cmd(cdb_t * current_cdb, uint8_t scsi_cmd)
 /*
  * Is the current context compatible with data reception ?
  */
+/*@
+  @ assigns \nothing;
+  */
 static inline bool scsi_is_ready_for_data_receive(void)
 {
     return ((scsi_ctx.direction == SCSI_DIRECTION_RECV
@@ -273,6 +277,9 @@ static inline bool scsi_is_ready_for_data_receive(void)
 /*
  * Is the current context compatible with data transmission ?
  */
+/*@
+  @ assigns \nothing;
+  */
 static inline bool scsi_is_ready_for_data_send(void)
 {
     return ((scsi_ctx.direction == SCSI_DIRECTION_SEND
@@ -286,12 +293,30 @@ static inline bool scsi_is_ready_for_data_send(void)
  * This function is sending an asynchronous read request. The
  * read terminaison is acknowledge by a trigger on scsi_data_available()
  */
+#ifdef __FRAMAC__
+/* we can't use ghost here as we assigns non-ghost variables */
+ /*@
+   @ assigns scsi_ctx.direction, scsi_ctx.line_state;
+   */
+void set_scsi_ready_to_receive(void) {
+    scsi_ctx.direction = SCSI_DIRECTION_IDLE;
+    scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY;
+}
+#endif
+
+/*@
+  @ requires \separated(buffer,&scsi_ctx,&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ assigns scsi_ctx,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx;
+ */
 void scsi_get_data(uint8_t *buffer, uint32_t size)
 {
 #if SCSI_DEBUG > 1
     log_printf("%s: size: %d \n", __func__, size);
 #endif
     while (!scsi_is_ready_for_data_receive()) {
+#ifdef __FRAMAC__
+        set_scsi_ready_to_receive();
+#endif
         request_data_membarrier();
         continue;
     }
@@ -1533,6 +1558,9 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         while (!scsi_is_ready_for_data_receive()) {
+#ifdef __FRAMAC__
+            set_scsi_ready_to_receive();
+#endif
             request_data_membarrier();
             continue;
         }
@@ -1562,6 +1590,9 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
             goto end;
         }
         while (!scsi_is_ready_for_data_receive()) {
+#ifdef __FRAMAC__
+            set_scsi_ready_to_receive();
+#endif
             request_data_membarrier();
             continue;
         }
@@ -1656,6 +1687,9 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         while (!scsi_is_ready_for_data_receive()) {
+#ifdef __FRAMAC__
+            set_scsi_ready_to_receive();
+#endif
             request_data_membarrier();
             continue;
         }
@@ -1685,6 +1719,9 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
             goto end;
         }
         while (!scsi_is_ready_for_data_receive()) {
+#ifdef __FRAMAC__
+            set_scsi_ready_to_receive();
+#endif
             request_data_membarrier();
             continue;
         }
