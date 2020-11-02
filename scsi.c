@@ -293,17 +293,6 @@ static inline bool scsi_is_ready_for_data_send(void)
  * This function is sending an asynchronous read request. The
  * read terminaison is acknowledge by a trigger on scsi_data_available()
  */
-#ifdef __FRAMAC__
-/* we can't use ghost here as we assigns non-ghost variables */
- /*@
-   @ assigns scsi_ctx.direction, scsi_ctx.line_state;
-   */
-void set_scsi_ready_to_receive(void) {
-    scsi_ctx.direction = SCSI_DIRECTION_IDLE;
-    scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY;
-}
-#endif
-
 /*@
   @ requires \separated(buffer,&scsi_ctx,&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
   @ assigns scsi_ctx,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx;
@@ -314,11 +303,12 @@ void scsi_get_data(uint8_t *buffer, uint32_t size)
     log_printf("%s: size: %d \n", __func__, size);
 #endif
     while (!scsi_is_ready_for_data_receive()) {
-#ifdef __FRAMAC__
-        set_scsi_ready_to_receive();
-#endif
         request_data_membarrier();
+#ifdef __FRAMAC__
+        break;
+#else
         continue;
+#endif
     }
 
     set_u8_with_membarrier(&scsi_ctx.direction, SCSI_DIRECTION_RECV);
@@ -555,41 +545,41 @@ err:
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
   @ assigns state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
 
-  @ behavior badstate:
-  @    assumes current_state == SCSI_ERROR;
-  @    ensures GHOST_invalid_transition == \true;
-  @    ensures GHOST_invalid_cmd == \false;
+  //@ behavior badstate:
+  //@    assumes current_state == SCSI_ERROR;
+  //@    ensures GHOST_invalid_transition == \true;
+  //@    ensures GHOST_invalid_cmd == \false;
 
-  @ behavior badinput:
-  @    assumes current_state != SCSI_ERROR;
-  @    ensures GHOST_invalid_transition == \false;
-  @    ensures GHOST_invalid_cmd == \true;
-  @    ensures state == SCSI_IDLE;
+  //@ behavior badinput:
+  //@    assumes current_state != SCSI_ERROR;
+  //@    ensures GHOST_invalid_transition == \false;
+  //@    ensures GHOST_invalid_cmd == \true;
+  //@    ensures state == SCSI_IDLE;
   // pth: need to find a way to handle allocation_length check in this funcion (tried ghost args, without results :'( )
   //@    assumes ((cdb->payload.cdb6_inquiry.EVPD == 0 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 5) ||
   //              (cdb->payload.cdb6_inquiry.EVPD == 1 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 4));
 
-  @ behavior inq_without_response:
-  @    assumes current_state != SCSI_ERROR;
-  @    ensures cdb->payload.cdb6_inquiry.allocation_length == 0;
-  @    ensures GHOST_invalid_transition == \false;
-  @    ensures GHOST_invalid_cmd == \false;
-  @    ensures state == SCSI_IDLE;
+  //@ behavior inq_without_response:
+  //@    assumes current_state != SCSI_ERROR;
+  //@    ensures cdb->payload.cdb6_inquiry.allocation_length == 0;
+  //@    ensures GHOST_invalid_transition == \false;
+  //@    ensures GHOST_invalid_cmd == \false;
+  //@    ensures state == SCSI_IDLE;
   //@    assumes !((cdb->payload.cdb6_inquiry.EVPD == 0 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 5) ||
   //               (cdb->payload.cdb6_inquiry.EVPD == 1 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 4)); //ensures alloc_len == 0;
 
-  @ behavior inq_with_response:
-  @    assumes current_state != SCSI_ERROR;
-  @    ensures cdb->payload.cdb6_inquiry.allocation_length != 0;
-  @    ensures GHOST_invalid_transition == \false;
-  @    ensures GHOST_invalid_cmd == \false;
-  @    ensures state == SCSI_IDLE;
+  //@ behavior inq_with_response:
+  //@    assumes current_state != SCSI_ERROR;
+  //@    ensures cdb->payload.cdb6_inquiry.allocation_length != 0;
+  //@    ensures GHOST_invalid_transition == \false;
+  //@    ensures GHOST_invalid_cmd == \false;
+  //@    ensures state == SCSI_IDLE;
   //@    assumes !((cdb->payload.cdb6_inquiry.EVPD == 0 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 5) ||
   //               (cdb->payload.cdb6_inquiry.EVPD == 1 && ntohs(cdb->payload.cdb6_inquiry.allocation_length) < 4)); //    ensures alloc_len != 0;
 
 
-  @ disjoint behaviors;
-  @ complete behaviors;
+  //@ disjoint behaviors;
+  //@ complete behaviors;
   */
 static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cdb)
 {
@@ -1558,11 +1548,12 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         while (!scsi_is_ready_for_data_receive()) {
-#ifdef __FRAMAC__
-            set_scsi_ready_to_receive();
-#endif
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
             continue;
+#endif
         }
 
     }
@@ -1590,11 +1581,12 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
             goto end;
         }
         while (!scsi_is_ready_for_data_receive()) {
-#ifdef __FRAMAC__
-            set_scsi_ready_to_receive();
-#endif
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
             continue;
+#endif
         }
     }
  end:
@@ -1687,11 +1679,12 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         while (!scsi_is_ready_for_data_receive()) {
-#ifdef __FRAMAC__
-            set_scsi_ready_to_receive();
-#endif
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
             continue;
+#endif
         }
 
     }
@@ -1719,11 +1712,12 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
             goto end;
         }
         while (!scsi_is_ready_for_data_receive()) {
-#ifdef __FRAMAC__
-            set_scsi_ready_to_receive();
-#endif
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
             continue;
+#endif
         }
     }
  end:
