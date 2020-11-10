@@ -102,10 +102,26 @@ scsi_context_t scsi_ctx = {
 static volatile cdb_t queued_cdb = { 0 };
 #endif
 
+#ifdef __FRAMAC__
+/* In FramaC mode, the scsi_ctx symbol is visible (as defined in a header to allow its usage in ACSL declaration).
+ * Nevertheless, WP consider it as static and any modification out of this object will not impact the symbol value used here.
+ * To correct this, a dedicated getter for this symbol is written here to export the correct symbol value to the EVA entrypoint.
+ * This permits to handle correct settings of the context from entrypoint object file. */
+
+/*@
+  @ assigns \nothing;
+  @ ensures \result == &scsi_ctx;
+  */
+scsi_context_t *scsi_get_context(void) {
+    return &scsi_ctx;
+};
+#endif
+
+
 /*@
   @ requires \separated(&scsi_ctx,((uint32_t *)(USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx, &bbb_ctx);
-  @ assigns scsi_ctx.error,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
-  @ ensures state == SCSI_IDLE;
+  @ assigns scsi_ctx.error,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, state, GHOST_state ;
+  @ ensures GHOST_state == SCSI_IDLE;
   */
 static void scsi_error(scsi_sense_key_t sensekey, uint8_t asc, uint8_t ascq)
 {
@@ -294,14 +310,56 @@ static inline bool scsi_is_ready_for_data_send(void)
  * read terminaison is acknowledge by a trigger on scsi_data_available()
  */
 /*@
-  @ requires \separated(buffer,&scsi_ctx,&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
-  @ assigns scsi_ctx,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx;
+  @ requires \separated(buffer + (0 .. size-1),&scsi_ctx,&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ assigns scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
+
+  @ behavior invbuffer:
+  @    assumes buffer == NULL;
+  @    ensures scsi_ctx.addr == \old(scsi_ctx.addr);
+  @    ensures scsi_ctx.direction == \old(scsi_ctx.direction);
+  @    ensures scsi_ctx.line_state == \old(scsi_ctx.line_state);
+  @    ensures *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)) == \old(*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)));
+  @    ensures usbotghs_ctx == \old(usbotghs_ctx);
+  @    ensures bbb_ctx.state == \old(bbb_ctx.state);
+  @    ensures \result == MBED_ERROR_INVPARAM;
+
+  @ behavior sizenull:
+  @    assumes buffer != NULL;
+  @    assumes size == 0;
+  @    ensures scsi_ctx.addr == \old(scsi_ctx.addr);
+  @    ensures scsi_ctx.direction == \old(scsi_ctx.direction);
+  @    ensures scsi_ctx.line_state == \old(scsi_ctx.line_state);
+  @    ensures *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)) == \old(*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)));
+  @    ensures usbotghs_ctx == \old(usbotghs_ctx);
+  @    ensures bbb_ctx.state == \old(bbb_ctx.state);
+  @    ensures \result == MBED_ERROR_INVPARAM;
+
+  @ behavior ok:
+  @    requires \valid(buffer + (0 .. size-1));
+  @    requires size > 0;
+  @    ensures scsi_ctx.direction == SCSI_DIRECTION_RECV;
+  @    ensures scsi_ctx.line_state == SCSI_TRANSMIT_LINE_BUSY;
+  @    ensures scsi_ctx.addr == 0; // usb_bbb_recv() postconditions are set in usb_bbb_recv() function contract
+  @    ensures \result == MBED_ERROR_NONE;
+
+  @ complete behaviors;
+  @ disjoint behaviors;
+
  */
-void scsi_get_data(uint8_t *buffer, uint32_t size)
+static mbed_error_t scsi_get_data(uint8_t *buffer, uint32_t size)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
 #if SCSI_DEBUG > 1
     log_printf("%s: size: %d \n", __func__, size);
 #endif
+    if (buffer == NULL) {
+        errcode = MBED_ERROR_INVPARAM;
+        goto err;
+    }
+    if (size == 0) {
+        errcode = MBED_ERROR_INVPARAM;
+        goto err;
+    }
     while (!scsi_is_ready_for_data_receive()) {
         request_data_membarrier();
 #ifdef __FRAMAC__
@@ -318,12 +376,18 @@ void scsi_get_data(uint8_t *buffer, uint32_t size)
     request_data_membarrier();
 
     usb_bbb_recv(buffer, size);
+err:
+    return errcode;
 }
 
 /*
  * Request to send data of given size into the BULK stack.
  * This function is sending an asynchronous write request. The
  * transmission terminaison is acknowledge by a trigger on scsi_data_sent()
+ */
+/*@
+  @ requires \separated(data + (0 .. size-1),&scsi_ctx,&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ assigns scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
  */
 void scsi_send_data(uint8_t *data, uint32_t size)
 {
@@ -342,9 +406,32 @@ void scsi_send_data(uint8_t *data, uint32_t size)
  * Trigger on input data available
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state, &GHOST_state, &scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, scsi_ctx, state;
+
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, GHOST_state, state;
+
+  @ behavior buffer_bigger_than_sizetoprocess:
+  @   assumes (size < scsi_ctx.size_to_process);
+  @   ensures scsi_ctx.size_to_process == (\old(scsi_ctx.size_to_process) - \old(size));
+  @   ensures scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY;
+  @   ensures scsi_ctx.direction == \old(scsi_ctx.direction);
+  @   ensures usbotghs_ctx == \old(usbotghs_ctx);
+  @   ensures bbb_ctx.state == \old(bbb_ctx.state);
+  @   ensures state == \old(state);
+  @   ensures GHOST_state == state;
+
+  @ behavior size_smaller_than_buffer:
+  @   assumes (size >= scsi_ctx.size_to_process);
+  @   ensures scsi_ctx.size_to_process == 0;
+  @   ensures scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY;
+  @   ensures scsi_ctx.direction == SCSI_DIRECTION_IDLE;
+  @   ensures state == SCSI_IDLE;
+  @   ensures GHOST_state == state;
+
+  @ complete behaviors;
+  @ disjoint behaviors;
+
   */
 #ifndef __FRAMAC__
 static
@@ -376,9 +463,32 @@ void scsi_data_available(uint32_t size)
  * Trigger on data sent by IP
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state,&GHOST_state, &scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, scsi_ctx, state;
+
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, GHOST_state, state;
+
+  @ behavior size_bigger_than_buffer:
+  @   assumes (scsi_ctx.size_to_process > scsi_ctx.global_buf_len);
+  @   ensures scsi_ctx.size_to_process == (\old(scsi_ctx.size_to_process) - \old(scsi_ctx.global_buf_len));
+  @   ensures scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY;
+  @   ensures scsi_ctx.direction == \old(scsi_ctx.direction);
+  @   ensures usbotghs_ctx == \old(usbotghs_ctx);
+  @   ensures bbb_ctx.state == \old(bbb_ctx.state);
+  @   ensures state == \old(state);
+  @   ensures GHOST_state == state;
+
+  @ behavior size_smaller_than_buffer:
+  @   assumes (scsi_ctx.size_to_process <= scsi_ctx.global_buf_len);
+  @   ensures scsi_ctx.size_to_process == 0;
+  @   ensures scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY;
+  @   ensures scsi_ctx.direction == SCSI_DIRECTION_IDLE;
+  @   ensures state == SCSI_IDLE;
+  @   ensures GHOST_state == state;
+
+  @ complete behaviors;
+  @ disjoint behaviors;
+
   */
 #ifndef __FRAMAC__
 static
@@ -406,6 +516,11 @@ void scsi_data_sent(void)
 }
 
 
+/*@
+  @ requires \separated(&cbw, response, &bbb_ctx,&usbotghs_ctx,&state,&GHOST_state, &scsi_ctx);
+  @ requires \valid_read(response);
+  @ assigns (((uint8_t*)response)[0..sizeof(mode_parameter10_data_t)-1]);
+  */
 static void scsi_forge_mode_sense_response(u_mode_parameter * response,
                                            uint8_t mode)
 {
@@ -488,8 +603,8 @@ extern bool reset_requested;
 /*@
   @ requires cdb_len <= sizeof(cdb_t);
   @ requires \valid_read(cdb + (0 .. cdb_len-1));
-  @ requires \separated(((uint8_t*)&queued_cdb + (0 .. cdb_len-1)), &scsi_ctx, &cdb[0 .. cdb_len-1]);
-  @ assigns scsi_ctx, queued_cdb ;
+  @ requires \separated(((uint8_t*)&queued_cdb + (0 .. cdb_len-1)), &scsi_ctx, &cdb[0 .. cdb_len-1], &reset_requested);
+  @ assigns scsi_ctx.queue_empty, queued_cdb;
 
   @ behavior reset_req:
   @    assumes reset_requested == \true;
@@ -543,7 +658,7 @@ err:
   @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, cdb);
   @ requires \valid_read(cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
-  @ assigns state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx.error,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
 
   //@ behavior badstate:
   //@    assumes current_state == SCSI_ERROR;
@@ -684,7 +799,14 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
     return;
 }
 
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
+  @ assigns scsi_ctx.error,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
                                                   cdb_t * current_cdb)
 {
@@ -719,7 +841,14 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
     return;
 }
 
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
+  @ assigns scsi_ctx.error,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
                                             cdb_t * current_cdb)
 {
@@ -788,6 +917,14 @@ static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
  * INFO: this command is deprecated but is implemented for retrocompatibility
  * with older Operating Systems
  */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 {
     uint32_t num_sectors;
@@ -898,6 +1035,14 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
 
 /* SCSI_CMD_READ_10 */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_read_data10(scsi_state_t current_state,
                                  cdb_t * current_cdb)
 {
@@ -1008,6 +1153,14 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
 
 /* SCSI_CMD_READ_CAPACITY_10 */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_read_capacity10(scsi_state_t current_state,
                                      cdb_t * current_cdb)
 {
@@ -1063,6 +1216,14 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
 }
 
 /* SCSI_CMD_READ_CAPACITY_16 */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_read_capacity16(scsi_state_t current_state,
                                      cdb_t * current_cdb)
 {
@@ -1141,6 +1302,14 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
 
 
 /* SCSI_CMD_REPORT_LUNS */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_report_luns(scsi_state_t current_state,
                                  cdb_t * current_cdb)
 {
@@ -1221,6 +1390,14 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
 }
 
 /* SCSI_CMD_REQUEST_SENSE */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_request_sense(scsi_state_t current_state,
                                    cdb_t * current_cdb)
 {
@@ -1275,6 +1452,14 @@ static void scsi_cmd_request_sense(scsi_state_t current_state,
 
 
 /* SCSI_CMD_MODE_SENSE(10) */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_mode_sense10(scsi_state_t current_state,
                                   cdb_t * current_cdb)
 {
@@ -1321,6 +1506,14 @@ static void scsi_cmd_mode_sense10(scsi_state_t current_state,
 
 
 /* SCSI_CMD_MODE_SENSE(6) */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_mode_sense6(scsi_state_t current_state,
                                  cdb_t * current_cdb)
 {
@@ -1364,6 +1557,14 @@ static void scsi_cmd_mode_sense6(scsi_state_t current_state,
 }
 
 /* SCSI_CMD_MODE_SELECT(6) */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_mode_select6(scsi_state_t current_state,
                                   cdb_t * current_cdb)
 {
@@ -1396,6 +1597,14 @@ static void scsi_cmd_mode_select6(scsi_state_t current_state,
 
 
 /* SCSI_CMD_MODE_SELECT(10) */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_mode_select10(scsi_state_t current_state,
                                    cdb_t * current_cdb)
 {
@@ -1430,6 +1639,14 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
 
 
 /* SCSI_CMD_TEST_UNIT_READY */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
                                      cdb_t * current_cdb)
 {
@@ -1467,6 +1684,14 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
  * This command is declared as obsolete by the T10 consorsium.
  * It is implemented here for retrocompatibility with old Operating System
  */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 {
     uint32_t num_sectors;
@@ -1602,6 +1827,14 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
 
 /* SCSI_CMD_WRITE(10) */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \valid_read(current_cdb);
+  @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 {
     uint32_t num_sectors;
@@ -1740,6 +1973,13 @@ mbed_error_t scsi_initialize_automaton(void)
 /*
  * SCSI Automaton execution
  */
+/*@
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ requires SCSI_IDLE <= state <= SCSI_ERROR;
+
+  @ assigns scsi_ctx,GHOST_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+
+  */
 void scsi_exec_automaton(void)
 {
     /* local cdb copy */
@@ -1858,6 +2098,10 @@ void scsi_exec_automaton(void)
  * Resetting SCSI context. Should be executed as a trigger of BULK level
  * USB reset order
  */
+/*@
+  @ requires \separated(&scsi_ctx, &state, &GHOST_state);
+  @ assigns scsi_ctx, state, GHOST_state;
+  */
 static void scsi_reset_context(void)
 {
     log_printf("[reset] clearing USB context\n");
@@ -1878,6 +2122,11 @@ static void scsi_reset_context(void)
 /*
  * At earlu init time, no usbctrl interaction, only local SCSI & BBB configuration
  */
+
+/*@
+  @ requires \separated(&scsi_ctx, &state, &GHOST_state, &bbb_ctx);
+  @ assigns scsi_ctx, state, GHOST_state, bbb_ctx;
+  */
 mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
 {
 
@@ -1927,10 +2176,23 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
  * 1) configure the SCSI context and queue
  * 2)
  */
+/*@
+  @ requires \separated(&state,&GHOST_state,&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &usbotghs_ctx,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
+
+  @ assigns scsi_ctx, ctx_list[0 .. CONFIG_USBCTRL_FW_MAX_CTX-1], bbb_ctx.iface;
+  */
 mbed_error_t scsi_init(uint32_t usbdci_handler)
 {
     uint32_t i;
     mbed_error_t errcode = MBED_ERROR_NONE;
+    if (scsi_ctx.global_buf == NULL) {
+        errcode = MBED_ERROR_INVSTATE;
+        goto err;
+    }
+    if (scsi_ctx.global_buf_len == 0) {
+        errcode = MBED_ERROR_INVSTATE;
+        goto err;
+    }
 
     log_printf("%s\n", __func__);
 
@@ -1941,6 +2203,12 @@ mbed_error_t scsi_init(uint32_t usbdci_handler)
     scsi_ctx.storage_size = 0;
     scsi_ctx.block_size = 4096; /* default */
 
+    /*@
+      @ loop invariant 0 <= i <= scsi_ctx.global_buf_len;
+      @ loop invariant \separated(&state,&GHOST_state,&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &usbotghs_ctx,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
+      @ loop assigns scsi_ctx.global_buf[0 .. scsi_ctx.global_buf_len-1];
+      @ loop variant scsi_ctx.global_buf_len - i;
+      */
     for (i = 0; i < scsi_ctx.global_buf_len; i++) {
         scsi_ctx.global_buf[i] = '\0';
     }
@@ -1960,6 +2228,10 @@ err:
     return errcode;
 }
 
+/*@
+  @ requires \separated(&scsi_ctx,&state,&GHOST_state,&usbotghs_ctx,&bbb_ctx);
+  @ assigns bbb_ctx.state, scsi_ctx, state, GHOST_state;
+  */
 void scsi_reinit(void)
 {
     usb_bbb_reconfigure();

@@ -89,6 +89,8 @@ struct __packed scsi_cbw {
 };
 
 struct scsi_cbw cbw;
+
+struct scsi_cbw *usb_bbb_get_cbw(void);
 #endif
 
 

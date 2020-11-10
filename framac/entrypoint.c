@@ -237,6 +237,8 @@ static inline void launch_data_recv_and_exec(struct scsi_cbw *cbw)
     }
     // triggering reception
     usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
+    scsi_context_t *ctx = scsi_get_context();
+    ctx->queue_empty = false;
     /* @ assert scsi_ctx.queue_empty == \false ; */
     // parsing content
     scsi_exec_automaton();
@@ -328,7 +330,7 @@ void test_fcn_driver_eva() {
      * we have declared in the first function checking valid behavior */
 
     uint8_t i = 0;
-    extern struct scsi_cbw cbw;
+    struct scsi_cbw *cbw = usb_bbb_get_cbw();
 
     /* we have defined a full-duplex HID interface. Let's (manually) configure it.
      * This portion of code is representative of the Set_Configuration STD request */
@@ -365,11 +367,11 @@ void test_fcn_driver_eva() {
     // To do that, the cbw structure must be set accordingly with any garbage
     // (or real cbw content) for each test.
     // Fixing cbw header
-    cbw.sig = USB_BBB_CBW_SIG;
-    cbw.flags.reserved = 0;
-    cbw.lun.reserved = 0;
-    cbw.lun.lun = 0;
-    cbw.cdb_len.reserved = 0;
+    cbw->sig = USB_BBB_CBW_SIG;
+    cbw->flags.reserved = 0;
+    cbw->lun.reserved = 0;
+    cbw->lun.lun = 0;
+    cbw->cdb_len.reserved = 0;
 
     /* because there is garbage in cdb content, these various calls may generate errors
      * (invalid size, invalid sector number, etc.), which may handle invalid state for the next
@@ -377,25 +379,25 @@ void test_fcn_driver_eva() {
      * This is a **normal** behavior of the stack, but this impacts the capacity to check
      * the overall code. To avoid this, we loop on the following sequence */
     uint8_t table_size = sizeof(cmd_sequence) / sizeof(cmd_data_t);
-    for (uint8_t i = 0; i < table_size; ++i) {
-        cbw.cdb_len.cdb_len = cmd_sequence[i].cdb_len;
-        cbw.cdb[0]  = cmd_sequence[i].cmd;
-        launch_data_recv_and_exec(&cbw);
+    for (uint8_t i = 0; i < 40; ++i) {
+        cbw->cdb_len.cdb_len = cmd_sequence[i].cdb_len;
+        cbw->cdb[0]  = cmd_sequence[i].cmd;
+        launch_data_recv_and_exec(cbw);
     }
 
     /* checking invalid transition */
     scsi_set_state(SCSI_ERROR);
 
-    cbw.cdb_len.cdb_len = sizeof(cdb6_t);
-    cbw.cdb[0]  = SCSI_CMD_READ_6;
-    launch_data_recv_and_exec(&cbw);
+    cbw->cdb_len.cdb_len = sizeof(cdb6_t);
+    cbw->cdb[0]  = SCSI_CMD_READ_6;
+    launch_data_recv_and_exec(cbw);
 
     scsi_set_state(SCSI_ERROR);
 
     /* INQUIRY is not valid in ERROR state */
-    cbw.cdb_len.cdb_len = sizeof(cdb6_inquiry_t);
-    cbw.cdb[0]  = SCSI_CMD_INQUIRY;
-    launch_data_recv_and_exec(&cbw);
+    cbw->cdb_len.cdb_len = sizeof(cdb6_inquiry_t);
+    cbw->cdb[0]  = SCSI_CMD_INQUIRY;
+    launch_data_recv_and_exec(cbw);
 
     scsi_set_state(SCSI_IDLE);
     /* inexistant next state */
@@ -406,29 +408,29 @@ void test_fcn_driver_eva() {
     usb_bbb_data_received(7, sizeof(struct scsi_cbw)+1, 2);
 
     /* invalid sig */
-    cbw.sig = USB_BBB_CBW_SIG-1;
+    cbw->sig = USB_BBB_CBW_SIG-1;
     usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
-    cbw.sig = USB_BBB_CBW_SIG;
+    cbw->sig = USB_BBB_CBW_SIG;
 
     /* invalid flags */
-    cbw.flags.reserved = 1;
+    cbw->flags.reserved = 1;
     usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
-    cbw.flags.reserved = 0;
+    cbw->flags.reserved = 0;
 
     /* invalid lun */
-    cbw.lun.reserved = 1;
+    cbw->lun.reserved = 1;
     usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
-    cbw.lun.reserved = 0;
+    cbw->lun.reserved = 0;
 
     /* invalid cdb_len */
-    cbw.cdb_len.reserved = 1;
+    cbw->cdb_len.reserved = 1;
     usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
-    cbw.cdb_len.reserved = 0;
+    cbw->cdb_len.reserved = 0;
 
     /* invalid lun id */
-    cbw.lun.lun = CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS;
+    cbw->lun.lun = CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS;
     usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
-    cbw.lun.lun = 0;
+    cbw->lun.lun = 0;
 
 err:
     return;
@@ -437,7 +439,7 @@ err:
 
 void test_fcn_driver_eva_reset() {
 
-    extern struct scsi_cbw cbw;
+    struct scsi_cbw *cbw = usb_bbb_get_cbw();
     // 1) step1: GetMaxLun command (class request)
     usbctrl_setup_pkt_t pkt = { 0 };
     pkt.wIndex = Frama_C_interval_16(0,65535);
@@ -453,19 +455,20 @@ void test_fcn_driver_eva_reset() {
     reset_requested = true;
 
     /* read while reset */
-    cbw.sig = USB_BBB_CBW_SIG;
-    cbw.flags.reserved = 0;
-    cbw.lun.reserved = 0;
-    cbw.lun.lun = 0;
-    cbw.cdb_len.reserved = 0;
-    cbw.cdb_len.cdb_len = sizeof(cdb6_t);
-    cbw.cdb[0]  = SCSI_CMD_READ_6;
-    launch_data_recv_and_exec(&cbw);
+    cbw->sig = USB_BBB_CBW_SIG;
+    cbw->flags.reserved = 0;
+    cbw->lun.reserved = 0;
+    cbw->lun.lun = 0;
+    cbw->cdb_len.reserved = 0;
+    cbw->cdb_len.cdb_len = sizeof(cdb6_t);
+    cbw->cdb[0]  = SCSI_CMD_READ_6;
+    launch_data_recv_and_exec(cbw);
 
     reset_requested = false;
+    scsi_context_t *ctx = scsi_get_context();
 
-    scsi_ctx.global_buf_len = 2048;
-    scsi_ctx.size_to_process = 4096;
+    ctx->global_buf_len = 2048;
+    ctx->size_to_process = 4096;
     scsi_data_sent();
 
     scsi_reinit();

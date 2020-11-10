@@ -117,6 +117,14 @@ extern bool reset_requested;
 #endif
 
 
+#ifdef __FRAMAC__
+/*@
+  @ assigns \nothing;
+  */
+struct scsi_cbw *usb_bbb_get_cbw(void) {
+    return &cbw;
+}
+#endif
 
 /*@
   @ requires \separated(((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&bbb_ctx,&usbotghs_ctx);
@@ -337,6 +345,10 @@ mbed_error_t usb_bbb_configure(uint32_t usbdci_handler)
     return errcode;
 }
 
+/*@
+  @ requires \separated(&scsi_ctx,&state,&GHOST_state,&usbotghs_ctx,&bbb_ctx);
+  @ assigns bbb_ctx.state;
+  */
 void usb_bbb_reconfigure(void)
 {
     log_printf("[USB BBB] %s\n", __func__);
@@ -394,7 +406,7 @@ void usb_bbb_send(const uint8_t * src, uint32_t size)
 /*@
   @ requires \separated(((uint8_t*)dst + (0 .. size -1)), &cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx;
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
   */
 void usb_bbb_recv(void *dst, uint32_t size)
 {

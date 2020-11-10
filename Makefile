@@ -222,7 +222,7 @@ frama-c-parsing:
 		 -cpp-extra-args="-nostdinc -I framac/include -I $(LIBUSB_API_DIR) -I $(LIBSTD_API_DIR) -I $(USBOTGHS_API_DIR) -I $(USBOTGHS_DEVHEADER_PATH) -I $(EWOK_API_DIR)"
 
 frama-c-eva:
-	frama-c framac/entrypoint.c scsi*.c usb*.c $(LIBUSB_API_DIR) $(USBOTGHS_DIR)/usbotghs.c $(USBOTGHS_DIR)/usbotghs_fifos.c -c11 \
+	frama-c framac/entrypoint.c scsi*.c usb*.c -c11 \
 		    $(FRAMAC_GEN_FLAGS) \
 			$(FRAMAC_EVA_FLAGS) \
 			-save $(EVA_SESSION) \

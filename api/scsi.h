@@ -115,7 +115,6 @@ void scsi_reinit(void);
 
 void scsi_send_data(uint8_t *data, uint32_t size);
 
-void scsi_get_data(uint8_t *buffer, uint32_t size);
 
 int scsi_is_ready_for_data(void);
 

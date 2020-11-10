@@ -69,6 +69,9 @@ void scsi_data_sent(void);
 void scsi_data_available(uint32_t size);
 
 void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len);
+
+/* FramaC specific */
+scsi_context_t *scsi_get_context(void);
 #endif
 
 #endif/*!SCSI_H_*/

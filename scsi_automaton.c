@@ -147,15 +147,18 @@ scsi_state_t scsi_get_state(void)
  * here.
  */
 /*@
-  @ assigns state;
+  @ requires \separated(&state, &GHOST_state);
+  @ assigns state, GHOST_state;
 
   @behavior invstate:
   @  assumes new_state > SCSI_ERROR;
-  @  ensures state == SCSI_ERROR;
+  @  ensures GHOST_state == SCSI_ERROR;
+  @  ensures GHOST_state == state;
 
   @behavior setstate:
   @  assumes new_state <= SCSI_ERROR;
-  @  ensures SCSI_IDLE <= state <= SCSI_ERROR ;
+  @  ensures SCSI_IDLE <= GHOST_state <= SCSI_ERROR ;
+  @  ensures GHOST_state == state;
 
   @ disjoint behaviors;
   @ complete behaviors;
@@ -165,11 +168,13 @@ void scsi_set_state(const scsi_state_t new_state)
     if (new_state > SCSI_ERROR) {
         log_printf("%s: PANIC! this should never arise !", __func__);
         state = SCSI_ERROR;
+        /*@ ghost GHOST_state = state; */
         goto err;
     }
     /*@ assert SCSI_IDLE <= new_state <= SCSI_ERROR ; */
     log_printf("%s: state: %x => %x\n", __func__, scsi_ctx.state, new_state);
     state = new_state;
+    /*@ ghost GHOST_state = state; */
 err:
     return;
 }
@@ -192,9 +197,10 @@ err:
  * \return the next state, or 0xff
  */
 /*@
+  @ requires GHOST_state == state;
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
   @ requires \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1));
-  @ requires \separated(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1),&state);
+  @ requires \separated(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1),&state, &GHOST_state);
   @ assigns \nothing;
 
   @behavior inv_req:
@@ -254,27 +260,33 @@ err:
  */
 
 /*@
+  @ requires GHOST_state == state;
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
   @ requires \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1));
-  @ requires \separated(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1),&state);
-  @ assigns state;
+  @ requires \separated(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1),&state,&GHOST_state);
+  @ assigns state, GHOST_state;
 
   @behavior inv_req:
   @   assumes request == 0xff;
   @   ensures \result == \false;
   @   ensures state == \old(state);
+  @   ensures GHOST_state == \old(GHOST_state);
+  @   ensures GHOST_state == state;
 
   @behavior trans_valid:
   @   assumes request != 0xff;
   @   assumes \exists integer i ; 0 <= i < scsi_automaton[current_state].trans_list.number && scsi_automaton[current_state].trans_list.transitions[i].request == request;
   @   ensures \result == \true;
   @   ensures state == \old(state);
+  @   ensures GHOST_state == \old(GHOST_state);
+  @   ensures GHOST_state == state;
 
   @behavior trans_invalid:
   @   assumes request != 0xff;
   @   assumes \forall integer i ; 0 <= i <scsi_automaton[current_state].trans_list.number ==> scsi_automaton[current_state].trans_list.transitions[i].request != request;
   @   ensures \result == \false;
   @   ensures state == SCSI_ERROR;
+  @   ensures GHOST_state == state;
 
   @ disjoint behaviors;
   @ complete behaviors;
@@ -313,7 +325,7 @@ bool scsi_is_valid_transition(scsi_state_t current_state,
     log_printf("%s: invalid transition from state %d, request %d\n", __func__,
            current_state, request);
     scsi_set_state(SCSI_ERROR);
-    /* @ assert state == SCSI_ERROR; */
+    /* @ assert GHOST_state == SCSI_ERROR; */
 err:
     return result;
 }
