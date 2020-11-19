@@ -26,6 +26,20 @@
 
 #include "libusbctrl.h"
 
+/*********************************************************************************
+ * About Frama-C header
+ * When using Frama-C, some static globals may need to be moved here instead of in
+ * local C or header files in order to define properly function contacts.
+ * There is no variables or type collisioning, and the behavior of the programs is the
+ * same.
+ */
+
+#ifdef __FRAMAC__
+# include "libscsi_framac.h"
+#endif
+
+
+
 /**
  * SCSI stack implementation
  */

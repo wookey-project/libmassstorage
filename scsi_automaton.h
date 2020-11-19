@@ -25,12 +25,15 @@
 #define SCSI_AUTOMATON_H_
 
 #include "libc/types.h"
+#include "api/scsi.h"
 #include "scsi_cmd.h"
 
+#ifndef __FRAMAC__
 typedef enum scsi_state {
     SCSI_IDLE = 0x00,
     SCSI_ERROR,
 } scsi_state_t;
+#endif
 
 scsi_state_t scsi_get_state(void);
 
@@ -41,11 +44,5 @@ uint8_t scsi_next_state(scsi_state_t current_state,
 
 bool    scsi_is_valid_transition(scsi_state_t current_state,
                                  scsi_operation_code_t request);
-
-#ifdef __FRAMAC__
-/* moved state definition here to allow ACSL usage in assigns */
-scsi_state_t state = SCSI_IDLE;
-/*@ ghost scsi_state_t GHOST_state = state; */
-#endif
 
 #endif /*!SCSI_AUTOMATON_H_ */

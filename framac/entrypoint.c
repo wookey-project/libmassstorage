@@ -1,18 +1,15 @@
-#include "generated/devlist.h"
-#include "libusbctrl.h"
-#include "api/scsi.h"
 #include "autoconf.h"
 #include "libc/types.h"
 #include "libc/string.h"
+#include "generated/devlist.h"
+#include "libusbctrl.h"
+#include "api/scsi.h"
 #include "usb_bbb.h"
-#include "scsi_cmd.h"
 #include "usbmass_desc.h"
 #include "usb_control_mass_storage.h"
 #include "framac/entrypoint.h"
 
 /* massstorage specific exports for framac */
-#include "scsi.h"
-#include "usb_bbb_framac.h"
 #include "scsi_automaton.h"
 
 bool reset_requested = false;
@@ -164,8 +161,7 @@ mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unus
 /*@
   @ requires \valid(numblocks);
   @ requires \valid(blocksize);
-  @ requires separation:
-  @    \separated(numblocks, blocksize);
+  @ requires \separated(numblocks, blocksize);
 */
 mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize)
 {
@@ -379,6 +375,10 @@ void test_fcn_driver_eva() {
      * This is a **normal** behavior of the stack, but this impacts the capacity to check
      * the overall code. To avoid this, we loop on the following sequence */
     uint8_t table_size = sizeof(cmd_sequence) / sizeof(cmd_data_t);
+    /*@
+      @ loop invariant 0 <= i <= 40;
+      @ loop variant 40-i;
+      */
     for (uint8_t i = 0; i < 40; ++i) {
         cbw->cdb_len.cdb_len = cmd_sequence[i].cdb_len;
         cbw->cdb[0]  = cmd_sequence[i].cmd;

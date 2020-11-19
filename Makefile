@@ -149,6 +149,7 @@ LOGFILE     := framac/results/frama-c-rte-eva-wp-ref.log
 EVA_SESSION := framac/results/frama-c-rte-eva.session
 EVA_LOGFILE := framac/results/frama-c-rte-eva.log
 TIMESTAMP   := framac/results/timestamp-calcium_wp-eva.txt
+EVAREPORT   := framac/results/eva_report_red.txt
 JOBS        := $(shell nproc)
 # Does this flag could be overriden by env (i.e. using ?=)
 TIMEOUT     := 15
@@ -202,7 +203,10 @@ FRAMAC_EVA_FLAGS:=\
 		    -eva-use-spec usbotghs_endpoint_stall_clear \
 		    -eva-use-spec usbotghs_endpoint_set_nak \
 		    -eva-use-spec usbotghs_endpoint_clear_nak \
-		    -eva-log a:$(EVA_LOGFILE)
+		    -eva-log a:$(EVA_LOGFILE) \
+		    -eva-report-red-statuses $(EVAREPORT)\
+            -metrics \
+			-metrics-eva-cover *.c
 
 FRAMAC_WP_FLAGS:=\
 	        -wp \

@@ -27,6 +27,12 @@
 #include "libc/regutils.h"
 #include "libusbctrl.h"
 
+typedef void (*usb_bbb_cb_cmd_received_t)(uint8_t *cdb, uint8_t cdb_len);
+typedef void (*usb_bbb_cb_data_received_t)(uint32_t size);
+typedef void (*usb_bbb_cb_data_sent_t)(void);
+
+
+
 /**
  * usb_bbb_init - Initialize the bulk only layer
  * @cmd_received: callback called when a command is received. Parameters are the
@@ -39,10 +45,9 @@ mbed_error_t usb_bbb_configure(uint32_t usbdci_handler);
 
 void usb_bbb_reconfigure(void);
 
-void    usb_bbb_declare(void (*cmd_received)(uint8_t cdb[],
-                                             uint8_t cdb_len),
-                       void(*data_received)(uint32_t),
-                       void(*data_sent)(void));
+void usb_bbb_declare(usb_bbb_cb_cmd_received_t cmd_received,
+                     usb_bbb_cb_data_received_t data_received,
+                     usb_bbb_cb_data_sent_t data_sent);
 
 enum csw_status {
     CSW_STATUS_SUCCESS = 0,
@@ -71,7 +76,7 @@ void    usb_bbb_send(const uint8_t * src, uint32_t size);
  * @size: number of bytes to read.
  * @ep: endpoint on which read data.
  */
-void    usb_bbb_recv(void *dst, uint32_t size);
+void    usb_bbb_recv(uint8_t *dst, uint32_t size);
 
 void    read_next_cmd(void);
 

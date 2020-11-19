@@ -24,7 +24,7 @@
 #ifndef SCSI_CMD_H_
 #define SCSI_CMD_H_
 
-
+#ifndef __FRAMAC__
 /* SCSI commands list */
 typedef enum {
     SCSI_CMD_FORMAT_UNIT = 0x04,        // Mandatory
@@ -236,6 +236,7 @@ typedef struct __attribute__((packed)) {
     u_cdb_payload payload;
 } cdb_t;
 
+#endif/*__FRAMAC__*/
 
 
 #endif /*!SCSI_CMD_H_ */

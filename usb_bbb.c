@@ -27,17 +27,11 @@
 #include "libusbotghs.h"
 #include "libusbctrl.h"
 #include "usb_bbb.h"
-#include "scsi.h" /* framac content */
 #include "libc/syscall.h"
 #include "libc/sanhandlers.h"
 #include "libc/sync.h"
+#include "api/scsi.h"
 #include "usb_control_mass_storage.h"
-
-#ifdef __FRAMAC__
-# include "usb_bbb_framac.h"
-# include "scsi_automaton.h"
-#endif
-
 
 #define BBB_DEBUG CONFIG_USR_LIB_MASSSTORAGE_BBB_DEBUG
 
@@ -57,10 +51,6 @@ typedef enum bbb_state {
     USB_BBB_STATE_STATUS,
 } usb_bbb_state_t;
 
-typedef void (*usb_bbb_cb_cmd_received_t)(uint8_t cdb[], uint8_t cdb_len);
-typedef void (*usb_usb_cb_data_received_t)(uint32_t size);
-typedef void (*usb_usb_cb_data_sent_t)(void);
-
 /*
  * This is the overall BBB context, set at initialization time.
  */
@@ -68,8 +58,8 @@ typedef struct {
     uint8_t                     state;
     usbctrl_interface_t         iface;
     usb_bbb_cb_cmd_received_t   cb_cmd_received;
-    usb_usb_cb_data_received_t  cb_data_received;
-    usb_usb_cb_data_sent_t      cb_data_sent;
+    usb_bbb_cb_data_received_t  cb_data_received;
+    usb_bbb_cb_data_sent_t      cb_data_sent;
     uint32_t                    tag;
 } usb_bbb_context_t;
 
@@ -144,13 +134,22 @@ void read_next_cmd(void)
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
   @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx, queued_cdb, reset_requested;
 
-  @behavior invinput:
-  @   assumes (size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS);
-  @   ensures \result == MBED_ERROR_INVPARAM;
+  @ behavior invinput:
+  @    assumes (size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS);
+  @    ensures \result == MBED_ERROR_INVPARAM;
 
-  @behavior ok:
-  @   assumes !(size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun  >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS);
-  @   ensures \result == MBED_ERROR_NONE;
+  @ behavior invcdblen:
+  @    assumes !(size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun  >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS);
+  @    assumes cbw.cdb_len.cdb_len == 0;
+  @    ensures \result == MBED_ERROR_INVPARAM;
+
+  @ behavior ok:
+  @    assumes !(size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun  >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS);
+  @    assumes cbw.cdb_len.cdb_len > 0;
+  @    ensures \result == MBED_ERROR_NONE;
+
+  @ complete behaviors;
+  @ disjoint behaviors;
   */
 static mbed_error_t usb_bbb_cmd_received(uint32_t size)
 {
@@ -176,6 +175,11 @@ static mbed_error_t usb_bbb_cmd_received(uint32_t size)
         errcode = MBED_ERROR_INVPARAM;
         goto err;
     }
+    if (cbw.cdb_len.cdb_len == 0) {
+        /* cdb with null size ? */
+        errcode = MBED_ERROR_INVPARAM;
+        goto err;
+    }
     set_u32_with_membarrier(&bbb_ctx.tag, cbw.tag);
     set_u8_with_membarrier(&bbb_ctx.state, USB_BBB_STATE_CMD);
 #ifndef __FRAMAC__
@@ -198,7 +202,9 @@ err:
 #ifndef __FRAMAC__
 static
 #endif
-mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)), uint32_t size, uint8_t ep __attribute__((unused)))
+mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)),
+                                   uint32_t size,
+                                   uint8_t ep __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
 
@@ -235,7 +241,9 @@ err:
 #ifndef __FRAMAC__
 static
 #endif
-mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)), uint32_t size __attribute__((unused)), uint8_t ep __attribute__((unused)))
+mbed_error_t usb_bbb_data_sent(uint32_t dev_id __attribute__((unused)),
+                               uint32_t size __attribute__((unused)),
+                               uint8_t ep __attribute__((unused)))
 {
     log_printf("[USB BBB] %s (state: %x)\n", __func__, bbb_ctx.state);
     switch (bbb_ctx.state) {
@@ -275,8 +283,9 @@ err:
   @ disjoint behaviors;
   @ complete behaviors;
   */
-void usb_bbb_declare(void (*cmd_received)(uint8_t cdb[], uint8_t cdb_len),
-                     void(*data_received)(uint32_t), void(*data_sent)(void))
+void usb_bbb_declare(usb_bbb_cb_cmd_received_t cmd_received,
+                     usb_bbb_cb_data_received_t data_received,
+                     usb_bbb_cb_data_sent_t data_sent)
 {
     log_printf("[USB BBB] %s\n", __func__);
     /*  sanitize */
@@ -346,7 +355,7 @@ mbed_error_t usb_bbb_configure(uint32_t usbdci_handler)
 }
 
 /*@
-  @ requires \separated(&scsi_ctx,&state,&GHOST_state,&usbotghs_ctx,&bbb_ctx);
+  @ requires \separated(&scsi_ctx,&state,&usbotghs_ctx,&bbb_ctx);
   @ assigns bbb_ctx.state;
   */
 void usb_bbb_reconfigure(void)
@@ -365,11 +374,20 @@ struct __packed scsi_csw {
 };
 
 #define USB_BBB_CSW_SIG			0x53425355      /* "USBS" */
+/*@
+predicate valid_iface_handlers(usbctrl_interface_t *iface) =
+    iface->rqst_handler == (usb_rqst_handler_t)mass_storage_class_rqst_handler &&
+    iface->class_desc_handler == NULL &&
+    iface->eps[0].handler == (usb_ioep_handler_t)usb_bbb_data_received &&
+    iface->eps[1].handler == (usb_ioep_handler_t)usb_bbb_data_sent;
+*/
+
 
 /*@
   @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
   @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
+  @ ensures bbb_ctx.state == USB_BBB_STATE_STATUS;
   */
 void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
 {
@@ -389,6 +407,7 @@ void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
     if (errcode != MBED_ERROR_NONE) {
         log_printf("failure while sending data: err=%d\n", errcode);
     }
+    /*@ assert bbb_ctx.state == USB_BBB_STATE_STATUS; */
 }
 
 /*@
@@ -404,11 +423,11 @@ void usb_bbb_send(const uint8_t * src, uint32_t size)
 }
 
 /*@
-  @ requires \separated(((uint8_t*)dst + (0 .. size -1)), &cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ requires \separated((dst + (0 .. size -1)), &cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
   @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
   */
-void usb_bbb_recv(void *dst, uint32_t size)
+void usb_bbb_recv(uint8_t *dst, uint32_t size)
 {
     log_printf("[USB BBB] %s: %dB\n", __func__, size);
     set_u8_with_membarrier(&bbb_ctx.state, USB_BBB_STATE_DATA);
