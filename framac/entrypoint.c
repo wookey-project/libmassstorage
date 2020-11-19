@@ -528,10 +528,10 @@ int main(void)
     if (errcode != MBED_ERROR_NONE) {
         goto err;
     }
-    //test_fcn_massstorage() ;
+    test_fcn_massstorage() ;
     test_fcn_massstorage_errorcases() ;
     test_fcn_driver_eva() ;
-    //test_fcn_driver_eva_reset() ;
+    test_fcn_driver_eva_reset() ;
 err:
     return errcode;
 }

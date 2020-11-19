@@ -523,13 +523,16 @@ void scsi_data_sent(void)
 /*@
   @ requires \separated(&cbw, response, &bbb_ctx,&usbotghs_ctx,&state, &scsi_ctx);
   @ requires \valid_read(response);
-  @ assigns (((uint8_t*)response)[0..sizeof(mode_parameter10_data_t)-1]);
+  @ assigns *response;
   */
 static void scsi_forge_mode_sense_response(u_mode_parameter * response,
                                            uint8_t mode)
 {
     if (mode == SCSI_CMD_MODE_SENSE_6) {
+#ifndef __FRAMAC__
+        /* FIXME: this should be, in FramaC, also done */
         memset(response, 0x0, sizeof(mode_parameter6_data_t));
+#endif
         /* We only send back the mode parameter header with no data */
         response->mode6.header.mode_data_length = 3;    /* The number of bytes that follow. */
         response->mode6.header.medium_type = 0; /* The media type SBC. */
@@ -548,7 +551,10 @@ static void scsi_forge_mode_sense_response(u_mode_parameter * response,
         response->mode6.caching.NV_DIS = 0x1;
 #endif
     } else if (mode == SCSI_CMD_MODE_SENSE_10) {
+#ifndef __FRAMAC__
+        /* FIXME: this should be, in FramaC, also done */
         memset(response, 0x0, sizeof(mode_parameter10_data_t));
+#endif
         /* We only send back the mode parameter header with no data */
         response->mode10.header.mode_data_length = 3;   /* The number of bytes that follow. */
         response->mode10.header.medium_type = 0;        /* The media type SBC. */
@@ -678,8 +684,7 @@ err:
   @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, cdb, &state, &scsi_ctx);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
   @ assigns scsi_ctx.error, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx,
-            bbb_ctx.state, state,
-            GHOST_invalid_transition, GHOST_invalid_cmd;
+            bbb_ctx.state, state, GHOST_invalid_transition, GHOST_invalid_cmd;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -820,11 +825,12 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
-  @ requires \valid_read(current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
+  @ requires \valid_read(current_cdb);
 
-  @ assigns scsi_ctx.error, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, state ;
 
   */
 static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
@@ -834,18 +840,11 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        goto invalid_transition;
-    }
-
-    /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
-        goto invalid_transition;
-    }
+    /* no invalid transition as this CMD is allowed in both IDLE & ERROR states */
 
     next_state = scsi_next_state(current_state, current_cdb->operation);
     scsi_set_state(next_state);
+
     log_printf("%s: Prevent allow medium removal: %x\n", __func__,
            current_cdb->payload.cdb10_prevent_allow_removal.prevent);
     /* FIXME Add callback ? */
@@ -853,20 +852,15 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
 
     return;
     /* effective transition execution (if needed) */
-
- invalid_transition:
-    log_printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
-               ASCQ_NO_ADDITIONAL_SENSE);
-    return;
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx.error, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, scsi_ctx.error, state, GHOST_invalid_transition ;
 
   */
 static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
@@ -874,18 +868,21 @@ static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
 {
     uint8_t next_state;
 
-    log_printf("%s\n", __func__);
+    /*@ ghost
+        GHOST_invalid_transition = false;
+     */
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        goto invalid_transition;
-    }
+    log_printf("%s\n", __func__);
 
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
+
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
 
     cdb12_read_format_capacities_t *rfc =
@@ -921,10 +918,14 @@ static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
         log_printf("allocation length is 0\n");
         usb_bbb_send((uint8_t *) & response, size);
     }
+    /*@ assert GHOST_invalid_transition == \false; */
     return;
 
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -938,11 +939,12 @@ static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
  * with older Operating Systems
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,  &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
   */
 static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
@@ -955,19 +957,20 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
     uint64_t rw_addr;
     uint8_t next_state;
     mbed_error_t error;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+      */
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        goto invalid_transition;
-    }
-
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
 
     /* entering READ state... */
     scsi_set_state(next_state);
@@ -1002,7 +1005,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
+      @ loop assigns num_sectors, error, scsi_ctx.error, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         /* There is more data to send that the buffer is able to process,
@@ -1022,6 +1025,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         /* active wait for data to be sent */
         /*@
+          @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
           @ loop assigns \nothing;
           */
         while (!scsi_is_ready_for_data_send()) {
@@ -1062,9 +1066,13 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
     }
 
  end:
+    /*@ assert GHOST_invalid_transition == \false; */
     return;
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1074,11 +1082,12 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
 /* SCSI_CMD_READ_10 */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
   */
 static void scsi_cmd_read_data10(scsi_state_t current_state,
@@ -1091,6 +1100,9 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
     uint16_t rw_size;
     uint64_t rw_addr;
     uint8_t next_state;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+      */
 
     mbed_error_t error;
 
@@ -1138,7 +1150,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
+      @ loop assigns num_sectors, error, scsi_ctx.error, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         /* There is more data to send that the buffer is able to process,
@@ -1158,6 +1170,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         /* active wait for data to be sent */
         /*@
+          @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
           @ loop assigns \nothing;
           */
         while (!scsi_is_ready_for_data_send()) {
@@ -1197,9 +1210,13 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
         }
     }
  end:
+    /*@ assert GHOST_invalid_transition == \false; */
     return;
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1209,11 +1226,12 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
 /* SCSI_CMD_READ_CAPACITY_10 */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx,
+            bbb_ctx.state, state, GHOST_invalid_transition;
 
   */
 static void scsi_cmd_read_capacity10(scsi_state_t current_state,
@@ -1222,20 +1240,21 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
     uint8_t next_state;
     read_capacity10_parameter_data_t response;
     uint8_t ret;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+      */
 
     log_printf("%s\n", __func__);
-
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        goto invalid_transition;
-    }
 
     /* Sanity check and next state detection */
 
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
 
 
     /* entering target state */
@@ -1260,10 +1279,14 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
 
     usb_bbb_send((uint8_t *) & response,
                  sizeof(read_capacity10_parameter_data_t));
+    /*@ assert GHOST_invalid_transition == \false; */
     return;
 
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_cmd = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1272,11 +1295,12 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
 
 /* SCSI_CMD_READ_CAPACITY_16 */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,  &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx,
+            bbb_ctx.state, state, GHOST_invalid_transition;
 
   */
 static void scsi_cmd_read_capacity16(scsi_state_t current_state,
@@ -1286,19 +1310,20 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
     read_capacity16_parameter_data_t response;
     cdb16_read_capacity_16_t *rc16;
     uint8_t ret;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+      */
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        goto invalid_transition;
-    }
-
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
 
     /* entering target state */
     scsi_set_state(next_state);
@@ -1345,10 +1370,14 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
                      (rc16->allocation_length < sizeof(response)) ?
 		         rc16->allocation_length : sizeof(response));
     }
+    /*@ assert GHOST_invalid_transition == \false; */
     return;
 
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_cmd = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1358,11 +1387,12 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
 
 /* SCSI_CMD_REPORT_LUNS */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
 
   */
 static void scsi_cmd_report_luns(scsi_state_t current_state,
@@ -1371,30 +1401,32 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
     uint8_t next_state;
     cdb12_report_luns_t *rl;
     bool    check_condition = false;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+        GHOST_invalid_cmd = false;
+     */
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        goto invalid_transition;
-    }
-
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
 
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
 
     scsi_set_state(next_state);
 
     rl = &(current_cdb->payload.cdb12_report_luns);
 
-    if (ntohs(rl->allocation_length) < 16) {
+    if (ntohl(rl->allocation_length) < 16) {
         /* invalid: requested to be at least 16 by standard */
         goto invalid_cmd;
     }
-    if (ntohs(rl->allocation_length) < 24) {
+    if (ntohl(rl->allocation_length) < 24) {
         /* enable to send first lun informations */
         check_condition = true;
     }
@@ -1409,8 +1441,8 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
 
     /* sending response, up to required bytes */
     usb_bbb_send((uint8_t *) & response,
-                 (ntohs(rl->allocation_length) <
-                  sizeof(response)) ? ntohs(rl->
+                 (ntohl(rl->allocation_length) <
+                  sizeof(response)) ? ntohl(rl->
                                             allocation_length) :
                  sizeof(response));
 
@@ -1419,6 +1451,8 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
     if (check_condition) {
         usb_bbb_send_csw(SCSI_STATUS_CHECK_CONDITION, 0);
     }
+    /*@ assert GHOST_invalid_transition == \false; */
+    /*@ assert GHOST_invalid_cmd == \false; */
     return;
 
     /* XXX
@@ -1431,6 +1465,9 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
 
 
  invalid_cmd:
+    /*@ ghost
+        GHOST_invalid_cmd = true;
+      */
     log_printf("%s: malformed cmd\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1438,6 +1475,9 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
 
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1446,31 +1486,24 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
 
 /* SCSI_CMD_REQUEST_SENSE */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
-
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state ;
   */
 static void scsi_cmd_request_sense(scsi_state_t current_state,
                                    cdb_t * current_cdb)
 {
     uint8_t next_state;
-    request_sense_parameter_data_t data;
+    request_sense_parameter_data_t data = { 0 };
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        goto invalid_transition;
-    }
-
-    /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
-        goto invalid_transition;
-    }
+    /* @ assert SCSI_IDLE <= current_state <= SCSI_ERROR; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
 
     scsi_set_state(next_state);
 
@@ -1484,7 +1517,6 @@ static void scsi_cmd_request_sense(scsi_state_t current_state,
 
     /* descriptor format sense data shall be returned. */
 
-    memset((void *) &data, 0, sizeof(data));
     data.error_code = 0x70;
     data.sense_key = scsi_error_get_sense_key(scsi_ctx.error);
     data.additional_sense_length = 0x0a;
@@ -1495,25 +1527,18 @@ static void scsi_cmd_request_sense(scsi_state_t current_state,
 
     usb_bbb_send((uint8_t *) & data, sizeof(data));
     return;
-
-
- invalid_transition:
-    log_printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
-               ASCQ_NO_ADDITIONAL_SENSE);
-    return;
 }
 
 
 
 /* SCSI_CMD_MODE_SENSE(10) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
-
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state ;
   */
 static void scsi_cmd_mode_sense10(scsi_state_t current_state,
                                   cdb_t * current_cdb)
@@ -1522,18 +1547,9 @@ static void scsi_cmd_mode_sense10(scsi_state_t current_state,
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        log_printf("%s: current_cdb == NULL\n", __func__);
-        goto invalid_transition;
-    }
-
-    /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
-        goto invalid_transition;
-    }
-
+    /* @ assert SCSI_IDLE <= current_state <= SCSI_ERROR; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
 
 #if SCSI_DEBUG > 1
@@ -1541,33 +1557,28 @@ static void scsi_cmd_mode_sense10(scsi_state_t current_state,
 #endif
 
     /* Sending Mode Sense 10 answer */
-    mode_parameter10_data_t response;
+    u_mode_parameter response = { 0 };
 
-    scsi_forge_mode_sense_response((u_mode_parameter *) & response,
+    scsi_forge_mode_sense_response(& response,
                                    SCSI_CMD_MODE_SENSE_10);
     /* Sending Mode Sense 10 answer */
 
     /*usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t)); */
-    usb_bbb_send((uint8_t *) & response, sizeof(mode_parameter10_data_t));
+    usb_bbb_send((uint8_t *) & response.mode10, sizeof(mode_parameter10_data_t));
 
-    return;
-
- invalid_transition:
-    log_printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
-               ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
 
 /* SCSI_CMD_MODE_SENSE(6) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
 
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state ;
   */
 static void scsi_cmd_mode_sense6(scsi_state_t current_state,
                                  cdb_t * current_cdb)
@@ -1576,17 +1587,6 @@ static void scsi_cmd_mode_sense6(scsi_state_t current_state,
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        log_printf("%s: current_cdb == NULL\n", __func__);
-        goto invalid_transition;
-    }
-
-    /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
-        goto invalid_transition;
-    }
-
     next_state = scsi_next_state(current_state, current_cdb->operation);
     scsi_set_state(next_state);
 
@@ -1594,56 +1594,55 @@ static void scsi_cmd_mode_sense6(scsi_state_t current_state,
     scsi_debug_dump_cmd(current_cdb, SCSI_CMD_MODE_SENSE_10);
 #endif
 
-    mode_parameter6_data_t response;
+    u_mode_parameter response = { 0 };
 
-    scsi_forge_mode_sense_response((u_mode_parameter *) & response,
+    scsi_forge_mode_sense_response(& response,
                                    SCSI_CMD_MODE_SENSE_6);
-    /* Sending Mode Sense 10 answer */
+    /* Sending Mode Sense 6 answer */
 
     /*usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t)); */
     usb_bbb_send((uint8_t *) & response, sizeof(mode_parameter6_data_t));
-    return;
-
- invalid_transition:
-    log_printf("%s: invalid_transition\n", __func__);
-    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
-               ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
 /* SCSI_CMD_MODE_SELECT(6) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
   */
 static void scsi_cmd_mode_select6(scsi_state_t current_state,
                                   cdb_t * current_cdb)
 {
     uint8_t next_state;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+     */
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        log_printf("%s: current_cdb == NULL\n", __func__);
-        goto invalid_transition;
-    }
-
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
 
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
+    /*@ assert GHOST_invalid_transition == \false; */
     return;
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1653,50 +1652,33 @@ static void scsi_cmd_mode_select6(scsi_state_t current_state,
 
 /* SCSI_CMD_MODE_SELECT(10) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &state);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
   */
 static void scsi_cmd_mode_select10(scsi_state_t current_state,
                                    cdb_t * current_cdb)
 {
     uint8_t next_state;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+     */
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        log_printf("%s: current_cdb == NULL\n", __func__);
-        goto invalid_transition;
-    }
-
-    /*@ assert \at(state,Here) == \at(state,Pre); */
-    /*@ assert \at(current_cdb->operation,Here) == \at(current_cdb->operation,Pre); */
-
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
-
-        /* @ assert \forall integer i ; 0 <= i < scsi_automaton[current_state].trans_list.number ==> scsi_automaton[current_state].trans_list.transitions[i].request != current_cdb->operation; */
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
-
-    /*@ assert \at(state,Here) == \at(state,Pre); */
-    /*@ assert \at(current_cdb->operation,Here) == \at(current_cdb->operation,Pre); */
-
-    /* @ assert \exists integer i ; 0 <= i < scsi_automaton[current_state].trans_list.number && scsi_automaton[current_state].trans_list.transitions[i].request == current_cdb->operation; */
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
-
-
-    /*@ assert \at(state,Here) == \at(state,Pre); */
-
+    /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
-    /*@ assert state == next_state; */
-
-    /*@ assert \at(bbb_ctx.state,Here) == \at(bbb_ctx.state,Pre); */
-    /*@ assert \separated(&state, &bbb_ctx); */
 
     /* effective transition execution (if needed) */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
@@ -1704,6 +1686,9 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
     return;
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1713,31 +1698,32 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
 
 /* SCSI_CMD_TEST_UNIT_READY */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
   */
 static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
                                      cdb_t * current_cdb)
 {
     uint8_t next_state;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+     */
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        log_printf("%s: current_cdb == NULL\n", __func__);
-        goto invalid_transition;
-    }
-
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
 
     scsi_set_state(next_state);
 
@@ -1746,6 +1732,9 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
     return;
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1758,11 +1747,12 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
  * It is implemented here for retrocompatibility with old Operating System
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
   */
 static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
@@ -1775,24 +1765,20 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     mbed_error_t error;
     uint8_t next_state;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+      */
 
     log_printf("%s:\n", __func__);
 
-    if (current_cdb == NULL) {
-        return;
-    }
-
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        goto invalid_transition;
-    }
-
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
-
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
 
     scsi_set_state(next_state);
 
@@ -1828,20 +1814,24 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
+      @ loop assigns num_sectors, error, scsi_ctx.error, scsi_ctx.line_state,  state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
 	/* Wait until we have indeed received data from the USB lower layers */
-	while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
+        /*@
+          @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
+          @ loop assigns scsi_ctx.line_state;
+          */
+        while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
 #ifdef __FRAMAC__
-        /* emulating asynchronous trigger */
-        scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
+            /* emulating asynchronous trigger */
+            scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 #endif
-        request_data_membarrier();
-		continue;
-	}
+            request_data_membarrier();
+		    continue;
+	    }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
@@ -1867,6 +1857,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
         /* Wait until we have indeed received data from the USB lower layers */
         /*@
+          @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
           @ loop invariant SCSI_TRANSMIT_LINE_READY <= scsi_ctx.line_state <= SCSI_TRANSMIT_LINE_ERROR;
           @ loop assigns scsi_ctx.line_state;
           */
@@ -1893,9 +1884,13 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 #endif
     }
  end:
+    /*@ assert GHOST_invalid_transition == \false; */
     return;
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
@@ -1906,11 +1901,12 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
 /* SCSI_CMD_WRITE(10) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
   */
 static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
@@ -1920,27 +1916,24 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
     uint32_t rw_lba;
     uint16_t rw_size;
     uint64_t rw_addr;
+    /*@ ghost
+        GHOST_invalid_transition = false;
+      */
 
     mbed_error_t error;
     uint8_t next_state;
 
     log_printf("%s:\n", __func__);
 
-    if (current_cdb == NULL) {
-        return;
-    }
-
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        goto invalid_transition;
-    }
-
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
-
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
+
     scsi_set_state(next_state);
 
     /* SCSI standard says that the host should not request WRITE10 cmd
@@ -1972,20 +1965,24 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
+      @ loop assigns num_sectors, error, scsi_ctx.error, scsi_ctx.line_state,  state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
 	/* Wait until we have indeed received data from the USB lower layers */
-	while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
+        /*@
+          @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
+          @ loop assigns scsi_ctx.line_state;
+          */
+	    while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
 #ifdef __FRAMAC__
         /* emulating asynchronous trigger */
-        scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
+            scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
 #endif
-        request_data_membarrier();
-		continue;
-	}
+            request_data_membarrier();
+		    continue;
+	    }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
@@ -2012,6 +2009,7 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
         /* Wait until we have indeed received data from the USB lower layers */
         /*@
+          @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
           @ loop invariant SCSI_TRANSMIT_LINE_READY <= scsi_ctx.line_state <= SCSI_TRANSMIT_LINE_ERROR;
           @ loop assigns scsi_ctx.line_state;
           */
@@ -2038,15 +2036,24 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 #endif
     }
  end:
+    /*@ assert GHOST_invalid_transition == \false; */
     return;
 
  invalid_transition:
+    /*@ ghost
+        GHOST_invalid_transition = true;
+      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
     return;
 }
 
+/*@
+  @ requires \separated(((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&bbb_ctx,&usbotghs_ctx);
+  @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
+  @ assigns bbb_ctx.state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx;
+  */
 mbed_error_t scsi_initialize_automaton(void)
 {
     /* read first command */
@@ -2058,10 +2065,11 @@ mbed_error_t scsi_initialize_automaton(void)
  * SCSI Automaton execution
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires SCSI_IDLE <= state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
 
   */
 void scsi_exec_automaton(void)
