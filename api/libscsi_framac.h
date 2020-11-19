@@ -2,10 +2,14 @@
 #define LIBSCSI_FRAMAC_
 
 #include "libc/types.h"
+#include "libusbotghs.h"
 
 #ifdef __FRAMAC__
 
 /* 1. About BBB */
+
+#define BBB_IN_EP 1
+#define BBB_OUT_EP 2
 
 mbed_error_t usb_bbb_data_received(uint32_t dev_id __attribute__((unused)), uint32_t size, uint8_t ep __attribute__((unused)));
 
@@ -35,7 +39,7 @@ typedef struct {
 } usb_bbb_context_t;
 
 
-static usb_bbb_context_t bbb_ctx = {
+usb_bbb_context_t bbb_ctx = {
     .state = USB_BBB_STATE_READY,
     .iface = { 0 },
     .cb_cmd_received = NULL,
@@ -72,7 +76,6 @@ struct scsi_cbw cbw;
 
 struct scsi_cbw *usb_bbb_get_cbw(void);
 
-
 /* 2. About SCSI */
 
 /* moved state definition here to allow ACSL usage in assigns */
@@ -82,31 +85,6 @@ typedef enum scsi_state {
 } scsi_state_t;
 
 scsi_state_t state = SCSI_IDLE;
-
-/* SCSI commands list */
-typedef enum {
-    SCSI_CMD_FORMAT_UNIT = 0x04,        // Mandatory
-    SCSI_CMD_INQUIRY = 0x12,    // Mandatory
-    SCSI_CMD_MODE_SELECT_6 = 0x15,
-    SCSI_CMD_MODE_SELECT_10 = 0x55,
-    SCSI_CMD_MODE_SENSE_10 = 0x5a,      // Requiered for some bootable devices
-    SCSI_CMD_MODE_SENSE_6 = 0x1a,       // Requiered for some bootable devices
-    SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL = 0x1e,
-    SCSI_CMD_READ_6 = 0x08,     // Mandatory for olders
-    SCSI_CMD_READ_10 = 0x28,    // Mandatory
-    SCSI_CMD_READ_CAPACITY_10 = 0x25,   // Mandatory
-    SCSI_CMD_READ_FORMAT_CAPACITIES = 0x23,
-    SCSI_CMD_REPORT_LUNS = 0xa0,        // Mandatory
-    SCSI_CMD_REQUEST_SENSE = 0x03,      // Mandatory
-    SCSI_CMD_SEND_DIAGNOSTIC = 0x1d,    // Mandatory
-    SCSI_CMD_START_STOP_UNIT = 0x1b,
-    SCSI_CMD_SYNCHRONIZE_CACHE_10 = 0x35,
-    SCSI_CMD_TEST_UNIT_READY = 0x00,    // Mandatory
-    SCSI_CMD_VERIFY_10 = 0x2f,
-    SCSI_CMD_WRITE_6 = 0x0a,    // Mandatory for olders
-    SCSI_CMD_WRITE_10 = 0x2a,   // Mandatory
-    SCSI_CMD_READ_CAPACITY_16 = 0x9e,
-} scsi_operation_code_t;
 
 /***************************
  * about SCSI commands
@@ -338,6 +316,8 @@ void scsi_parse_cdb(uint8_t cdb[], uint8_t cdb_len);
 
 /* FramaC specific */
 scsi_context_t *scsi_get_context(void);
+
+void scsi_error(uint16_t sensekey, uint8_t asc, uint8_t ascq);
 
 
 /**************************************************************

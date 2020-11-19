@@ -27,6 +27,12 @@
 #include "libc/regutils.h"
 #include "libusbctrl.h"
 
+
+#ifndef __FRAMAC__
+#define BBB_IN_EP 1
+#define BBB_OUT_EP 2
+#endif
+
 typedef void (*usb_bbb_cb_cmd_received_t)(uint8_t *cdb, uint8_t cdb_len);
 typedef void (*usb_bbb_cb_data_received_t)(uint32_t size);
 typedef void (*usb_bbb_cb_data_sent_t)(void);

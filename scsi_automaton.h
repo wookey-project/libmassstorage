@@ -35,6 +35,7 @@ typedef enum scsi_state {
 } scsi_state_t;
 #endif
 
+
 scsi_state_t scsi_get_state(void);
 
 void    scsi_set_state(const scsi_state_t new_state);

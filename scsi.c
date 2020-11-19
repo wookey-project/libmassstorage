@@ -116,23 +116,28 @@ scsi_context_t *scsi_get_context(void) {
 /*@
   @ requires \separated(&state, &cbw, &scsi_ctx,((uint32_t *)(USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx, &bbb_ctx);
   @ requires sensekey < 0xff;
-  @ assigns scsi_ctx.error,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, state ;
+  @ assigns scsi_ctx.error,*((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
+            usbotghs_ctx, bbb_ctx.state, state;
   @ ensures state == SCSI_IDLE;
   */
-static void scsi_error(uint16_t sensekey, uint8_t asc, uint8_t ascq)
+#ifndef __FRAMAC__
+static
+#endif
+void scsi_error(uint16_t sensekey, uint8_t asc, uint8_t ascq)
 {
     log_printf("%s: %s: status=%d\n", __func__, __func__, sensekey);
     log_printf("%s: state -> Error\n", __func__);
     uint32_t err = 0;
 
-    /* @ assert sensekey <= 65535; */
+    /* @ assert sensekey <= 0xff; */
     err = (uint32_t)
-        (sensekey << 16 |
+        ((sensekey & 0xff) << 16 |
          asc << 8       |
          ascq);
     scsi_ctx.error = err;
     /* returning status */
     usb_bbb_send_csw(CSW_STATUS_FAILED, 0);
+    /* FIXME check assign */
     scsi_set_state(SCSI_IDLE);
 }
 
@@ -662,15 +667,19 @@ err:
 /* SCSI_CMD_INQUIRY */
 
 /*@ ghost
-    bool GHOST_invalid_transition = false;
-    bool GHOST_invalid_cmd = false;
+    // these two local variables help in the definition of the cmd_inquiry() function
+    // behaviors
+    static bool GHOST_invalid_transition = false;
+    static bool GHOST_invalid_cmd = false;
   */
 
 /*@
   @ requires \valid_read(cdb);
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, cdb);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, cdb, &state, &scsi_ctx);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
-  @ assigns scsi_ctx.error, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state ;
+  @ assigns scsi_ctx.error, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx,
+            bbb_ctx.state, state,
+            GHOST_invalid_transition, GHOST_invalid_cmd;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -709,10 +718,11 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
     /* Sanity check and next state detection */
 
     if (!scsi_is_valid_transition(current_state, cdb->operation)) {
+        /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
 
-    /* @ assert state == SCSI_IDLE; */
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, cdb->operation);
     /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
@@ -730,13 +740,18 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
     /* sanitize received cmd in conformity with SCSI standard */
     if (inq->EVPD == 0 && alen < 5) {
         /* invalid: additional fields parameter can't be send */
+        /*@ assert is_invalid_inquiry(&(cdb->payload.cdb6_inquiry)); */
         goto invalid_cmd;
     }
 
     if (inq->EVPD == 1 && alen < 4) {
         /* invalid: additional fields parameter can't be send */
+        /*@ assert is_invalid_inquiry(&(cdb->payload.cdb6_inquiry)); */
         goto invalid_cmd;
     }
+
+
+    /*@ assert !is_invalid_inquiry(&(cdb->payload.cdb6_inquiry)); */
 
     /* Most of support bits are set to 0
      * version is 0 because the device does not claim conformance to any
@@ -772,19 +787,17 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
     memcpy(response.product_revision, CONFIG_USB_DEV_REVISION,
            strlen(CONFIG_USB_DEV_REVISION));
 #endif
-
     log_printf("%s: %s\n", __func__, response.product_revision);
 
 
     if (inq->allocation_length > 0) {
         usb_bbb_send((uint8_t *) & response,
-                     (ntohs(inq->allocation_length) <
-                      sizeof(response)) ? ntohs(inq->
-                                                allocation_length) :
-                     sizeof(response));
+                     (alen < sizeof(response)) ? alen : sizeof(response));
     } else {
         log_printf("allocation length is 0\n");
     }
+    /*@ assert GHOST_invalid_transition == \false; */
+    /*@ assert GHOST_invalid_cmd == \false; */
     return;
 
  invalid_cmd:
@@ -2080,6 +2093,7 @@ void scsi_exec_automaton(void)
      */
 
     scsi_state_t current_state = scsi_get_state();
+    /*@ assert SCSI_IDLE <= current_state <= SCSI_ERROR; */
 
     switch (local_cdb.operation) {
         case SCSI_CMD_INQUIRY:
@@ -2250,7 +2264,7 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
 /*@
   @ requires \separated(&state,&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &usbotghs_ctx,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
 
-  @ assigns scsi_ctx, ctx_list[0 .. CONFIG_USBCTRL_FW_MAX_CTX-1], bbb_ctx.iface;
+  @ assigns scsi_ctx, ctx_list[0 .. CONFIG_USBCTRL_FW_MAX_CTX-1], bbb_ctx.iface, state;
   */
 mbed_error_t scsi_init(uint32_t usbdci_handler)
 {

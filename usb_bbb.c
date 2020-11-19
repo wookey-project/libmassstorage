@@ -104,17 +104,17 @@ struct scsi_cbw cbw;
 #ifdef __FRAMAC__
 /* required for ACSL */
 extern bool reset_requested;
-#endif
 
 
-#ifdef __FRAMAC__
 /*@
   @ assigns \nothing;
   */
 struct scsi_cbw *usb_bbb_get_cbw(void) {
     return &cbw;
 }
+
 #endif
+
 
 /*@
   @ requires \separated(((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&bbb_ctx,&usbotghs_ctx);

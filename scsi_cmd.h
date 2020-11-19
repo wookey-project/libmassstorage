@@ -24,7 +24,6 @@
 #ifndef SCSI_CMD_H_
 #define SCSI_CMD_H_
 
-#ifndef __FRAMAC__
 /* SCSI commands list */
 typedef enum {
     SCSI_CMD_FORMAT_UNIT = 0x04,        // Mandatory
@@ -49,6 +48,8 @@ typedef enum {
     SCSI_CMD_WRITE_10 = 0x2a,   // Mandatory
     SCSI_CMD_READ_CAPACITY_16 = 0x9e,
 } scsi_operation_code_t;
+
+#ifndef __FRAMAC__
 
 /***************************
  * about SCSI commands

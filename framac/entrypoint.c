@@ -5,6 +5,7 @@
 #include "libusbctrl.h"
 #include "api/scsi.h"
 #include "usb_bbb.h"
+#include "scsi_log.h"
 #include "usbmass_desc.h"
 #include "usb_control_mass_storage.h"
 #include "framac/entrypoint.h"
@@ -24,24 +25,39 @@ __attribute__ ((aligned(4)))
  * Support for Frama-C testing
  */
 
+/*@
+  @ assigns \nothing;
+  */
 void Frama_C_update_entropy_b(void) {
   Frama_C_entropy_source_b = Frama_C_entropy_source_b;
 }
 
 
+/*@
+  @ assigns \nothing;
+  */
 void Frama_C_update_entropy_8(void) {
   Frama_C_entropy_source_8 = Frama_C_entropy_source_8;
 }
 
+/*@
+  @ assigns \nothing;
+  */
 void Frama_C_update_entropy_16(void) {
   Frama_C_entropy_source_16 = Frama_C_entropy_source_16;
 }
 
+/*@
+  @ assigns \nothing;
+  */
 void Frama_C_update_entropy_32(void) {
   Frama_C_entropy_source_32 = Frama_C_entropy_source_32;
 }
 
 
+/*@
+  @ assigns \nothing;
+  */
 bool Frama_C_interval_b(bool min, bool max)
 {
   bool r,aux;
@@ -56,6 +72,9 @@ bool Frama_C_interval_b(bool min, bool max)
 
 
 
+/*@
+  @ assigns \nothing;
+  */
 uint8_t Frama_C_interval_8(uint8_t min, uint8_t max)
 {
   uint8_t r,aux;
@@ -69,6 +88,9 @@ uint8_t Frama_C_interval_8(uint8_t min, uint8_t max)
 }
 
 
+/*@
+  @ assigns \nothing;
+  */
 uint16_t Frama_C_interval_16(uint16_t min, uint16_t max)
 {
   uint16_t r,aux;
@@ -81,6 +103,9 @@ uint16_t Frama_C_interval_16(uint16_t min, uint16_t max)
   return r;
 }
 
+/*@
+  @ assigns \nothing;
+  */
 uint32_t Frama_C_interval_32(uint32_t min, uint32_t max)
 {
   uint32_t r,aux;
@@ -124,7 +149,8 @@ void scsi_reset_device(void)
 mbed_error_t storage_read(uint32_t sector_address __attribute__((unused)),
                           uint32_t num_sectors    __attribute__((unused)))
 {
-    return MBED_ERROR_NONE;
+    mbed_error_t errcode = Frama_C_interval_8(0,16);
+    return errcode;
 }
 
 /*@
@@ -133,7 +159,8 @@ mbed_error_t storage_read(uint32_t sector_address __attribute__((unused)),
 mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
                            uint32_t num_sectors    __attribute__((unused)))
 {
-    return MBED_ERROR_NONE;
+    mbed_error_t errcode = Frama_C_interval_8(0,16);
+    return errcode;
 }
 
 /* TODO: The 2 following functions may fails in case of storage error (read error/write error).
@@ -146,7 +173,8 @@ mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
 mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unused)),
                                        uint32_t num_sectors __attribute__((unused)))
 {
-    return MBED_ERROR_NONE;
+    mbed_error_t errcode = Frama_C_interval_8(0,16);
+    return errcode;
 }
 
 /*@
@@ -155,7 +183,8 @@ mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unuse
 mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unused)),
                                         uint32_t num_sectors __attribute__((unused)))
 {
-    return MBED_ERROR_NONE;
+    mbed_error_t errcode = Frama_C_interval_8(0,16);
+    return errcode;
 }
 
 /*@
@@ -216,6 +245,8 @@ void test_fcn_massstorage(){
 }
 
 void test_fcn_massstorage_errorcases(){
+    scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
+               ASCQ_NO_ADDITIONAL_SENSE);
 
 }
 
@@ -375,6 +406,7 @@ void test_fcn_driver_eva() {
      * This is a **normal** behavior of the stack, but this impacts the capacity to check
      * the overall code. To avoid this, we loop on the following sequence */
     uint8_t table_size = sizeof(cmd_sequence) / sizeof(cmd_data_t);
+#if 1
     /*@
       @ loop invariant 0 <= i <= 40;
       @ loop variant 40-i;
@@ -392,6 +424,8 @@ void test_fcn_driver_eva() {
     cbw->cdb[0]  = SCSI_CMD_READ_6;
     launch_data_recv_and_exec(cbw);
 
+
+#endif
     scsi_set_state(SCSI_ERROR);
 
     /* INQUIRY is not valid in ERROR state */
@@ -400,6 +434,12 @@ void test_fcn_driver_eva() {
     launch_data_recv_and_exec(cbw);
 
     scsi_set_state(SCSI_IDLE);
+    /* INQUIRY is not valid in ERROR state */
+    cbw->cdb_len.cdb_len = sizeof(cdb6_inquiry_t);
+    cbw->cdb[0]  = SCSI_CMD_INQUIRY;
+    launch_data_recv_and_exec(cbw);
+
+#if 1
     /* inexistant next state */
     scsi_next_state(SCSI_ERROR, SCSI_CMD_READ_6);
 
@@ -431,6 +471,7 @@ void test_fcn_driver_eva() {
     cbw->lun.lun = CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS;
     usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
     cbw->lun.lun = 0;
+#endif
 
 err:
     return;
@@ -487,10 +528,10 @@ int main(void)
     if (errcode != MBED_ERROR_NONE) {
         goto err;
     }
-    test_fcn_massstorage() ;
+    //test_fcn_massstorage() ;
     test_fcn_massstorage_errorcases() ;
     test_fcn_driver_eva() ;
-    test_fcn_driver_eva_reset() ;
+    //test_fcn_driver_eva_reset() ;
 err:
     return errcode;
 }
