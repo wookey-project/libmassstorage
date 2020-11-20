@@ -191,13 +191,15 @@ mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unus
   @ requires \valid(numblocks);
   @ requires \valid(blocksize);
   @ requires \separated(numblocks, blocksize);
+  @ assigns *numblocks, *blocksize;
 */
 mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize)
 {
+    mbed_error_t errcode = Frama_C_interval_8(0,16);
     /* 4GB backend storage size */
     *numblocks = 1024*1024;
     *blocksize = 4096;
-    return MBED_ERROR_NONE;
+    return errcode;
 }
 
 /*********************************************************************
@@ -248,6 +250,9 @@ void test_fcn_massstorage_errorcases(){
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
 
+    /* testing invalid transitions */
+    scsi_is_valid_transition(SCSI_ERROR, SCSI_CMD_INQUIRY);
+    scsi_is_valid_transition(SCSI_IDLE,  0xff);
 }
 
 /*requests, triggers... This is specially required for the SCSI stack as all
@@ -406,7 +411,6 @@ void test_fcn_driver_eva() {
      * This is a **normal** behavior of the stack, but this impacts the capacity to check
      * the overall code. To avoid this, we loop on the following sequence */
     uint8_t table_size = sizeof(cmd_sequence) / sizeof(cmd_data_t);
-#if 1
     /*@
       @ loop invariant 0 <= i <= 40;
       @ loop variant 40-i;
@@ -417,15 +421,7 @@ void test_fcn_driver_eva() {
         launch_data_recv_and_exec(cbw);
     }
 
-    /* checking invalid transition */
-    scsi_set_state(SCSI_ERROR);
-
-    cbw->cdb_len.cdb_len = sizeof(cdb6_t);
-    cbw->cdb[0]  = SCSI_CMD_READ_6;
-    launch_data_recv_and_exec(cbw);
-
-
-#endif
+#if 0
     scsi_set_state(SCSI_ERROR);
 
     /* INQUIRY is not valid in ERROR state */
@@ -439,7 +435,9 @@ void test_fcn_driver_eva() {
     cbw->cdb[0]  = SCSI_CMD_INQUIRY;
     launch_data_recv_and_exec(cbw);
 
-#if 1
+    scsi_set_state(SCSI_IDLE);
+#endif
+
     /* inexistant next state */
     scsi_next_state(SCSI_ERROR, SCSI_CMD_READ_6);
 
@@ -471,7 +469,6 @@ void test_fcn_driver_eva() {
     cbw->lun.lun = CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS;
     usb_bbb_data_received(7, sizeof(struct scsi_cbw), 2);
     cbw->lun.lun = 0;
-#endif
 
 err:
     return;

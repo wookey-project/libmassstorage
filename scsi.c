@@ -46,6 +46,11 @@
 
 #include "libc/sanhandlers.h"
 
+#ifdef __FRAMAC__
+/* requested to access entropy sources to emulate backend errors */
+# include "framac/entrypoint.h"
+#endif
+
 
 /*
  * The SCSI stack context. This is a global variable, which means
@@ -161,16 +166,20 @@ void scsi_error(uint16_t sensekey, uint8_t asc, uint8_t ascq)
 static inline mbed_error_t enter_critical_section(void)
 {
     uint8_t ret;
+    mbed_error_t errcode = MBED_ERROR_NONE;
 
 #ifndef __FRAMAC__
     /* this is a syscall requiring the kernel to lock ISR for a short time */
     ret = sys_lock(LOCK_ENTER); /* Enter in critical section */
     if (ret != SYS_E_DONE) {
         log_printf("%s: Error: failed entering critical section!\n", __func__);
-        return MBED_ERROR_BUSY;
+        errcode = MBED_ERROR_BUSY;
     }
+#else
+    /* In FramaC case, we do not execute lock systcall, instead, we emulate various error cases */
+    errcode = Frama_C_interval_8(0,5);
 #endif
-    return MBED_ERROR_NONE;
+    return errcode;
 }
 
 /*
@@ -855,12 +864,26 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
+  @ requires \separated(&cbw, current_cdb, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
   @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
             usbotghs_ctx, bbb_ctx.state, scsi_ctx.error, state, GHOST_invalid_transition ;
+
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+
 
   */
 static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
@@ -887,6 +910,14 @@ static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
 
     cdb12_read_format_capacities_t *rfc =
         &(current_cdb->payload.cdb12_read_format_capacities);
+
+    uint32_t storage_size = scsi_ctx.storage_size;
+    if (storage_size == 0) {
+        /* This should not happend in a nominal way (i.e. should have been set previously */
+        scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
+                ASCQ_NO_ADDITIONAL_SENSE);
+        goto end;
+    }
 
     capacity_list_t response = {
         .list_header.reserved_1            = 0,
@@ -918,6 +949,7 @@ static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
         log_printf("allocation length is 0\n");
         usb_bbb_send((uint8_t *) & response, size);
     }
+end:
     /*@ assert GHOST_invalid_transition == \false; */
     return;
 
@@ -945,6 +977,21 @@ static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
 
   @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
             usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
+
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+
+
 
   */
 static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
@@ -981,7 +1028,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
     if (scsi_ctx.storage_size == 0) {
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
-        return;
+        goto end;
     }
 
     /* TODO: is the big endian is set only on the last 16 bytes of this
@@ -1089,6 +1136,21 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
   @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
             usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+
+
+
   */
 static void scsi_cmd_read_data10(scsi_state_t current_state,
                                  cdb_t * current_cdb)
@@ -1108,12 +1170,6 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
     log_printf("%s\n", __func__);
 
-    /* Sanity check */
-    if (current_cdb == NULL) {
-        log_printf("current cdb is null\n");
-        goto invalid_transition;
-    }
-
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
         log_printf("not valid transition from state %d\n", current_state);
@@ -1128,7 +1184,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
         log_printf("read capcity not yet set\n");
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
-        return;
+        goto end;
     }
 
     /* entering READ state... */
@@ -1233,6 +1289,19 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
   @ assigns scsi_ctx, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx,
             bbb_ctx.state, state, GHOST_invalid_transition;
 
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+
   */
 static void scsi_cmd_read_capacity10(scsi_state_t current_state,
                                      cdb_t * current_cdb)
@@ -1301,6 +1370,19 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
 
   @ assigns scsi_ctx, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx,
             bbb_ctx.state, state, GHOST_invalid_transition;
+
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
 
   */
 static void scsi_cmd_read_capacity16(scsi_state_t current_state,
@@ -1394,6 +1476,30 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
   @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
             usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
 
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+  @    ensures GHOST_invalid_cmd == \false;
+
+  @ behavior badinput:
+  @    assumes current_state == SCSI_IDLE;
+  @    assumes is_invalid_report_luns(&current_cdb->payload.cdb12_report_luns);
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures GHOST_invalid_cmd == \true;
+  @    ensures state == SCSI_IDLE;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    assumes is_invalid_report_luns(&current_cdb->payload.cdb12_report_luns);
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures GHOST_invalid_cmd == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+
+
   */
 static void scsi_cmd_report_luns(scsi_state_t current_state,
                                  cdb_t * current_cdb)
@@ -1414,11 +1520,6 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
         goto invalid_transition;
     }
 
-    /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
-    /* @ assert next_state == SCSI_IDLE; */
-
-    scsi_set_state(next_state);
 
     rl = &(current_cdb->payload.cdb12_report_luns);
 
@@ -1426,6 +1527,13 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
         /* invalid: requested to be at least 16 by standard */
         goto invalid_cmd;
     }
+
+    /* @ assert current_state == SCSI_IDLE; */
+    next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
+
+    scsi_set_state(next_state);
+
     if (ntohl(rl->allocation_length) < 24) {
         /* enable to send first lun informations */
         check_condition = true;
@@ -1614,6 +1722,19 @@ static void scsi_cmd_mode_sense6(scsi_state_t current_state,
   @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
             usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+
   */
 static void scsi_cmd_mode_select6(scsi_state_t current_state,
                                   cdb_t * current_cdb)
@@ -1658,6 +1779,19 @@ static void scsi_cmd_mode_select6(scsi_state_t current_state,
 
   @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
             usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
+
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
 
   */
 static void scsi_cmd_mode_select10(scsi_state_t current_state,
@@ -1704,6 +1838,19 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
 
   @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
             usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
+
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
 
   */
 static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
@@ -1754,6 +1901,19 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
   @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
             usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
 
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+
   */
 static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 {
@@ -1788,7 +1948,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
     if (scsi_ctx.storage_size == 0) {
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
-        return;
+        goto end;
     }
 
 
@@ -1907,6 +2067,19 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
   @ assigns scsi_ctx, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),
             usbotghs_ctx, bbb_ctx.state, GHOST_invalid_transition ;
+
+  @ behavior badstate:
+  @    assumes current_state != SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \true;
+
+  @ behavior ok:
+  @    assumes current_state == SCSI_IDLE;
+  @    ensures GHOST_invalid_transition == \false;
+  @    ensures state == SCSI_IDLE;
+
+
+  @ disjoint behaviors;
+  @ complete behaviors;
 
   */
 static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
@@ -2090,7 +2263,19 @@ void scsi_exec_automaton(void)
         log_printf("Unable to enter critical section!\n");
         goto nothing_to_do;
     }
+#ifdef __FRAMAC__
+    /* Here, we use a local memcpy implementation. The resulting execution is the
+     * same, but accepted by framaC.
+     * We keep the libC memcpy in non-FramaC implementation for performances reasons */
+    uint8_t *local_u8_cdb = (uint8_t*)&local_cdb;
+    uint8_t *queued_u8_cdb = (uint8_t*)&queued_cdb;
+    /*@ assert \valid(queued_u8_cdb+(0..sizeof(cdb_t)-1)); */
+    /*@ assert \valid(local_u8_cdb+(0..sizeof(cdb_t)-1)); */
+
+    FC_memcpy_u8(local_u8_cdb, queued_u8_cdb, sizeof(cdb_t));
+#else
     memcpy((void *) &local_cdb, (void *) &queued_cdb, sizeof(cdb_t));
+#endif
     /* we handle a signe command at a time, which is standard for the
      * SCSI automaton, as SCSI is syncrhonous */
     set_bool_with_membarrier(&scsi_ctx.queue_empty, true);
@@ -2219,13 +2404,24 @@ static void scsi_reset_context(void)
 /*@
   @ requires \separated(&scsi_ctx, &state, &bbb_ctx, buf + (0..len-1), &cbw);
   @ assigns scsi_ctx, state, bbb_ctx;
+
+  @ behavior invbuf:
+  @    assumes buf == NULL || len == 0;
+  @    ensures \result == MBED_ERROR_INVPARAM;
+
+  @ behavior ok:
+  @    assumes buf != NULL && len > 0;
+  @    ensures \result == MBED_ERROR_NONE;
+
+  @ disjoint behaviors;
+  @ complete behaviors;
   */
 mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
 {
 
     log_printf("%s\n", __func__);
 
-    if (!buf) {
+    if (!buf || len == 0) {
         goto init_error;
     }
     scsi_ctx.direction = SCSI_DIRECTION_IDLE,
@@ -2272,7 +2468,18 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
 /*@
   @ requires \separated(&state,&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &usbotghs_ctx,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
 
-  @ assigns scsi_ctx, ctx_list[0 .. CONFIG_USBCTRL_FW_MAX_CTX-1], bbb_ctx.iface, state;
+  @ assigns scsi_ctx, scsi_ctx.global_buf[0 .. scsi_ctx.global_buf_len-1], ctx_list[0 .. CONFIG_USBCTRL_FW_MAX_CTX-1], bbb_ctx.iface, state;
+
+  @ behavior invbuf:
+  @    assumes scsi_ctx.global_buf == NULL || scsi_ctx.global_buf_len == 0;
+  @    ensures \result == MBED_ERROR_INVSTATE;
+
+  @ behavior ok:
+  @    assumes scsi_ctx.global_buf != NULL && scsi_ctx.global_buf_len > 0;
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+
   */
 mbed_error_t scsi_init(uint32_t usbdci_handler)
 {
@@ -2286,6 +2493,7 @@ mbed_error_t scsi_init(uint32_t usbdci_handler)
         errcode = MBED_ERROR_INVSTATE;
         goto err;
     }
+    /*@ assert \valid(scsi_ctx.global_buf+(0..scsi_ctx.global_buf_len-1)); */
 
     log_printf("%s\n", __func__);
 

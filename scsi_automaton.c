@@ -33,12 +33,12 @@
  * functions
  ***************************************************************/
 
-#ifndef __FRAMAC__
+//#ifndef __FRAMAC__
 /* in FramaC case, state must be handled in ACSL content in usb_bbb.c, and as a
  * consequence must be exported. */
-static scsi_state_t state;
+scsi_state_t state = SCSI_IDLE;
 
-#endif
+//#endif
 /*
  * all allowed transitions and target states for each current state
  * empty fields are set as 0xff/0xff for request/state couple, which is
@@ -73,11 +73,11 @@ typedef struct scsi_operation_code_transition {
 
 typedef struct {
     uint8_t number;
-    scsi_operation_code_transition_t *transitions;
+    scsi_operation_code_transition_t const *transitions;
 } scsi_state_transitions_t;
 
 /* IDLE SCSI transitions */
-scsi_operation_code_transition_t scsi_idle_trans[] = {
+static const scsi_operation_code_transition_t scsi_idle_trans[] = {
     {SCSI_CMD_INQUIRY, SCSI_IDLE},
     {SCSI_CMD_MODE_SELECT_10, SCSI_IDLE},
     {SCSI_CMD_MODE_SELECT_6, SCSI_IDLE},
@@ -98,7 +98,7 @@ scsi_operation_code_transition_t scsi_idle_trans[] = {
 };
 
 /* ERROR SCSI transitions */
-scsi_operation_code_transition_t scsi_error_trans[] = {
+static const scsi_operation_code_transition_t scsi_error_trans[] = {
     {SCSI_CMD_MODE_SENSE_10, SCSI_IDLE},
     {SCSI_CMD_MODE_SENSE_6, SCSI_IDLE},
     {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL, SCSI_IDLE},
@@ -197,8 +197,8 @@ err:
  */
 /*@
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
-  @ requires \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1));
   @ requires \separated(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1),&state);
+  @ requires \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1));
   @ assigns \nothing;
 
   @behavior inv_req:
@@ -259,8 +259,8 @@ err:
 
 /*@
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
-  @ requires \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1));
   @ requires \separated(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1),&state);
+  @ requires \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1));
   @ assigns state;
 
   @behavior inv_req:

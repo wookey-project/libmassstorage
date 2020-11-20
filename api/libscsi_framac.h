@@ -84,7 +84,8 @@ typedef enum scsi_state {
     SCSI_ERROR,
 } scsi_state_t;
 
-scsi_state_t state = SCSI_IDLE;
+
+extern scsi_state_t state;
 
 /***************************
  * about SCSI commands
@@ -334,6 +335,16 @@ void scsi_error(uint16_t sensekey, uint8_t asc, uint8_t ascq);
   predicate is_invalid_inquiry(cdb6_inquiry_t *inq) =
     ((inq->EVPD == 0) && ((((inq->allocation_length & 0xff) << 8) | (inq->allocation_length >> 8)) < 5)) ||
     ((inq->EVPD == 1) && ((((inq->allocation_length & 0xff) << 8) | (inq->allocation_length >> 8)) < 4));
+
+
+  // INFO: We assumes that framaC is targetting x86-32 architecture (i.e. little indian architecture, for which
+  // ntohl() requires bytes inversion.
+  predicate is_invalid_report_luns(cdb12_report_luns_t *rl) =
+                        (((rl->allocation_length & 0xff)   << 24)    |
+                         ((rl->allocation_length & 0xff00) << 8)     |
+                         ((rl->allocation_length & 0xff0000) >> 8)   |
+                         ((rl->allocation_length & 0xff000000) >> 24)) < 16;
+
  */
 
 
