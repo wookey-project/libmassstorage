@@ -1,5 +1,3 @@
-usb_control_mass_storage.c:79:[wp] warning: Missing 'calls' for default behavior
-usb_control_mass_storage.c:59:[wp] warning: Missing 'calls' for default behavior
 usb_bbb.c:227:[wp] warning: \valid_function not yet implemented
 (rte: function_pointer: \valid_function(bbb_ctx.cb_data_received))
 usb_bbb.c:227:[wp] warning: \valid_function not yet implemented
@@ -8,15 +6,15 @@ usb_bbb.c:261:[wp] warning: \valid_function not yet implemented
 (rte: function_pointer: \valid_function(bbb_ctx.cb_data_sent))
 usb_bbb.c:261:[wp] warning: \valid_function not yet implemented
 (rte: pointer_value: \valid_function(bbb_ctx.cb_data_sent))
-scsi.c:634:[wp] warning: Logic cast from struct (cdb_t) not implemented yet
+scsi.c:626:[wp] warning: Logic cast from struct (cdb_t) not implemented yet
 usb_bbb.c:406:[wp] warning: Cast with incompatible pointers types (source: scsi_csw*) (target: uint8*)
 usb_bbb.c:128:[wp] warning: Cast with incompatible pointers types (source: scsi_cbw*) (target: uint8*)
-framac/entrypoint.c:418:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-framac/entrypoint.c:267:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:32:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:945:[wp] warning: Cast with incompatible pointers types
+framac/entrypoint.c:423:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+framac/entrypoint.c:269:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:937:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_capacity_list_t_109*) (target: uint8*)
-scsi.c:950:[wp] warning: Cast with incompatible pointers types
+scsi.c:942:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_capacity_list_t_109*) (target: uint8*)
 scsi.c:1078:[wp] warning: calculus failed on strategy
 for 'scsi_cmd_read_data6', behavior 'default!', all properties, both assigns or not
@@ -51,14 +49,32 @@ scsi.c:1675:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_mode_parameter10_data_t_116*) (target: uint8*)
 scsi.c:1712:[wp] warning: Cast with incompatible pointers types
    (source: __anonunion_u_mode_parameter_117*) (target: uint8*)
-scsi.c:350:[wp] warning: Concretization for comprehension sets not implemented yet
-scsi.c:339:[wp] warning: Concretization for comprehension sets not implemented yet
-/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:32:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:1987:[wp] warning: calculus failed on strategy
+for 'scsi_write_data6', behavior 'default!', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:1987:[wp] warning: calculus failed on strategy
+for 'scsi_write_data6', behavior 'badstate', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:1987:[wp] warning: calculus failed on strategy
+for 'scsi_write_data6', behavior 'ok', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:2161:[wp] warning: calculus failed on strategy
+for 'scsi_write_data10', behavior 'default!', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:2161:[wp] warning: calculus failed on strategy
+for 'scsi_write_data10', behavior 'badstate', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:2161:[wp] warning: calculus failed on strategy
+for 'scsi_write_data10', behavior 'ok', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 usb_bbb.c:192:[wp] warning: \valid_function not yet implemented
 (rte: function_pointer: \valid_function(bbb_ctx.cb_cmd_received))
 usb_bbb.c:192:[wp] warning: \valid_function not yet implemented
 (rte: pointer_value: \valid_function(bbb_ctx.cb_cmd_received))
-/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:32:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:331:[wp] warning: Concretization for comprehension sets not implemented yet
+scsi.c:342:[wp] warning: Concretization for comprehension sets not implemented yet
 scsi.c:1078:[wp] warning: calculus failed on strategy
 for 'scsi_cmd_read_data6_0', behavior 'default!', all properties, both assigns or not
 because unsupported non-natural loop without invariant property. (abort)
@@ -77,211 +93,197 @@ because unsupported non-natural loop without invariant property. (abort)
 scsi.c:1232:[wp] warning: calculus failed on strategy
 for 'scsi_cmd_read_data10_0', behavior 'ok', all properties, both assigns or not
 because unsupported non-natural loop without invariant property. (abort)
-[wp] 1509 goals scheduled
+scsi.c:1987:[wp] warning: calculus failed on strategy
+for 'scsi_write_data6_0', behavior 'default!', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:1987:[wp] warning: calculus failed on strategy
+for 'scsi_write_data6_0', behavior 'badstate', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:1987:[wp] warning: calculus failed on strategy
+for 'scsi_write_data6_0', behavior 'ok', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:2161:[wp] warning: calculus failed on strategy
+for 'scsi_write_data10_0', behavior 'default!', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:2161:[wp] warning: calculus failed on strategy
+for 'scsi_write_data10_0', behavior 'badstate', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+scsi.c:2161:[wp] warning: calculus failed on strategy
+for 'scsi_write_data10_0', behavior 'ok', all properties, both assigns or not
+because unsupported non-natural loop without invariant property. (abort)
+[wp] 1336 goals scheduled
 [wp] [Failed] Goal typed_ref_lemma_u16_and_is_u16
 Z3 4.4.1: Timeout (15s) (cached)
 CVC4 1.6: Unknown (cached)
 Alt-Ergo 2.3.2: Timeout (15s) (cached)
-[wp] [Failed] Goal typed_ref_enter_critical_section_assigns_exit
-Z3 4.4.1: Timeout (Qed:0.82ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:0.82ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:0.82ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_enter_critical_section_assigns_normal_part1
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_enter_critical_section_0_assigns_exit
-Z3 4.4.1: Timeout (Qed:0.96ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:0.96ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:0.96ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_enter_critical_section_0_assigns_normal_part1
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_handler_sanity_check_assigns_part1
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_handler_sanity_check_0_assigns_part1
-Z3 4.4.1: Timeout (Qed:2ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:2ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:2ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_handler_sanity_check_1_assigns_part1
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_handler_sanity_check_2_assigns_part1
-Z3 4.4.1: Timeout (Qed:4ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:4ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:4ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_handler_sanity_check_3_assigns_part1
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_handler_sanity_check_4_assigns_part1
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_mass_storage_class_rqst_handler_assigns_exit_part2
+Z3 4.4.1: Timeout (Qed:53ms) (15s)
+CVC4 1.6: Unknown (Qed:53ms)
+Alt-Ergo 2.3.2: Timeout (Qed:53ms) (15s)
+[wp] [Failed] Goal typed_ref_mass_storage_class_rqst_handler_assigns_normal_part2
+Z3 4.4.1: Timeout (Qed:51ms) (15s)
+CVC4 1.6: Unknown (Qed:51ms)
+Alt-Ergo 2.3.2: Timeout (Qed:51ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_call_scsi_is_valid_transition_requires
-Z3 4.4.1: Timeout (Qed:48ms) (15s)
-CVC4 1.6: Unknown (Qed:48ms)
-Alt-Ergo 2.3.2: Timeout (Qed:48ms) (15s)
+Z3 4.4.1: Timeout (Qed:21ms) (15s)
+CVC4 1.6: Unknown (Qed:21ms)
+Alt-Ergo 2.3.2: Timeout (Qed:21ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_badstate_ensures
-Z3 4.4.1: Timeout (Qed:4.9s) (15s)
-CVC4 1.6: Timeout (Qed:4.9s) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:4.9s) (15s)
+Z3 4.4.1: Timeout (Qed:5.4s) (15s)
+CVC4 1.6: Timeout (Qed:5.4s) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:5.4s) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_badstate_ensures_2
-Z3 4.4.1: Timeout (Qed:5.8s) (15s)
-CVC4 1.6: Timeout (Qed:5.8s) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:5.8s) (15s)
+Z3 4.4.1: Timeout (Qed:5.2s) (15s)
+CVC4 1.6: Timeout (Qed:5.2s) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:5.2s) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_0_badstate_ensures
-Z3 4.4.1: Timeout (Qed:4.0s) (15s)
-CVC4 1.6: Timeout (Qed:4.0s) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:4.0s) (15s)
+Z3 4.4.1: Timeout (Qed:4s) (15s)
+CVC4 1.6: Timeout (Qed:4s) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:4s) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_0_badstate_ensures_2
-Z3 4.4.1: Timeout (Qed:4.6s) (15s)
-CVC4 1.6: Timeout (Qed:4.6s) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:4.6s) (15s)
+Z3 4.4.1: Timeout (Qed:5.3s) (15s)
+CVC4 1.6: Timeout (Qed:5.3s) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:5.3s) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_select10_call_scsi_is_valid_transition_requires
-Z3 4.4.1: Timeout (Qed:14ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:14ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:14ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:9ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:9ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:9ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_0_ok_ensures_3
 Z3 4.4.1: Timeout (Qed:4.4s) (15s)
 CVC4 1.6: Timeout (Qed:4.4s) (15s)
 Alt-Ergo 2.3.2: Timeout (Qed:4.4s) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_select10_badstate_ensures
-Z3 4.4.1: Timeout (Qed:185ms) (15s)
-CVC4 1.6: Unknown (Qed:185ms)
-Alt-Ergo 2.3.2: Timeout (Qed:185ms) (15s)
+Z3 4.4.1: Timeout (Qed:184ms) (15s)
+CVC4 1.6: Unknown (Qed:184ms)
+Alt-Ergo 2.3.2: Timeout (Qed:184ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_select10_0_badstate_ensures
-Z3 4.4.1: Timeout (Qed:175ms) (15s)
-CVC4 1.6: Unknown (Qed:175ms)
-Alt-Ergo 2.3.2: Timeout (Qed:175ms) (15s)
+Z3 4.4.1: Timeout (Qed:160ms) (15s)
+CVC4 1.6: Unknown (Qed:160ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:160ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_select6_call_scsi_is_valid_transition_requires
-Z3 4.4.1: Timeout (Qed:10ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:10ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:10ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:14ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:14ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:14ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_select6_badstate_ensures
-Z3 4.4.1: Timeout (Qed:163ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:163ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:163ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:153ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:153ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:153ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_select6_0_badstate_ensures
-Z3 4.4.1: Timeout (Qed:134ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:134ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:134ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:151ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:151ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:151ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_select10_0_ok_ensures_2
-Z3 4.4.1: Timeout (Qed:86ms) (15s)
-CVC4 1.6: Unknown (Qed:86ms)
-Alt-Ergo 2.3.2: Timeout (Qed:86ms) (15s)
+Z3 4.4.1: Timeout (Qed:103ms) (15s)
+CVC4 1.6: Unknown (Qed:103ms)
+Alt-Ergo 2.3.2: Timeout (Qed:103ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_select6_0_ok_ensures_2
-Z3 4.4.1: Timeout (Qed:73ms) (15s)
-CVC4 1.6: Unknown (Qed:73ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:73ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:78ms) (15s)
+CVC4 1.6: Unknown (Qed:78ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:78ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_sense10_call_scsi_next_state_requires
-Z3 4.4.1: Timeout (Qed:11ms) (15s)
-CVC4 1.6: Unknown (Qed:11ms)
-Alt-Ergo 2.3.2: Timeout (Qed:11ms) (15s)
+Z3 4.4.1: Timeout (Qed:13ms) (15s)
+CVC4 1.6: Unknown (Qed:13ms)
+Alt-Ergo 2.3.2: Timeout (Qed:13ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_prevent_allow_medium_removal_call_scsi_next_state_requires
-Z3 4.4.1: Timeout (Qed:9ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:9ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:9ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:8ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:8ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:8ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_mode_sense6_call_scsi_next_state_requires
 Z3 4.4.1: Timeout (Qed:12ms) (15s)
 CVC4 1.6: Unknown (Qed:12ms)
 Alt-Ergo 2.3.2: Timeout (Qed:12ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_assigns_exit_part8
-Z3 4.4.1: Timeout (Qed:57ms) (15s)
-CVC4 1.6: Unknown (Qed:57ms)
-Alt-Ergo 2.3.2: Timeout (Qed:57ms) (15s)
+Z3 4.4.1: Timeout (Qed:51ms) (15s)
+CVC4 1.6: Unknown (Qed:51ms)
+Alt-Ergo 2.3.2: Timeout (Qed:51ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_assigns_normal_part8
-Z3 4.4.1: Timeout (Qed:76ms) (15s)
-CVC4 1.6: Unknown (Qed:76ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:76ms) (15s)
+Z3 4.4.1: Timeout (Qed:69ms) (15s)
+CVC4 1.6: Unknown (Qed:69ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:69ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_call_scsi_is_valid_transition_requires
 Z3 4.4.1: Timeout (Qed:24ms) (15s)
 CVC4 1.6: Unknown (Qed:24ms)
 Alt-Ergo 2.3.2: Timeout (Qed:24ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_badstate_ensures (Stronger)
-Z3 4.4.1: Timeout (Qed:599ms) (15s)
-CVC4 1.6: Unknown (Qed:599ms)
-Alt-Ergo 2.3.2: Timeout (Qed:599ms) (15s)
+Z3 4.4.1: Timeout (Qed:603ms) (15s)
+CVC4 1.6: Unknown (Qed:603ms)
+Alt-Ergo 2.3.2: Timeout (Qed:603ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_0_assigns_exit_part8
-Z3 4.4.1: Timeout (Qed:49ms) (15s)
-CVC4 1.6: Unknown (Qed:49ms)
-Alt-Ergo 2.3.2: Timeout (Qed:49ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_0_assigns_normal_part8
-Z3 4.4.1: Timeout (Qed:75ms) (15s)
-CVC4 1.6: Unknown (Qed:75ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:75ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_0_badstate_ensures (Stronger)
-Z3 4.4.1: Timeout (Qed:518ms) (15s)
-CVC4 1.6: Unknown (Qed:518ms)
-Alt-Ergo 2.3.2: Timeout (Qed:518ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_0_ok_ensures_2 (Stronger)
-Z3 4.4.1: Timeout (Qed:221ms) (15s)
-CVC4 1.6: Unknown (Qed:221ms)
-Alt-Ergo 2.3.2: Timeout (Qed:221ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_assigns_exit_part07 (Stronger)
-Z3 4.4.1: Timeout (Qed:133ms) (15s)
-CVC4 1.6: Unknown (Qed:133ms)
-Alt-Ergo 2.3.2: Timeout (Qed:133ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_assigns_exit_part15
-Z3 4.4.1: Timeout (Qed:76ms) (15s)
-CVC4 1.6: Unknown (Qed:76ms)
-Alt-Ergo 2.3.2: Timeout (Qed:76ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_assigns_normal_part07 (Stronger)
-Z3 4.4.1: Timeout (Qed:123ms) (15s)
-CVC4 1.6: Unknown (Qed:123ms)
-Alt-Ergo 2.3.2: Timeout (Qed:123ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_assigns_normal_part15
 Z3 4.4.1: Timeout (Qed:52ms) (15s)
-CVC4 1.6: Unknown (Qed:52ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:52ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_call_scsi_is_valid_transition_requires
-Z3 4.4.1: Timeout (Qed:17ms) (15s)
-CVC4 1.6: Unknown (Qed:17ms)
-Alt-Ergo 2.3.2: Timeout (Qed:17ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_badstate_ensures (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:920ms) (15s)
-CVC4 1.6: Unknown (Qed:920ms)
-Alt-Ergo 2.3.2: Timeout (Qed:920ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_assigns_exit_part07 (Stronger)
-Z3 4.4.1: Timeout (Qed:129ms) (15s)
-CVC4 1.6: Unknown (Qed:129ms)
-Alt-Ergo 2.3.2: Timeout (Qed:129ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_assigns_exit_part15
-Z3 4.4.1: Timeout (Qed:49ms) (15s)
-CVC4 1.6: Unknown (Qed:49ms)
-Alt-Ergo 2.3.2: Timeout (Qed:49ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_assigns_normal_part15
-Z3 4.4.1: Timeout (Qed:52ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:52ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:52ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_assigns_normal_part07 (Stronger)
+CVC4 1.6: Unknown (Qed:52ms)
+Alt-Ergo 2.3.2: Timeout (Qed:52ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_0_assigns_normal_part8
+Z3 4.4.1: Timeout (Qed:53ms) (15s)
+CVC4 1.6: Unknown (Qed:53ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:53ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_0_badstate_ensures (Stronger)
+Z3 4.4.1: Timeout (Qed:517ms) (15s)
+CVC4 1.6: Unknown (Qed:517ms)
+Alt-Ergo 2.3.2: Timeout (Qed:517ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_0_ok_ensures_2 (Stronger)
+Z3 4.4.1: Timeout (Qed:314ms) (15s)
+CVC4 1.6: Unknown (Qed:314ms)
+Alt-Ergo 2.3.2: Timeout (Qed:314ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_assigns_exit_part07 (Stronger)
+Z3 4.4.1: Timeout (Qed:125ms) (15s)
+CVC4 1.6: Unknown (Qed:125ms)
+Alt-Ergo 2.3.2: Timeout (Qed:125ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_assigns_exit_part15
+Z3 4.4.1: Timeout (Qed:55ms) (15s)
+CVC4 1.6: Unknown (Qed:55ms)
+Alt-Ergo 2.3.2: Timeout (Qed:55ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_assigns_normal_part15
+Z3 4.4.1: Timeout (Qed:56ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:56ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:56ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_assigns_normal_part07 (Stronger)
 Z3 4.4.1: Timeout (Qed:120ms) (15s)
 CVC4 1.6: Unknown (Qed:120ms)
 Alt-Ergo 2.3.2: Timeout (Qed:120ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_badstate_ensures (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:761ms) (15s)
-CVC4 1.6: Unknown (Qed:761ms)
-Alt-Ergo 2.3.2: Timeout (Qed:761ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_ok_ensures_2 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:415ms) (15s)
-CVC4 1.6: Unknown (Qed:415ms)
-Alt-Ergo 2.3.2: Timeout (Qed:415ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_call_scsi_is_valid_transition_requires
-Z3 4.4.1: Unknown (Qed:20ms)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_call_scsi_is_valid_transition_requires
+Z3 4.4.1: Timeout (Qed:20ms) (15s)
 CVC4 1.6: Unknown (Qed:20ms)
 Alt-Ergo 2.3.2: Timeout (Qed:20ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_badstate_ensures (Stronger, 2 warnings)
+Z3 4.4.1: Timeout (Qed:881ms) (15s)
+CVC4 1.6: Unknown (Qed:881ms)
+Alt-Ergo 2.3.2: Timeout (Qed:881ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_assigns_exit_part07 (Stronger)
+Z3 4.4.1: Timeout (Qed:114ms) (15s)
+CVC4 1.6: Unknown (Qed:114ms)
+Alt-Ergo 2.3.2: Timeout (Qed:114ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_assigns_exit_part15
+Z3 4.4.1: Timeout (Qed:52ms) (15s)
+CVC4 1.6: Unknown (Qed:52ms)
+Alt-Ergo 2.3.2: Timeout (Qed:52ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_assigns_normal_part07 (Stronger)
+Z3 4.4.1: Timeout (Qed:110ms) (15s)
+CVC4 1.6: Unknown (Qed:110ms)
+Alt-Ergo 2.3.2: Timeout (Qed:110ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_assigns_normal_part15
+Z3 4.4.1: Timeout (Qed:58ms) (15s)
+CVC4 1.6: Unknown (Qed:58ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:58ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_badstate_ensures (Stronger, 2 warnings)
+Z3 4.4.1: Timeout (Qed:904ms) (15s)
+CVC4 1.6: Unknown (Qed:904ms)
+Alt-Ergo 2.3.2: Timeout (Qed:904ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_ok_ensures_2 (Stronger, 2 warnings)
+Z3 4.4.1: Timeout (Qed:402ms) (15s)
+CVC4 1.6: Unknown (Qed:402ms)
+Alt-Ergo 2.3.2: Timeout (Qed:402ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_call_scsi_is_valid_transition_requires
+Z3 4.4.1: Timeout (Qed:24ms) (15s)
+CVC4 1.6: Unknown (Qed:24ms)
+Alt-Ergo 2.3.2: Timeout (Qed:24ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_badstate_ensures (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:820ms) (15s)
-CVC4 1.6: Unknown (Qed:820ms)
-Alt-Ergo 2.3.2: Timeout (Qed:820ms) (15s)
+Z3 4.4.1: Timeout (Qed:790ms) (15s)
+CVC4 1.6: Unknown (Qed:790ms)
+Alt-Ergo 2.3.2: Timeout (Qed:790ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_0_badstate_ensures (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:713ms) (15s)
-CVC4 1.6: Unknown (Qed:713ms)
-Alt-Ergo 2.3.2: Timeout (Qed:713ms) (15s)
+Z3 4.4.1: Timeout (Qed:738ms) (15s)
+CVC4 1.6: Unknown (Qed:738ms)
+Alt-Ergo 2.3.2: Timeout (Qed:738ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_complete_ok_badinput_badstate
 Z3 4.4.1: Timeout (Qed:11ms) (15s) (cached)
 CVC4 1.6: Unknown (Qed:11ms) (cached)
@@ -291,227 +293,131 @@ Z3 4.4.1: Timeout (Qed:12ms) (15s) (cached)
 CVC4 1.6: Unknown (Qed:12ms) (cached)
 Alt-Ergo 2.3.2: Timeout (Qed:12ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_0_ok_ensures_2 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:638ms) (15s)
-CVC4 1.6: Timeout (Qed:638ms) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:638ms) (15s)
+Z3 4.4.1: Timeout (Qed:708ms) (15s)
+CVC4 1.6: Timeout (Qed:708ms) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:708ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_call_scsi_is_valid_transition_requires
-Z3 4.4.1: Timeout (Qed:23ms) (15s)
-CVC4 1.6: Unknown (Qed:23ms)
-Alt-Ergo 2.3.2: Timeout (Qed:23ms) (15s)
+Z3 4.4.1: Timeout (Qed:21ms) (15s)
+CVC4 1.6: Unknown (Qed:21ms)
+Alt-Ergo 2.3.2: Timeout (Qed:21ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_badstate_ensures (Stronger)
-Z3 4.4.1: Timeout (Qed:994ms) (15s)
-CVC4 1.6: Timeout (Qed:994ms) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:994ms) (15s)
+Z3 4.4.1: Timeout (Qed:1.1s) (15s)
+CVC4 1.6: Timeout (Qed:1.1s) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:1.1s) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_badstate_ensures_2 (Stronger)
-Z3 4.4.1: Timeout (Qed:987ms) (15s)
-CVC4 1.6: Timeout (Qed:987ms) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:987ms) (15s)
+Z3 4.4.1: Timeout (Qed:1.1s) (15s)
+CVC4 1.6: Timeout (Qed:1.1s) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:1.1s) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_0_complete_ok_badinput_badstate
 Z3 4.4.1: Timeout (Qed:11ms) (15s) (cached)
 CVC4 1.6: Unknown (Qed:11ms) (cached)
 Alt-Ergo 2.3.2: Timeout (Qed:11ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_0_disjoint_ok_badinput_badstate
-Z3 4.4.1: Timeout (Qed:14ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:14ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:14ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:11ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:11ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:11ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_ok_ensures_2 (Stronger)
-Z3 4.4.1: Timeout (Qed:958ms) (15s)
-CVC4 1.6: Timeout (Qed:958ms) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:958ms) (15s)
+Z3 4.4.1: Timeout (Qed:996ms) (15s)
+CVC4 1.6: Timeout (Qed:996ms) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:996ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_0_badstate_ensures (Stronger)
-Z3 4.4.1: Timeout (Qed:945ms) (15s)
-CVC4 1.6: Timeout (Qed:945ms) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:945ms) (15s)
+Z3 4.4.1: Timeout (Qed:873ms) (15s)
+CVC4 1.6: Timeout (Qed:873ms) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:873ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_0_badstate_ensures_2 (Stronger)
-Z3 4.4.1: Timeout (Qed:1s) (15s)
-CVC4 1.6: Timeout (Qed:1s) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:1s) (15s)
+Z3 4.4.1: Timeout (Qed:995ms) (15s)
+CVC4 1.6: Timeout (Qed:995ms) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:995ms) (15s)
 [wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_call_scsi_is_valid_transition_requires
-Z3 4.4.1: Timeout (Qed:15ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:15ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:15ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_badstate_ensures
-Z3 4.4.1: Timeout (Qed:212ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:212ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:212ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_0_badstate_ensures
-Z3 4.4.1: Timeout (Qed:196ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:196ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:196ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_0_ok_ensures_2
-Z3 4.4.1: Timeout (Qed:104ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:104ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:104ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_0_ok_ensures_2 (Stronger)
-Z3 4.4.1: Timeout (Qed:932ms) (15s)
-CVC4 1.6: Timeout (Qed:932ms) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:932ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_request_sense_call_scsi_next_state_requires
-Z3 4.4.1: Timeout (Qed:14ms) (15s)
-CVC4 1.6: Unknown (Qed:14ms)
-Alt-Ergo 2.3.2: Timeout (Qed:14ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_storage_backend_capacity_assigns_exit
-Z3 4.4.1: Timeout (Qed:0.69ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:0.69ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:0.69ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_storage_backend_capacity_assigns_normal_part2
-Z3 4.4.1: Timeout (Qed:2ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:2ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:2ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_storage_backend_read_assigns_exit
-Z3 4.4.1: Timeout (Qed:0.88ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:0.88ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:0.88ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_storage_backend_read_assigns_normal_part1
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_storage_backend_write_assigns_exit
-Z3 4.4.1: Timeout (Qed:0.81ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:0.81ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:0.81ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_storage_backend_write_assigns_normal_part1
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_parse_cdb_ok_ensures (Stronger)
-Z3 4.4.1: Timeout (Qed:36ms) (15s)
-CVC4 1.6: Timeout (Qed:36ms) (15s)
-Alt-Ergo 2.3.2: Timeout (Qed:36ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assert_rte_unsigned_overflow (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:292ms) (15s)
-CVC4 1.6: Unknown (Qed:292ms)
-Alt-Ergo 2.3.2: Timeout (Qed:292ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_call_scsi_is_valid_transition_requires
 Z3 4.4.1: Timeout (Qed:10ms) (15s) (cached)
 CVC4 1.6: Unknown (Qed:10ms) (cached)
 Alt-Ergo 2.3.2: Timeout (Qed:10ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_loop_assigns_part2 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:231ms) (15s)
-CVC4 1.6: Unknown (Qed:231ms)
-Alt-Ergo 2.3.2: Timeout (Qed:231ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_badstate_ensures (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:2.0s) (15s)
-CVC4 1.6: Unknown (Qed:2.0s)
-Alt-Ergo 2.3.2: Timeout (Qed:2.0s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_badstate_ensures (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:2s) (15s)
-CVC4 1.6: Unknown (Qed:2s) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:2s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_ok_ensures_2 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:1.7s) (15s)
-CVC4 1.6: Unknown (Qed:1.7s)
-Alt-Ergo 2.3.2: Timeout (Qed:1.7s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_assert_rte_unsigned_downcast
-Z3 4.4.1: Timeout (Qed:139ms) (15s)
-CVC4 1.6: Unknown (Qed:139ms)
-Alt-Ergo 2.3.2: Timeout (Qed:139ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_call_scsi_is_valid_transition_requires
-Z3 4.4.1: Timeout (Qed:13ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:13ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:13ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_assert_rte_unsigned_overflow (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:278ms) (15s)
-CVC4 1.6: Unknown (Qed:278ms)
-Alt-Ergo 2.3.2: Timeout (Qed:278ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_loop_assigns_part2 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:286ms) (15s)
-CVC4 1.6: Unknown (Qed:286ms)
-Alt-Ergo 2.3.2: Timeout (Qed:286ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_badstate_ensures (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:2.5s) (15s)
-CVC4 1.6: Unknown (Qed:2.5s)
-Alt-Ergo 2.3.2: Timeout (Qed:2.5s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_0_badstate_ensures (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:2.1s) (15s)
-CVC4 1.6: Unknown (Qed:2.1s) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:2.1s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_0_ok_ensures_2 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:1.7s) (15s)
-CVC4 1.6: Unknown (Qed:1.7s)
-Alt-Ergo 2.3.2: Timeout (Qed:1.7s) (15s)
-[wp] [Failed] Goal typed_ref_storage_read_assigns_exit
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_storage_read_assigns_normal_part1
-Z3 4.4.1: Timeout (Qed:1ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:1ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:1ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_storage_write_assigns_exit
-Z3 4.4.1: Timeout (Qed:0.51ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:0.51ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:0.51ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_storage_write_assigns_normal_part1
-Z3 4.4.1: Timeout (Qed:0.76ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:0.76ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:0.76ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert
-Z3 4.4.1: Timeout (Qed:58ms) (15s)
-CVC4 1.6: Unknown (Qed:58ms)
-Alt-Ergo 2.3.2: Timeout (Qed:58ms) (15s)
-[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_Eva_pointer_value
-Z3 4.4.1: Timeout (Qed:75ms) (15s)
-CVC4 1.6: Unknown (Qed:75ms)
-Alt-Ergo 2.3.2: Timeout (Qed:75ms) (15s)
-[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_rte_mem_access
-Z3 4.4.1: Timeout (Qed:111ms) (15s)
-CVC4 1.6: Unknown (Qed:111ms)
-Alt-Ergo 2.3.2: Timeout (Qed:111ms) (15s)
-[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_rte_pointer_value
-Z3 4.4.1: Timeout (Qed:85ms) (15s)
-CVC4 1.6: Unknown (Qed:85ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:85ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_test_fcn_driver_eva_assert_rte_mem_access_2
-Z3 4.4.1: Timeout (Qed:186ms) (15s)
-CVC4 1.6: Unknown (Qed:186ms)
-Alt-Ergo 2.3.2: Timeout (Qed:186ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_badstate_ensures
+Z3 4.4.1: Timeout (Qed:189ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:189ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:189ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_0_badstate_ensures
+Z3 4.4.1: Timeout (Qed:194ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:194ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:194ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_0_ok_ensures_2
+Z3 4.4.1: Timeout (Qed:98ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:98ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:98ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_0_ok_ensures_2 (Stronger)
+Z3 4.4.1: Timeout (Qed:943ms) (15s)
+CVC4 1.6: Timeout (Qed:943ms) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:943ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_cmd_request_sense_call_scsi_next_state_requires
+Z3 4.4.1: Timeout (Qed:13ms) (15s)
+CVC4 1.6: Unknown (Qed:13ms)
+Alt-Ergo 2.3.2: Timeout (Qed:13ms) (15s)
+[wp] [Failed] Goal typed_ref_scsi_parse_cdb_ok_ensures (Stronger)
+Z3 4.4.1: Timeout (Qed:32ms) (15s)
+CVC4 1.6: Timeout (Qed:32ms) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:32ms) (15s)
 [wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_assigns_exit_part2 (Stronger, 3 warnings)
-Z3 4.4.1: Timeout (Qed:82ms) (15s)
-CVC4 1.6: Unknown (Qed:82ms)
-Alt-Ergo 2.3.2: Timeout (Qed:82ms) (15s)
+Z3 4.4.1: Timeout (Qed:53ms) (15s)
+CVC4 1.6: Unknown (Qed:53ms)
+Alt-Ergo 2.3.2: Timeout (Qed:53ms) (15s)
 [wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_assigns_exit_part2 (Stronger, 3 warnings)
-Z3 4.4.1: Timeout (Qed:53ms) (15s) (cached)
-CVC4 1.6: Unknown (Qed:53ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:53ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:56ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:56ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:56ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_assigns_normal_part6 (Stronger, 3 warnings)
-Z3 4.4.1: Timeout (Qed:83ms) (15s)
-CVC4 1.6: Unknown (Qed:83ms)
-Alt-Ergo 2.3.2: Timeout (Qed:83ms) (15s)
+Z3 4.4.1: Timeout (Qed:86ms) (15s)
+CVC4 1.6: Unknown (Qed:86ms)
+Alt-Ergo 2.3.2: Timeout (Qed:86ms) (15s)
 [wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_assigns_normal_part6 (Stronger, 3 warnings)
 Z3 4.4.1: Timeout (Qed:55ms) (15s)
 CVC4 1.6: Unknown (Qed:55ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:55ms) (15s)
+Alt-Ergo 2.3.2: Timeout (Qed:55ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_call_scsi_parse_cdb_requires (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:80ms) (15s)
-CVC4 1.6: Unknown (Qed:80ms)
-Alt-Ergo 2.3.2: Timeout (Qed:80ms) (15s)
+Z3 4.4.1: Timeout (Qed:56ms) (15s)
+CVC4 1.6: Unknown (Qed:56ms)
+Alt-Ergo 2.3.2: Timeout (Qed:56ms) (15s)
 [wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_call_scsi_parse_cdb_requires_2 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:82ms) (15s)
-CVC4 1.6: Unknown (Qed:82ms)
-Alt-Ergo 2.3.2: Timeout (Qed:82ms) (15s)
+Z3 4.4.1: Timeout (Qed:77ms) (15s)
+CVC4 1.6: Unknown (Qed:77ms)
+Alt-Ergo 2.3.2: Timeout (Qed:77ms) (15s)
 [wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_call_scsi_parse_cdb_requires (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:55ms) (15s)
-CVC4 1.6: Unknown (Qed:55ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:55ms) (15s)
+Z3 4.4.1: Timeout (Qed:58ms) (15s)
+CVC4 1.6: Unknown (Qed:58ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:58ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_call_scsi_parse_cdb_requires_2 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:80ms) (15s)
-CVC4 1.6: Unknown (Qed:80ms) (cached)
-Alt-Ergo 2.3.2: Timeout (Qed:80ms) (15s) (cached)
+Z3 4.4.1: Timeout (Qed:60ms) (15s)
+CVC4 1.6: Unknown (Qed:60ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:60ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_usb_bbb_send_assigns_exit_part2
+Z3 4.4.1: Timeout (Qed:53ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:53ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:53ms) (15s) (cached)
+[wp] [Failed] Goal typed_ref_usb_bbb_send_assigns_normal_part2
+Z3 4.4.1: Timeout (Qed:67ms) (15s) (cached)
+CVC4 1.6: Unknown (Qed:67ms) (cached)
+Alt-Ergo 2.3.2: Timeout (Qed:67ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_usb_bbb_data_received_assigns_exit_part2 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:14ms) (15s)
-CVC4 1.6: Unknown (Qed:14ms)
-Alt-Ergo 2.3.2: Timeout (Qed:14ms) (15s)
+Z3 4.4.1: Timeout (Qed:15ms) (15s)
+CVC4 1.6: Unknown (Qed:15ms)
+Alt-Ergo 2.3.2: Timeout (Qed:15ms) (15s)
 [wp] [Failed] Goal typed_ref_usb_bbb_data_received_assigns_normal_part3 (Stronger, 2 warnings)
-Z3 4.4.1: Timeout (Qed:32ms) (15s)
-CVC4 1.6: Unknown (Qed:32ms)
-Alt-Ergo 2.3.2: Timeout (Qed:32ms) (15s)
-[wp] [Cache] found:867, updated:264
-[wp] Proved goals: 1402 / 1509
-Qed:            1101  (0.05ms-35ms-4.6s)
-Alt-Ergo 2.3.2:  298  (15ms-6.4s-15s) (954) (interrupted: 107) (cached: 305)
-CVC4 1.6:        264  (50ms-588ms-2s) (interrupted: 13) (unknown: 94) (cached: 290)
-Z3 4.4.1:        248  (30ms-15s) (interrupted: 106) (unknown: 1) (cached: 272)
+Z3 4.4.1: Timeout (Qed:39ms) (15s)
+CVC4 1.6: Unknown (Qed:39ms)
+Alt-Ergo 2.3.2: Timeout (Qed:39ms) (15s)
+[wp] [Failed] Goal typed_ref_usb_bbb_send_csw_assigns_exit_part2 (Stronger)
+Z3 4.4.1: Timeout (Qed:58ms) (15s)
+CVC4 1.6: Unknown (Qed:58ms)
+Alt-Ergo 2.3.2: Timeout (Qed:58ms) (15s)
+[wp] [Failed] Goal typed_ref_usb_bbb_send_csw_assigns_normal_part2 (Stronger)
+Z3 4.4.1: Timeout (Qed:85ms) (15s)
+CVC4 1.6: Unknown (Qed:85ms)
+Alt-Ergo 2.3.2: Timeout (Qed:85ms) (15s)
+[wp] [Cache] found:816, updated:215
+[wp] Proved goals: 1261 / 1336
+Qed:             963  (0.05ms-36ms-5.1s)
+Alt-Ergo 2.3.2:  292  (15ms-6.5s-15s) (783) (interrupted: 75) (cached: 288)
+CVC4 1.6:        266  (50ms-171ms-2s) (interrupted: 13) (unknown: 62) (cached: 270)
+Z3 4.4.1:        248  (20ms-15s) (interrupted: 75) (cached: 258)
 [wp] warning: Memory model hypotheses for function 'usbotghs_send_data':
 /*@ behavior typed_ref: requires \separated(&usbotghs_ctx,src+(..)); */
 mbed_error_t usbotghs_send_data(uint8_t *src, uint32_t size, uint8_t ep_id);
@@ -545,7 +451,7 @@ void scsi_parse_cdb(uint8_t *cdb, uint8_t cdb_len);
 [wp] warning: Memory model hypotheses for function 'scsi_storage_backend_capacity':
 /*@
    behavior typed_ref:
-   requires \separated(numblocks,blocksize,&Frama_C_entropy_source_8);
+   requires \separated(numblocks,blocksize,&variable_errcode);
    requires \valid(numblocks);
    requires \valid(blocksize);
    */
@@ -585,6 +491,15 @@ void usb_bbb_send(uint8_t const *src, uint32_t size);
    requires \separated(\union(&usbotghs_ctx,&bbb_ctx,&cbw),dst+(..));
    */
 void usb_bbb_recv(uint8_t *dst, uint32_t size);
+[wp] warning: Memory model hypotheses for function 'mass_storage_class_rqst_handler':
+/*@
+   behavior typed_ref:
+   requires \separated(packet,&bbb_ctx);
+   requires \valid(packet);
+   */
+mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((
+                                             __unused__)),
+                                             usbctrl_setup_pkt_t *packet);
 [wp] warning: Memory model hypotheses for function 'set_u8_with_membarrier':
 /*@ behavior typed_ref: requires \valid(target); */
 __inline void set_u8_with_membarrier(uint8_t *target, uint8_t val);
@@ -790,24 +705,6 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
    */
 static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
                                      cdb_t *current_cdb);
-[wp] warning: Memory model hypotheses for function 'scsi_write_data6':
-/*@
-   behavior typed_ref:
-   requires \separated(current_cdb,
-              \union(&usbotghs_ctx,&bbb_ctx,&cbw,&state,&scsi_ctx,
-                scsi_automaton+(..)));
-   requires \valid(current_cdb);
-   */
-static void scsi_write_data6(scsi_state_t current_state, cdb_t *current_cdb);
-[wp] warning: Memory model hypotheses for function 'scsi_write_data10':
-/*@
-   behavior typed_ref:
-   requires \separated(current_cdb,
-              \union(&usbotghs_ctx,&bbb_ctx,&cbw,&state,&scsi_ctx,
-                scsi_automaton+(..)));
-   requires \valid(current_cdb);
-   */
-static void scsi_write_data10(scsi_state_t current_state, cdb_t *current_cdb);
 [wp] warning: Memory model hypotheses for function 'get_reg_value_1':
 /*@ behavior typed_ref: requires \valid(reg); */
 static uint32_t get_reg_value_1(uint32_t const volatile *reg, uint32_t mask,
@@ -1048,25 +945,6 @@ static void scsi_cmd_mode_select10_0(scsi_state_t current_state,
    */
 static void scsi_cmd_test_unit_ready_0(scsi_state_t current_state,
                                        cdb_t *current_cdb);
-[wp] warning: Memory model hypotheses for function 'scsi_write_data6_0':
-/*@
-   behavior typed_ref:
-   requires \separated(current_cdb,
-              \union(&usbotghs_ctx,&bbb_ctx,&cbw,&state,&scsi_ctx,
-                scsi_automaton+(..)));
-   requires \valid(current_cdb);
-   */
-static void scsi_write_data6_0(scsi_state_t current_state, cdb_t *current_cdb);
-[wp] warning: Memory model hypotheses for function 'scsi_write_data10_0':
-/*@
-   behavior typed_ref:
-   requires \separated(current_cdb,
-              \union(&usbotghs_ctx,&bbb_ctx,&cbw,&state,&scsi_ctx,
-                scsi_automaton+(..)));
-   requires \valid(current_cdb);
-   */
-static void scsi_write_data10_0(scsi_state_t current_state,
-                                cdb_t *current_cdb);
 [wp] warning: Memory model hypotheses for function 'get_reg_value_5':
 /*@ behavior typed_ref: requires \valid(reg); */
 static uint32_t get_reg_value_5(uint32_t const volatile *reg, uint32_t mask,

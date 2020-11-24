@@ -129,6 +129,7 @@ uint32_t Frama_C_interval_32(uint32_t min, uint32_t max)
  * Callbacks implementations that are required by libmassstorage API
  */
 
+mbed_error_t variable_errcode;
 
 /*@
   @ assigns \nothing;
@@ -149,7 +150,7 @@ void scsi_reset_device(void)
 mbed_error_t storage_read(uint32_t sector_address __attribute__((unused)),
                           uint32_t num_sectors    __attribute__((unused)))
 {
-    mbed_error_t errcode = Frama_C_interval_8(0,16);
+    mbed_error_t errcode = variable_errcode;
     return errcode;
 }
 
@@ -159,7 +160,7 @@ mbed_error_t storage_read(uint32_t sector_address __attribute__((unused)),
 mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
                            uint32_t num_sectors    __attribute__((unused)))
 {
-    mbed_error_t errcode = Frama_C_interval_8(0,16);
+    mbed_error_t errcode = variable_errcode;
     return errcode;
 }
 
@@ -167,13 +168,14 @@ mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
  * This should be tested (i.e. returning non-zero value in case of error) to check
  * resiliency on bad storage cases */
 
+
 /*@
   @ assigns \nothing;
   */
 mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unused)),
                                        uint32_t num_sectors __attribute__((unused)))
 {
-    mbed_error_t errcode = Frama_C_interval_8(0,16);
+    mbed_error_t errcode = variable_errcode;
     return errcode;
 }
 
@@ -183,7 +185,7 @@ mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unuse
 mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unused)),
                                         uint32_t num_sectors __attribute__((unused)))
 {
-    mbed_error_t errcode = Frama_C_interval_8(0,16);
+    mbed_error_t errcode = variable_errcode;
     return errcode;
 }
 
@@ -195,7 +197,7 @@ mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unus
 */
 mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize)
 {
-    mbed_error_t errcode = Frama_C_interval_8(0,16);
+    mbed_error_t errcode = variable_errcode;
     /* 4GB backend storage size */
     *numblocks = 1024*1024;
     *blocksize = 4096;
@@ -334,14 +336,17 @@ static const cmd_data_t cmd_sequence[] = {
   /* EOT */
 };
 
-void test_fcn_driver_eva() {
+/*@
+  @ requires \separated(&cbw,&ctx_list+(..),&usbotghs_ctx,&scsi_ctx,&bbb_ctx,(uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END));
+  */
+void test_fcn_driver_eva(void) {
 
 
     mbed_error_t errcode;
     usbctrl_context_t *ctx = NULL;
-    // 7 is the device id for USBOTGHS on Wookeyv3 config
-    // FIXME: should be replaced by a canonical identifier
-    usbctrl_get_context(7, &ctx);
+    ctx = &(ctx_list[0]);
+
+    /* assert \valid(ctx); */
 
     uint16_t maxlen = Frama_C_interval_16(0,65535);
     /*@ assert ctx != (usbctrl_context_t*)NULL ; */
@@ -519,6 +524,7 @@ void test_fcn_driver_eva_reset() {
 
 int main(void)
 {
+    variable_errcode = Frama_C_interval_8(0,16);
     mbed_error_t errcode;
 
     errcode = prepare_ctrl_ctx();

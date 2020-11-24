@@ -117,7 +117,7 @@ struct scsi_cbw *usb_bbb_get_cbw(void) {
 
 
 /*@
-  @ requires \separated(((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&bbb_ctx,&usbotghs_ctx);
+  @ requires \separated(((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&bbb_ctx,&usbotghs_ctx,&scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
   @ assigns bbb_ctx.state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx;
   */
@@ -132,7 +132,7 @@ void read_next_cmd(void)
 /*@
   @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx, queued_cdb, reset_requested;
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.queue_empty, queued_cdb, reset_requested;
 
   @ behavior invinput:
   @    assumes (size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS);
@@ -197,7 +197,7 @@ err:
 /*@
   @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx, queued_cdb, reset_requested;
+  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, queued_cdb, state, reset_requested;
   */
 #ifndef __FRAMAC__
 static

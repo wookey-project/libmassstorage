@@ -35,6 +35,7 @@
 #include "libc/syscall.h"
 #include "libc/sanhandlers.h"
 #include "libusbctrl.h"
+#include "api/scsi.h"
 
 static mass_storage_reset_trigger_t ms_reset_trigger = NULL;
 static device_reset_trigger_t device_reset_trigger = NULL;
@@ -43,20 +44,24 @@ static device_reset_trigger_t device_reset_trigger = NULL;
 /*
  * Enumeration phase MS_RESET
  */
+/*@
+  @ assigns \nothing;
+  */
 static void mass_storage_reset(void)
 {
     log_printf("Bulk-Only Mass Storage Reset\n");
     if (ms_reset_trigger != NULL) {
         /* Sanity check our callback before calling it */
 #ifndef __FRAMAC__
+        /* INFO: ms_reset_trigger is an upper layer callaback. Here, we consider upper
+         * layer content as assigning nothing, as the current proof is handling local library
+         * proof, not upper one. */
         if(handler_sanity_check((physaddr_t)ms_reset_trigger)){
             return;
         }
         else{
             ms_reset_trigger();
         }
-#else
-        ms_reset_trigger();
 #endif
     }
 }
@@ -64,19 +69,23 @@ static void mass_storage_reset(void)
 /*
  * Nominal phase device reset (critical communication error with device)
  */
+/*@
+  @ assigns \nothing;
+  */
 static void full_device_reset(void)
 {
     log_printf("Bulk-Only Mass Storage Reset\n");
     if(device_reset_trigger != NULL){
 #ifndef __FRAMAC__
+        /* INFO: device_reset_trigger is an upper layer callaback. Here, we consider upper
+         * layer content as assigning nothing, as the current proof is handling local library
+         * proof, not upper one. */
         /* Sanity check our callback before calling it */
         if(handler_sanity_check((physaddr_t)device_reset_trigger)){
             return;
         } else {
             device_reset_trigger();
         }
-#else
-        device_reset_trigger();
 #endif
     }
 }
@@ -88,6 +97,10 @@ static void full_device_reset(void)
  *
  * @param packet Setup packet
  */
+/*@
+    @ requires \separated(packet,&usbotghs_ctx, (uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END), &bbb_ctx);
+    @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
+  */
 mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((unused)),
                                              usbctrl_setup_pkt_t *packet)
 {

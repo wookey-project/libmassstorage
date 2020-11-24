@@ -142,7 +142,6 @@ void scsi_error(uint16_t sensekey, uint8_t asc, uint8_t ascq)
     scsi_ctx.error = err;
     /* returning status */
     usb_bbb_send_csw(CSW_STATUS_FAILED, 0);
-    /* FIXME check assign */
     scsi_set_state(SCSI_IDLE);
 }
 
@@ -168,17 +167,12 @@ static inline mbed_error_t enter_critical_section(void)
     uint8_t ret;
     mbed_error_t errcode = MBED_ERROR_NONE;
 
-#ifndef __FRAMAC__
     /* this is a syscall requiring the kernel to lock ISR for a short time */
     ret = sys_lock(LOCK_ENTER); /* Enter in critical section */
     if (ret != SYS_E_DONE) {
         log_printf("%s: Error: failed entering critical section!\n", __func__);
         errcode = MBED_ERROR_BUSY;
     }
-#else
-    /* In FramaC case, we do not execute lock systcall, instead, we emulate various error cases */
-    errcode = Frama_C_interval_8(0,5);
-#endif
     return errcode;
 }
 
@@ -192,10 +186,8 @@ static inline mbed_error_t enter_critical_section(void)
   */
 static inline void leave_critical_section(void)
 {
-#ifndef __FRAMAC__
     sys_lock(LOCK_EXIT);        /* Exit from critical section, should not
                                    fail */
-#endif
     return;
 }
 
@@ -378,13 +370,14 @@ static mbed_error_t scsi_get_data(uint8_t *buffer, uint32_t size)
         errcode = MBED_ERROR_INVPARAM;
         goto err;
     }
-#ifndef __FRAMAC__
-    /* wait for async event making current state ready to recv */
     while (!scsi_is_ready_for_data_receive()) {
         request_data_membarrier();
+#ifdef __FRAMAC__
+        break;
+#else
         continue;
-    }
 #endif
+    }
 
     set_u8_with_membarrier(&scsi_ctx.direction, SCSI_DIRECTION_RECV);
 
@@ -416,7 +409,7 @@ void scsi_send_data(uint8_t *data, uint32_t size)
     set_u8_with_membarrier(&scsi_ctx.line_state, SCSI_TRANSMIT_LINE_BUSY);
     scsi_ctx.addr = 0;
 
-    usb_bbb_send(data, size);        /* FIXME HARCODED ENDPOINT */
+    usb_bbb_send(data, size);
 }
 
 /*
@@ -856,7 +849,7 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
 
     log_printf("%s: Prevent allow medium removal: %x\n", __func__,
            current_cdb->payload.cdb10_prevent_allow_removal.prevent);
-    /* FIXME Add callback ? */
+    /* TODO: Add callback ? */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
 
     return;
@@ -1033,7 +1026,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     /* TODO: is the big endian is set only on the last 16 bytes of this
      * unaligned field ? */
-    rw_lba = ntohs((uint16_t) current_cdb->payload.cdb6.logical_block)
+    rw_lba = ntohs((uint16_t)(current_cdb->payload.cdb6.logical_block & 0xffff))
         + (current_cdb->payload.cdb6.logical_block & 0x1f0000);
 
     rw_size = current_cdb->payload.cdb6.transfer_blocks;
@@ -1068,8 +1061,16 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         }
         /* send data we have just read */
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
+        uint32_t logicalblock_increment = scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        if (((uint64_t)rw_lba + (uint64_t)logicalblock_increment) > UINT32_MAX) {
+            /* uint32 overflow detected! */
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
+                       ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
         /* increment read pointer */
-        rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        /*@ assert ((uint64_t)logicalblock_increment + (uint64_t)rw_lba <= UINT32_MAX); */
+        rw_lba += logicalblock_increment;
         /* active wait for data to be sent */
         /*@
           @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
@@ -1954,7 +1955,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     /* TODO: is the big endian is set only on the last 16 bytes of this
      * unaligned field ? */
-    rw_lba = ntohs((uint16_t) current_cdb->payload.cdb6.logical_block)
+    rw_lba = ntohs((uint16_t)(current_cdb->payload.cdb6.logical_block & 0xffff))
         + (current_cdb->payload.cdb6.logical_block & 0x1f0000);
     rw_size = current_cdb->payload.cdb6.transfer_blocks;
     rw_addr = (uint64_t) scsi_ctx.block_size * (uint64_t) rw_lba;
@@ -1974,7 +1975,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, scsi_ctx.error, scsi_ctx.line_state,  state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
+      @ loop assigns num_sectors, error, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,  state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
@@ -1982,15 +1983,16 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 	/* Wait until we have indeed received data from the USB lower layers */
         /*@
           @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
-          @ loop assigns scsi_ctx.line_state;
+          @ loop assigns \nothing;
           */
         while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
+            request_data_membarrier();
 #ifdef __FRAMAC__
             /* emulating asynchronous trigger */
-            scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
-#endif
-            request_data_membarrier();
+            break;
+#else
 		    continue;
+#endif
 	    }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
@@ -1998,14 +2000,24 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
                        ASCQ_NO_ADDITIONAL_SENSE);
             goto end;
         }
-        rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
-#ifndef __FRAMAC__
+        uint32_t logicalblock_increment = scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        if (((uint64_t)rw_lba + (uint64_t)logicalblock_increment) > UINT32_MAX) {
+            /* uint32 overflow detected! */
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
+                       ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
+        /*@ assert ((uint64_t)logicalblock_increment + (uint64_t)rw_lba <= UINT32_MAX); */
+        rw_lba += logicalblock_increment;
         /* wait for async event making current state ready to recv */
         while (!scsi_is_ready_for_data_receive()) {
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
             continue;
-        }
 #endif
+        }
     }
 
     /* Fractional residue */
@@ -2019,15 +2031,16 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         /*@
           @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
           @ loop invariant SCSI_TRANSMIT_LINE_READY <= scsi_ctx.line_state <= SCSI_TRANSMIT_LINE_ERROR;
-          @ loop assigns scsi_ctx.line_state;
+          @ loop assigns \nothing;
           */
         while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
+            request_data_membarrier();
 #ifdef __FRAMAC__
             /* emulating asynchronous trigger */
-            scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
-#endif
-            request_data_membarrier();
+            break;
+#else
             continue;
+#endif
         }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
@@ -2035,13 +2048,15 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
                     ASCQ_NO_ADDITIONAL_SENSE);
             goto end;
         }
-#ifndef __FRAMAC__
         /* wait for async event making current state ready to recv */
         while (!scsi_is_ready_for_data_receive()) {
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
             continue;
-        }
 #endif
+        }
     }
  end:
     /*@ assert GHOST_invalid_transition == \false; */
@@ -2061,7 +2076,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
 /* SCSI_CMD_WRITE(10) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, &state, &scsi_ctx,&GHOST_invalid_transition);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
@@ -2137,24 +2152,24 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 #endif
 
     /*@
-      @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, scsi_ctx.error, scsi_ctx.line_state,  state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
+      @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx,&GHOST_invalid_transition);
+      @ loop assigns num_sectors, error, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state, state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
 	/* Wait until we have indeed received data from the USB lower layers */
         /*@
-          @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
-          @ loop assigns scsi_ctx.line_state;
+          @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx,&GHOST_invalid_transition);
+          @ loop assigns \nothing;
           */
 	    while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
-#ifdef __FRAMAC__
-        /* emulating asynchronous trigger */
-            scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
-#endif
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
 		    continue;
+#endif
 	    }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
@@ -2163,14 +2178,14 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
             goto end;
         }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
-#ifndef __FRAMAC__
-        /* wait for async event making current state ready to recv */
         while (!scsi_is_ready_for_data_receive()) {
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
             continue;
-        }
 #endif
-
+        }
     }
 
     /* Fractional residue */
@@ -2184,15 +2199,15 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         /*@
           @ loop invariant \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx, current_cdb, &scsi_ctx);
           @ loop invariant SCSI_TRANSMIT_LINE_READY <= scsi_ctx.line_state <= SCSI_TRANSMIT_LINE_ERROR;
-          @ loop assigns scsi_ctx.line_state;
+          @ loop assigns \nothing;
           */
         while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
-#ifdef __FRAMAC__
-            /* emulating asynchronous trigger */
-            scsi_ctx.line_state = SCSI_TRANSMIT_LINE_READY;
-#endif
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
             continue;
+#endif
         }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
@@ -2200,13 +2215,14 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
                        ASCQ_NO_ADDITIONAL_SENSE);
             goto end;
         }
-#ifndef __FRAMAC__
-        /* wait for async event making current state ready to recv */
         while (!scsi_is_ready_for_data_receive()) {
             request_data_membarrier();
+#ifdef __FRAMAC__
+            break;
+#else
             continue;
-        }
 #endif
+        }
     }
  end:
     /*@ assert GHOST_invalid_transition == \false; */
