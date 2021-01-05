@@ -389,7 +389,7 @@ predicate valid_iface_handlers(usbctrl_interface_t *iface) =
   @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
   @ ensures bbb_ctx.state == USB_BBB_STATE_STATUS;
   */
-void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
+void usb_bbb_send_csw(uint8_t status, uint32_t data_residue)
 {
     log_printf("[USB BBB] %s: status %d\n", __func__, status);
     mbed_error_t errcode = MBED_ERROR_NONE;
