@@ -24,7 +24,6 @@
 #include "libc/stdio.h"
 #include "libc/nostd.h"
 #include "libc/regutils.h"
-#include "libusbotghs.h"
 #include "libusbctrl.h"
 #include "usb_bbb.h"
 #include "libc/syscall.h"
