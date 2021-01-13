@@ -238,7 +238,7 @@ struct __packed scsi_csw {
 
 #define USB_BBB_CSW_SIG			0x53425355      /* "USBS" */
 
-void usb_bbb_send_csw(enum csw_status status, uint32_t data_residue)
+void usb_bbb_send_csw(uint8_t status, uint32_t data_residue)
 {
     struct scsi_csw csw = {
         .sig = USB_BBB_CSW_SIG,

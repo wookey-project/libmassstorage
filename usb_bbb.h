@@ -54,7 +54,7 @@ enum csw_status {
  * @src: address of the data to send. The buffer's size must be at list @size.
  * @data_residue: number of bytes not sent nor received.
  */
-void    usb_bbb_send_csw(enum csw_status status, uint32_t data_residue);
+void    usb_bbb_send_csw(uint8_t status, uint32_t data_residue);
 
 /**
  * usb_bbb_send - Send data throw USB layer
