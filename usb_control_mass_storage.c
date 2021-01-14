@@ -52,15 +52,11 @@ static void mass_storage_reset(void)
     log_printf("Bulk-Only Mass Storage Reset\n");
     if (ms_reset_trigger != NULL) {
         /* Sanity check our callback before calling it */
-<<<<<<< HEAD
 #ifndef __FRAMAC__
         /* INFO: ms_reset_trigger is an upper layer callaback. Here, we consider upper
          * layer content as assigning nothing, as the current proof is handling local library
          * proof, not upper one. */
         if(handler_sanity_check((physaddr_t)ms_reset_trigger)){
-=======
-        if(handler_sanity_check_with_panic((physaddr_t)ms_reset_trigger)){
->>>>>>> master
             return;
         }
         else{
@@ -85,11 +81,7 @@ static void full_device_reset(void)
          * layer content as assigning nothing, as the current proof is handling local library
          * proof, not upper one. */
         /* Sanity check our callback before calling it */
-<<<<<<< HEAD
         if(handler_sanity_check((physaddr_t)device_reset_trigger)){
-=======
-        if(handler_sanity_check_with_panic((physaddr_t)device_reset_trigger)){
->>>>>>> master
             return;
         } else {
             device_reset_trigger();
