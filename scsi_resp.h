@@ -63,7 +63,7 @@ typedef struct __attribute__((packed)) {
 
 
 
-
+#define MAX_LUNS 	1
 /* REQUEST SENSE PARAMETER DATA */
 typedef struct __packed request_sense_parameter_data {
     uint8_t error_code:7;
@@ -88,7 +88,7 @@ typedef struct __packed request_sense_parameter_data {
 typedef struct __attribute__((packed)) {
     uint32_t lun_list_length;
     uint32_t reserved;
-    uint64_t luns[];
+    uint64_t luns[MAX_LUNS];
 } report_luns_data_t;
 
 /* READ FORMAT CAPACITIES response structure */
