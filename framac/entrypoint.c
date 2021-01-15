@@ -337,7 +337,7 @@ static const cmd_data_t cmd_sequence[] = {
 };
 
 /*@
-  @ requires \separated(&cbw,&ctx_list+(..),&usbotghs_ctx,&scsi_ctx,&bbb_ctx,(uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END));
+  @ requires \separated(&cbw,&ctx_list+(..),&GHOST_opaque_drv_privates,&scsi_ctx,&bbb_ctx);
   */
 void test_fcn_driver_eva(void) {
 

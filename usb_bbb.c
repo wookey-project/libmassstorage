@@ -116,9 +116,9 @@ struct scsi_cbw *usb_bbb_get_cbw(void) {
 
 
 /*@
-  @ requires \separated(((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&bbb_ctx,&usbotghs_ctx,&scsi_ctx);
+  @ requires \separated(&bbb_ctx,&GHOST_opaque_drv_privates,&scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns bbb_ctx.state, *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx;
+  @ assigns bbb_ctx.state, GHOST_opaque_drv_privates;
   */
 void read_next_cmd(void)
 {
@@ -129,9 +129,9 @@ void read_next_cmd(void)
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.queue_empty, queued_cdb, reset_requested;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.queue_empty, queued_cdb, reset_requested;
 
   @ behavior invinput:
   @    assumes (size != sizeof(cbw) || cbw.sig != USB_BBB_CBW_SIG || cbw.flags.reserved != 0 || cbw.lun.reserved != 0 || cbw.cdb_len.reserved != 0 || cbw.lun.lun >= CONFIG_USR_LIB_MASSSTORAGE_SCSI_MAX_LUNS);
@@ -194,9 +194,9 @@ err:
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), &usbotghs_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, queued_cdb, state, reset_requested;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, queued_cdb, state, reset_requested;
   */
 #ifndef __FRAMAC__
 static
@@ -233,9 +233,9 @@ err:
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx,&state);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&state);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state, scsi_ctx, state;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx, state;
   */
 #ifndef __FRAMAC__
 static
@@ -304,7 +304,7 @@ err:
 }
 
 /*@
-  @ requires \separated(&usbotghs_ctx,&bbb_ctx);
+  @ requires \separated(&GHOST_opaque_drv_privates,&bbb_ctx);
   @ assigns ctx_list[usbdci_handler], bbb_ctx.iface;
   */
 mbed_error_t usb_bbb_configure(uint32_t usbdci_handler)
@@ -354,7 +354,7 @@ mbed_error_t usb_bbb_configure(uint32_t usbdci_handler)
 }
 
 /*@
-  @ requires \separated(&scsi_ctx,&state,&usbotghs_ctx,&bbb_ctx);
+  @ requires \separated(&scsi_ctx,&state,&GHOST_opaque_drv_privates,&bbb_ctx);
   @ assigns bbb_ctx.state;
   */
 void usb_bbb_reconfigure(void)
@@ -383,9 +383,9 @@ predicate valid_iface_handlers(usbctrl_interface_t *iface) =
 
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state;
   @ ensures bbb_ctx.state == USB_BBB_STATE_STATUS;
   */
 void usb_bbb_send_csw(uint8_t status, uint32_t data_residue)
@@ -410,9 +410,9 @@ void usb_bbb_send_csw(uint8_t status, uint32_t data_residue)
 }
 
 /*@
-  @ requires \separated(src, &cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ requires \separated(src, &cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state;
   */
 void usb_bbb_send(const uint8_t * src, uint32_t size)
 {
@@ -422,9 +422,9 @@ void usb_bbb_send(const uint8_t * src, uint32_t size)
 }
 
 /*@
-  @ requires \separated((dst + (0 .. size -1)), &cbw, &bbb_ctx,((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)),&usbotghs_ctx);
+  @ requires \separated((dst + (0 .. size -1)), &cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state;
   */
 void usb_bbb_recv(uint8_t *dst, uint32_t size)
 {

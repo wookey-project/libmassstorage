@@ -98,8 +98,8 @@ static void full_device_reset(void)
  * @param packet Setup packet
  */
 /*@
-    @ requires \separated(packet,&usbotghs_ctx, (uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END), &bbb_ctx);
-    @ assigns *((uint32_t *) (USB_BACKEND_MEMORY_BASE .. USB_BACKEND_MEMORY_END)), usbotghs_ctx, bbb_ctx.state;
+    @ requires \separated(packet,&GHOST_opaque_drv_privates, &bbb_ctx);
+    @ assigns GHOST_opaque_drv_privates, bbb_ctx.state;
   */
 mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((unused)),
                                              usbctrl_setup_pkt_t *packet)
