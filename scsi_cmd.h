@@ -24,7 +24,6 @@
 #ifndef SCSI_CMD_H_
 #define SCSI_CMD_H_
 
-
 /* SCSI commands list */
 typedef enum {
     SCSI_CMD_FORMAT_UNIT = 0x04,        // Mandatory
@@ -49,6 +48,8 @@ typedef enum {
     SCSI_CMD_WRITE_10 = 0x2a,   // Mandatory
     SCSI_CMD_READ_CAPACITY_16 = 0x9e,
 } scsi_operation_code_t;
+
+#ifndef __FRAMAC__
 
 /***************************
  * about SCSI commands
@@ -202,7 +203,11 @@ typedef struct __attribute__((packed)) {
 
 /*
  * polymorphic SCSI command content, using a C union
- * type
+ * type.
+ * Each command is identified by an operation attribute before
+ * the command content used as segregation field:
+ *
+ * [cmd id][type-variable, length variable cmd content]
  */
 typedef union {
     /* CDB 6 bytes length */
@@ -232,6 +237,7 @@ typedef struct __attribute__((packed)) {
     u_cdb_payload payload;
 } cdb_t;
 
+#endif/*__FRAMAC__*/
 
 
 #endif /*!SCSI_CMD_H_ */

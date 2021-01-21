@@ -25,6 +25,19 @@
 #define USB_BBB_H
 
 #include "libc/regutils.h"
+#include "libusbctrl.h"
+
+
+#ifndef __FRAMAC__
+#define BBB_IN_EP 1
+#define BBB_OUT_EP 2
+#endif
+
+typedef void (*usb_bbb_cb_cmd_received_t)(uint8_t *cdb, uint8_t cdb_len);
+typedef void (*usb_bbb_cb_data_received_t)(uint32_t size);
+typedef void (*usb_bbb_cb_data_sent_t)(void);
+
+
 
 /**
  * usb_bbb_init - Initialize the bulk only layer
@@ -34,14 +47,13 @@
  * size of received data.
  * @data_sent: callback called when data has been sent
  */
-void    usb_bbb_init(void);
+mbed_error_t usb_bbb_configure(uint32_t usbdci_handler);
 
-void usb_bbb_reinit(void);
+void usb_bbb_reconfigure(void);
 
-void    usb_bbb_early_init(void (*cmd_received)(uint8_t cdb[],
-                                                uint8_t cdb_len),
-                           void(*data_received)(uint32_t),
-                           void(*data_sent)(void));
+void usb_bbb_declare(usb_bbb_cb_cmd_received_t cmd_received,
+                     usb_bbb_cb_data_received_t data_received,
+                     usb_bbb_cb_data_sent_t data_sent);
 
 enum csw_status {
     CSW_STATUS_SUCCESS = 0,
@@ -54,7 +66,7 @@ enum csw_status {
  * @src: address of the data to send. The buffer's size must be at list @size.
  * @data_residue: number of bytes not sent nor received.
  */
-void    usb_bbb_send_csw(uint8_t status, uint32_t data_residue);
+void usb_bbb_send_csw(uint8_t status, uint32_t data_residue);
 
 /**
  * usb_bbb_send - Send data throw USB layer
@@ -62,7 +74,7 @@ void    usb_bbb_send_csw(uint8_t status, uint32_t data_residue);
  * @size: number of bytes to send.
  * @ep: endpoint on which send data.
  */
-void    usb_bbb_send(const uint8_t * src, uint32_t size, uint8_t ep);
+void    usb_bbb_send(const uint8_t * src, uint32_t size);
 
 /**
  * usb_bbb_read - Read data from USB layer
@@ -70,7 +82,7 @@ void    usb_bbb_send(const uint8_t * src, uint32_t size, uint8_t ep);
  * @size: number of bytes to read.
  * @ep: endpoint on which read data.
  */
-void    usb_bbb_read(void *dst, uint32_t size, uint8_t ep);
+void    usb_bbb_recv(uint8_t *dst, uint32_t size);
 
 void    read_next_cmd(void);
 

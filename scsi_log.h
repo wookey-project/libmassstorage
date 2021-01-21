@@ -96,16 +96,25 @@ typedef enum {
 #define ASCQ_WRITE_PROTECTED                       0x00
 
 /* SCSI errors */
+/*@
+  @ assigns \nothing;
+  */
 static inline scsi_sense_key_t scsi_error_get_sense_key(uint32_t error)
 {
     return (scsi_sense_key_t) ((error & 0xf0000) >> 16);
 }
 
+/*@
+  @ assigns \nothing;
+  */
 static inline uint8_t scsi_error_get_asc(uint32_t error)
 {
     return (uint8_t) ((error & 0xff00) >> 8);
 }
 
+/*@
+  @ assigns \nothing;
+  */
 static inline uint8_t scsi_error_get_ascq(uint32_t error)
 {
     return (uint8_t) (error & 0xff);

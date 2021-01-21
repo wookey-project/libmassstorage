@@ -25,14 +25,16 @@
 #define SCSI_AUTOMATON_H_
 
 #include "libc/types.h"
+#include "api/scsi.h"
 #include "scsi_cmd.h"
 
+#ifndef __FRAMAC__
 typedef enum scsi_state {
     SCSI_IDLE = 0x00,
-    SCSI_READ,
-    SCSI_WRITE,
     SCSI_ERROR,
 } scsi_state_t;
+#endif
+
 
 scsi_state_t scsi_get_state(void);
 

@@ -24,6 +24,21 @@
 #ifndef SCSI_H
 # define SCSI_H
 
+#include "libusbctrl.h"
+
+/*********************************************************************************
+ * About Frama-C header
+ * When using Frama-C, some static globals may need to be moved here instead of in
+ * local C or header files in order to define properly function contacts.
+ * There is no variables or type collisioning, and the behavior of the programs is the
+ * same.
+ */
+
+#ifdef __FRAMAC__
+# include "libscsi_framac.h"
+#endif
+
+
 
 /**
  * SCSI stack implementation
@@ -104,15 +119,16 @@ void scsi_reset_device(void);
  * libSCSI API
  ***********************************************************/
 
-mbed_error_t scsi_early_init(uint8_t*buf, uint16_t buflen);
+mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len);
 
-mbed_error_t scsi_init(void);
+mbed_error_t scsi_init(uint32_t usbdci_handler);
+
+mbed_error_t scsi_initialize_automaton(void);
 
 void scsi_reinit(void);
 
-void scsi_send_data(void *data, uint32_t size);
+void scsi_send_data(uint8_t *data, uint32_t size);
 
-void scsi_get_data(void *buffer, uint32_t size);
 
 int scsi_is_ready_for_data(void);
 
