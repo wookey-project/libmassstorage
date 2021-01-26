@@ -26,7 +26,7 @@
 #include "libc/stdio.h"
 #include "libc/nostd.h"
 #include "libc/string.h"
-#include "libc/string.h"
+#include "libc/stdint.h"
 #include "libc/arpa/inet.h"
 #include "libc/syscall.h"
 #include "libc/sync.h"
@@ -1217,6 +1217,15 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
             goto end;
         }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
+        /* check for unsigned overflow */
+        if ((UINT32_MAX - rw_lba) < (scsi_ctx.global_buf_len / scsi_ctx.block_size)) {
+            /* increment will generate overflow ! This should not happen as logical blocks of
+             * 512 bytes should not exceed U32_MAX */
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
+                       ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+
+        }
         /* increment read pointer */
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         /* active wait for data to be sent */
@@ -1277,7 +1286,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
 /* SCSI_CMD_READ_CAPACITY_10 */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(current_cdb, &cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
@@ -1359,7 +1368,7 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
 
 /* SCSI_CMD_READ_CAPACITY_16 */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,  &state, &scsi_ctx);
+  @ requires \separated(current_cdb, &cbw, &bbb_ctx,&GHOST_opaque_drv_privates,  &state, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
