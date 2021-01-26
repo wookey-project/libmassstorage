@@ -25,6 +25,8 @@
 #include "libc/stdio.h"
 #include "libc/nostd.h"
 #include "libc/string.h"
+#include "libc/sync.h"
+#include "scsi.h"
 #include "scsi_dbg.h"
 
 
@@ -77,7 +79,7 @@ typedef struct {
 } scsi_state_transitions_t;
 
 /* IDLE SCSI transitions */
-static const scsi_operation_code_transition_t scsi_idle_trans[] = {
+static const scsi_operation_code_transition_t scsi_idle_trans[17] = {
     {SCSI_CMD_INQUIRY, SCSI_IDLE},
     {SCSI_CMD_MODE_SELECT_10, SCSI_IDLE},
     {SCSI_CMD_MODE_SELECT_6, SCSI_IDLE},
@@ -98,7 +100,7 @@ static const scsi_operation_code_transition_t scsi_idle_trans[] = {
 };
 
 /* ERROR SCSI transitions */
-static const scsi_operation_code_transition_t scsi_error_trans[] = {
+static const scsi_operation_code_transition_t scsi_error_trans[4] = {
     {SCSI_CMD_MODE_SENSE_10, SCSI_IDLE},
     {SCSI_CMD_MODE_SENSE_6, SCSI_IDLE},
     {SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL, SCSI_IDLE},
@@ -111,7 +113,7 @@ typedef struct {
     scsi_state_transitions_t trans_list;
 } scsi_automaton_t;
 
-static const scsi_automaton_t scsi_automaton[] = {
+static const scsi_automaton_t scsi_automaton[2] = {
     {
         .state = SCSI_IDLE,
         .trans_list = {
@@ -134,10 +136,12 @@ static const scsi_automaton_t scsi_automaton[] = {
 
 /*@
   @ assigns \nothing;
+  @ ensures \result == scsi_ctx.state;
    */
 scsi_state_t scsi_get_state(void)
 {
-    return state;
+    scsi_context_t *ctx = scsi_get_context();
+    return ctx->state;
 }
 
 
@@ -147,33 +151,33 @@ scsi_state_t scsi_get_state(void)
  * here.
  */
 /*@
-  @ requires \separated(&state);
-  @ assigns state;
+  @ assigns scsi_ctx.state;
 
   @behavior invstate:
   @  assumes new_state > SCSI_ERROR;
-  @  ensures state == SCSI_ERROR;
+  @  ensures scsi_ctx.state == SCSI_ERROR;
 
   @behavior setstate:
   @  assumes new_state <= SCSI_ERROR;
-  @  ensures state == new_state;
-  @  ensures SCSI_IDLE <= state <= SCSI_ERROR ;
+  @  ensures scsi_ctx.state == new_state;
+  @  ensures SCSI_IDLE <= scsi_ctx.state <= SCSI_ERROR ;
 
   @ disjoint behaviors;
   @ complete behaviors;
    */
 void scsi_set_state(const scsi_state_t new_state)
 {
+    scsi_context_t *ctx = scsi_get_context();
     if (new_state > SCSI_ERROR) {
         /*@ assert \false; */
         log_printf("%s: PANIC! this should never arise !", __func__);
-        state = SCSI_ERROR;
+        set_u8_with_membarrier(&ctx->state, SCSI_ERROR);
         goto err;
     }
     /*@ assert SCSI_IDLE <= new_state <= SCSI_ERROR ; */
-    log_printf("%s: state: %x => %x\n", __func__, scsi_ctx.state, new_state);
-    state = new_state;
-    /*@ assert state == new_state; */
+    log_printf("%s: state: %x => %x\n", __func__, ctx->state, new_state);
+    set_u8_with_membarrier(&ctx->state, new_state);
+    /*@ assert scsi_ctx.state == new_state; */
 err:
     return;
 }
@@ -197,8 +201,10 @@ err:
  */
 /*@
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
-  @ requires \separated(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1),&state);
-  @ requires \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1));
+
+  @ requires \separated(scsi_automaton + (0 .. 1), scsi_automaton[0].trans_list.transitions + (0 .. scsi_automaton[0].trans_list.number-1),&scsi_ctx,scsi_automaton[1].trans_list.transitions + (0 .. scsi_automaton[1].trans_list.number-1));
+  @ requires \valid_read(scsi_automaton[0].trans_list.transitions + (0 .. scsi_automaton[0].trans_list.number-1));
+  @ requires \valid_read(scsi_automaton[1].trans_list.transitions + (0 .. scsi_automaton[1].trans_list.number-1));
   @ assigns \nothing;
 
   @behavior inv_req:
@@ -259,26 +265,27 @@ err:
 
 /*@
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
-  @ requires \separated(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1),&state);
-  @ requires \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. scsi_automaton[current_state].trans_list.number-1));
-  @ assigns state;
+  @ requires \separated(scsi_automaton + (0 .. 1), scsi_automaton[0].trans_list.transitions + (0 .. scsi_automaton[0].trans_list.number-1),&scsi_ctx,scsi_automaton[1].trans_list.transitions + (0 .. scsi_automaton[1].trans_list.number-1));
+  @ requires \valid_read(scsi_automaton[0].trans_list.transitions + (0 .. scsi_automaton[0].trans_list.number-1));
+  @ requires \valid_read(scsi_automaton[1].trans_list.transitions + (0 .. scsi_automaton[1].trans_list.number-1));
+  @ assigns scsi_ctx.state;
 
   @behavior inv_req:
   @   assumes request == 0xff;
   @   ensures \result == \false;
-  @   ensures state == \old(state);
+  @   ensures scsi_ctx.state == \old(scsi_ctx.state);
 
   @behavior trans_valid:
   @   assumes request != 0xff;
   @   assumes \exists integer i ; 0 <= i < scsi_automaton[current_state].trans_list.number && scsi_automaton[current_state].trans_list.transitions[i].request == request;
   @   ensures \result == \true;
-  @   ensures state == \old(state);
+  @   ensures scsi_ctx.state == \old(scsi_ctx.state);
 
   @behavior trans_invalid:
   @   assumes request != 0xff;
   @   assumes \forall integer i ; 0 <= i <scsi_automaton[current_state].trans_list.number ==> scsi_automaton[current_state].trans_list.transitions[i].request != request;
   @   ensures \result == \false;
-  @   ensures state == SCSI_ERROR;
+  @   ensures scsi_ctx.state == SCSI_ERROR;
 
   @ disjoint behaviors;
   @ complete behaviors;

@@ -39,6 +39,7 @@
 
 #include "scsi_dbg.h"
 
+#include "scsi.h"
 #include "scsi_cmd.h"
 #include "scsi_resp.h"
 #include "scsi_log.h"
@@ -61,31 +62,6 @@
 
 
 #ifndef __FRAMAC__
-typedef enum {
-    SCSI_TRANSMIT_LINE_READY = 0,
-    SCSI_TRANSMIT_LINE_BUSY,
-    SCSI_TRANSMIT_LINE_ERROR,
-} transmition_line_state_t;
-
-typedef enum {
-    SCSI_DIRECTION_IDLE = 0,
-    SCSI_DIRECTION_SEND,
-    SCSI_DIRECTION_RECV,
-} transmission_direction_t;
-
-typedef struct {
-    uint8_t  direction;
-    uint8_t  line_state;
-    uint32_t size_to_process;
-    uint32_t addr;
-    uint32_t error;
-    bool     queue_empty;
-    uint8_t *global_buf;
-    uint16_t global_buf_len;
-    uint32_t block_size;
-    uint32_t storage_size;
-} scsi_context_t;
-
 
 scsi_context_t scsi_ctx = {
     .direction = SCSI_DIRECTION_IDLE,
@@ -98,6 +74,7 @@ scsi_context_t scsi_ctx = {
     .global_buf_len = 0,
     .block_size = 0,
     .storage_size = 0,
+    .state = SCSI_IDLE
 };
 
 static volatile cdb_t queued_cdb = { 0 };
@@ -119,11 +96,11 @@ scsi_context_t *scsi_get_context(void) {
 #endif
 
 /*@
-  @ requires \separated(&state, &cbw, &scsi_ctx,&GHOST_opaque_drv_privates, &bbb_ctx);
+  @ requires \separated(&cbw, &scsi_ctx,&GHOST_opaque_drv_privates, &bbb_ctx);
   @ requires sensekey < 0xff;
   @ assigns scsi_ctx.error,
-            GHOST_opaque_drv_privates, bbb_ctx.state, state;
-  @ ensures state == SCSI_IDLE;
+            GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.state;
+  @ ensures scsi_ctx.state == SCSI_IDLE;
   */
 #ifndef __FRAMAC__
 static
@@ -414,10 +391,10 @@ void scsi_send_data(uint8_t *data, uint32_t size)
  * Trigger on input data available
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
 
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, state;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
   @ behavior buffer_bigger_than_sizetoprocess:
   @   assumes (size < scsi_ctx.size_to_process);
@@ -426,14 +403,14 @@ void scsi_send_data(uint8_t *data, uint32_t size)
   @   ensures scsi_ctx.direction == \old(scsi_ctx.direction);
   @   ensures GHOST_opaque_drv_privates == \old(GHOST_opaque_drv_privates);
   @   ensures bbb_ctx.state == \old(bbb_ctx.state);
-  @   ensures state == \old(state);
+  @   ensures scsi_ctx.state == \old(scsi_ctx.state);
 
   @ behavior size_smaller_than_buffer:
   @   assumes (size >= scsi_ctx.size_to_process);
   @   ensures scsi_ctx.size_to_process == 0;
   @   ensures scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY;
   @   ensures scsi_ctx.direction == SCSI_DIRECTION_IDLE;
-  @   ensures state == SCSI_IDLE;
+  @   ensures scsi_ctx.state == SCSI_IDLE;
 
   @ complete behaviors;
   @ disjoint behaviors;
@@ -469,10 +446,10 @@ void scsi_data_available(uint32_t size)
  * Trigger on data sent by IP
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
 
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, state;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
   @ behavior size_bigger_than_buffer:
   @   assumes (scsi_ctx.size_to_process > scsi_ctx.global_buf_len);
@@ -481,14 +458,14 @@ void scsi_data_available(uint32_t size)
   @   ensures scsi_ctx.direction == \old(scsi_ctx.direction);
   @   ensures GHOST_opaque_drv_privates == \old(GHOST_opaque_drv_privates);
   @   ensures bbb_ctx.state == \old(bbb_ctx.state);
-  @   ensures state == \old(state);
+  @   ensures scsi_ctx.state == \old(scsi_ctx.state);
 
   @ behavior size_smaller_than_buffer:
   @   assumes (scsi_ctx.size_to_process <= scsi_ctx.global_buf_len);
   @   ensures scsi_ctx.size_to_process == 0;
   @   ensures scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY;
   @   ensures scsi_ctx.direction == SCSI_DIRECTION_IDLE;
-  @   ensures state == SCSI_IDLE;
+  @   ensures scsi_ctx.state == SCSI_IDLE;
 
   @ complete behaviors;
   @ disjoint behaviors;
@@ -521,7 +498,7 @@ void scsi_data_sent(void)
 
 
 /*@
-  @ requires \separated(&cbw, response, &bbb_ctx,&GHOST_opaque_drv_privates,&state, &scsi_ctx);
+  @ requires \separated(&cbw, response, &bbb_ctx,&GHOST_opaque_drv_privates,&scsi_ctx);
   @ requires \valid_read(response);
   @ assigns *response;
   */
@@ -681,10 +658,10 @@ err:
 
 /*@
   @ requires \valid_read(cdb);
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, cdb, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, cdb, &scsi_ctx);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
   @ assigns scsi_ctx.error, GHOST_opaque_drv_privates,
-            bbb_ctx.state, state, GHOST_invalid_transition, GHOST_invalid_cmd;
+            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -696,14 +673,14 @@ err:
   @    assumes is_invalid_inquiry(&(cdb->payload.cdb6_inquiry));
   @    ensures GHOST_invalid_transition == \false;
   @    ensures GHOST_invalid_cmd == \true;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    assumes !is_invalid_inquiry(&(cdb->payload.cdb6_inquiry));
   @    ensures GHOST_invalid_transition == \false;
   @    ensures GHOST_invalid_cmd == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -825,11 +802,11 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
   @ requires \valid_read(current_cdb);
 
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, state ;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.state ;
 
   */
 static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
@@ -854,11 +831,11 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
 }
 
 /*@
-  @ requires \separated(&cbw, current_cdb, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, current_cdb, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.error, state, GHOST_invalid_transition ;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.error, scsi_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -867,7 +844,7 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -960,11 +937,11 @@ end:
  * with older Operating Systems
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,  &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -973,7 +950,7 @@ end:
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -1040,7 +1017,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, scsi_ctx.error, state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
+      @ loop assigns num_sectors, error, scsi_ctx.error, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         /* There is more data to send that the buffer is able to process,
@@ -1125,11 +1102,11 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
 /* SCSI_CMD_READ_10 */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1138,7 +1115,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -1201,7 +1178,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, scsi_ctx.error, state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
+      @ loop assigns num_sectors, error, scsi_ctx.error, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         /* There is more data to send that the buffer is able to process,
@@ -1286,12 +1263,12 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
 /* SCSI_CMD_READ_CAPACITY_10 */
 /*@
-  @ requires \separated(current_cdb, &cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(current_cdb, &cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
   @ assigns scsi_ctx, GHOST_opaque_drv_privates,
-            bbb_ctx.state, state, GHOST_invalid_transition;
+            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1300,7 +1277,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -1368,12 +1345,12 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
 
 /* SCSI_CMD_READ_CAPACITY_16 */
 /*@
-  @ requires \separated(current_cdb, &cbw, &bbb_ctx,&GHOST_opaque_drv_privates,  &state, &scsi_ctx);
+  @ requires \separated(current_cdb, &cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
   @ assigns scsi_ctx, GHOST_opaque_drv_privates,
-            bbb_ctx.state, state, GHOST_invalid_transition;
+            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1382,7 +1359,7 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -1473,11 +1450,11 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
 
 /* SCSI_CMD_REPORT_LUNS */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
+  @ assigns scsi_ctx, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1489,14 +1466,14 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
   @    assumes is_invalid_report_luns(&current_cdb->payload.cdb12_report_luns);
   @    ensures GHOST_invalid_transition == \false;
   @    ensures GHOST_invalid_cmd == \true;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    assumes is_invalid_report_luns(&current_cdb->payload.cdb12_report_luns);
   @    ensures GHOST_invalid_transition == \false;
   @    ensures GHOST_invalid_cmd == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -1597,11 +1574,11 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
 
 /* SCSI_CMD_REQUEST_SENSE */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state ;
+  @ assigns scsi_ctx, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state ;
   */
 static void scsi_cmd_request_sense(scsi_state_t current_state,
                                    cdb_t * current_cdb)
@@ -1643,11 +1620,11 @@ static void scsi_cmd_request_sense(scsi_state_t current_state,
 
 /* SCSI_CMD_MODE_SENSE(10) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state ;
   */
 static void scsi_cmd_mode_sense10(scsi_state_t current_state,
                                   cdb_t * current_cdb)
@@ -1681,12 +1658,12 @@ static void scsi_cmd_mode_sense10(scsi_state_t current_state,
 
 /* SCSI_CMD_MODE_SENSE(6) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state ;
   */
 static void scsi_cmd_mode_sense6(scsi_state_t current_state,
                                  cdb_t * current_cdb)
@@ -1715,11 +1692,11 @@ static void scsi_cmd_mode_sense6(scsi_state_t current_state,
 
 /* SCSI_CMD_MODE_SELECT(6) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1728,7 +1705,7 @@ static void scsi_cmd_mode_sense6(scsi_state_t current_state,
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -1772,11 +1749,11 @@ static void scsi_cmd_mode_select6(scsi_state_t current_state,
 
 /* SCSI_CMD_MODE_SELECT(10) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1785,7 +1762,7 @@ static void scsi_cmd_mode_select6(scsi_state_t current_state,
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -1830,11 +1807,11 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
 
 /* SCSI_CMD_TEST_UNIT_READY */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1843,7 +1820,7 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -1891,11 +1868,11 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
  * It is implemented here for retrocompatibility with old Operating System
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1904,7 +1881,7 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -1970,7 +1947,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,  state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
+      @ loop assigns num_sectors, error, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,  scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
@@ -2071,11 +2048,11 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
 /* SCSI_CMD_WRITE(10) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx,&GHOST_invalid_transition);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx,&GHOST_invalid_transition);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -2084,7 +2061,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    ensures GHOST_invalid_transition == \false;
-  @    ensures state == SCSI_IDLE;
+  @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
   @ disjoint behaviors;
@@ -2147,7 +2124,7 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx,&GHOST_invalid_transition);
-      @ loop assigns num_sectors, error, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state, state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
+      @ loop assigns num_sectors, error, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
@@ -2248,10 +2225,10 @@ mbed_error_t scsi_initialize_automaton(void)
  * SCSI Automaton execution
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &state, &scsi_ctx);
-  @ requires SCSI_IDLE <= state <= SCSI_ERROR;
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
+  @ requires SCSI_IDLE <= scsi_ctx.state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
 
   */
 void scsi_exec_automaton(void)
@@ -2386,8 +2363,8 @@ void scsi_exec_automaton(void)
  * USB reset order
  */
 /*@
-  @ requires \separated(&scsi_ctx, &state);
-  @ assigns scsi_ctx, state;
+  @ requires \separated(&scsi_ctx);
+  @ assigns scsi_ctx;
   */
 static void scsi_reset_context(void)
 {
@@ -2411,8 +2388,8 @@ static void scsi_reset_context(void)
  */
 
 /*@
-  @ requires \separated(&scsi_ctx, &state, &bbb_ctx, buf + (0..len-1), &cbw);
-  @ assigns scsi_ctx, state, bbb_ctx;
+  @ requires \separated(&scsi_ctx, &bbb_ctx, buf + (0..len-1), &cbw);
+  @ assigns scsi_ctx, bbb_ctx;
 
   @ behavior invbuf:
   @    assumes buf == NULL || len == 0;
@@ -2475,9 +2452,9 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
  * 2)
  */
 /*@
-  @ requires \separated(&state,&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &GHOST_opaque_drv_privates,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
+  @ requires \separated(&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &GHOST_opaque_drv_privates,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
 
-  @ assigns scsi_ctx, scsi_ctx.global_buf[0 .. scsi_ctx.global_buf_len-1], ctx_list[0 .. CONFIG_USBCTRL_FW_MAX_CTX-1], bbb_ctx.iface, state;
+  @ assigns scsi_ctx, scsi_ctx.global_buf[0 .. scsi_ctx.global_buf_len-1], ctx_list[0 .. CONFIG_USBCTRL_FW_MAX_CTX-1], bbb_ctx.iface, scsi_ctx.state;
 
   @ behavior invbuf:
   @    assumes scsi_ctx.global_buf == NULL || scsi_ctx.global_buf_len == 0;
@@ -2515,7 +2492,7 @@ mbed_error_t scsi_init(uint32_t usbdci_handler)
 
     /*@
       @ loop invariant 0 <= i <= scsi_ctx.global_buf_len;
-      @ loop invariant \separated(&state,&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &GHOST_opaque_drv_privates,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
+      @ loop invariant \separated(&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &GHOST_opaque_drv_privates,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
       @ loop assigns i, scsi_ctx.global_buf[0 .. scsi_ctx.global_buf_len-1];
       @ loop variant scsi_ctx.global_buf_len - i;
       */
@@ -2539,8 +2516,8 @@ err:
 }
 
 /*@
-  @ requires \separated(&scsi_ctx,&state,&GHOST_opaque_drv_privates,&bbb_ctx);
-  @ assigns bbb_ctx.state, scsi_ctx, state;
+  @ requires \separated(&scsi_ctx,&GHOST_opaque_drv_privates,&bbb_ctx);
+  @ assigns bbb_ctx.state, scsi_ctx;
   */
 void scsi_reinit(void)
 {

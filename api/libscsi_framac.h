@@ -80,12 +80,10 @@ struct scsi_cbw *usb_bbb_get_cbw(void);
 
 /* moved state definition here to allow ACSL usage in assigns */
 typedef enum scsi_state {
-    SCSI_IDLE = 0x00,
-    SCSI_ERROR,
+    SCSI_IDLE  = 0x0,
+    SCSI_ERROR = 0x1,
 } scsi_state_t;
 
-
-extern scsi_state_t state;
 
 /***************************
  * about SCSI commands
@@ -302,6 +300,7 @@ typedef struct {
     uint16_t global_buf_len;
     uint32_t block_size;
     uint32_t storage_size;
+    uint8_t  state;
 } scsi_context_t;
 
 

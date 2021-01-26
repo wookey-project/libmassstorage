@@ -196,7 +196,7 @@ err:
 /*@
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, queued_cdb, state, reset_requested;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, queued_cdb, scsi_ctx.state, reset_requested;
   */
 #ifndef __FRAMAC__
 static
@@ -233,9 +233,9 @@ err:
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&state);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx, state;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx, scsi_ctx.state;
   */
 #ifndef __FRAMAC__
 static
@@ -354,7 +354,7 @@ mbed_error_t usb_bbb_configure(uint32_t usbdci_handler)
 }
 
 /*@
-  @ requires \separated(&scsi_ctx,&state,&GHOST_opaque_drv_privates,&bbb_ctx);
+  @ requires \separated(&scsi_ctx,&GHOST_opaque_drv_privates,&bbb_ctx);
   @ assigns bbb_ctx.state;
   */
 void usb_bbb_reconfigure(void)
