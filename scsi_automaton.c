@@ -237,7 +237,6 @@ uint8_t scsi_next_state(scsi_state_t current_state,
     const uint8_t num_trans = scsi_automaton[current_state].trans_list.number;
     /*@
       @ loop invariant 0 <= i <= num_trans;
-      @ loop invariant \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. num_trans-1)) ;
       @ loop invariant \forall integer prei; 0 <= prei < i ==> scsi_automaton[current_state].trans_list.transitions[prei].request != request;
       @ loop assigns i;
       @ loop variant num_trans - i;
@@ -305,7 +304,6 @@ bool scsi_is_valid_transition(scsi_state_t current_state,
     /*@ assert \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. num_trans-1)); */
     /*@
       @ loop invariant 0 <= i <= num_trans ;
-      @ loop invariant \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. num_trans-1)) ;
       @ loop invariant \forall integer prei; 0 <= prei < i ==> scsi_automaton[current_state].trans_list.transitions[prei].request != request;
       @ loop assigns i ;
       @ loop variant num_trans - i ;
