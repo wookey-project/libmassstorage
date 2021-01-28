@@ -134,6 +134,6 @@ int scsi_is_ready_for_data(void);
 
 void scsi_send_status(void);
 
-void scsi_exec_automaton(void);
+mbed_error_t scsi_exec_automaton(void);
 
 #endif /* SCSI_H */

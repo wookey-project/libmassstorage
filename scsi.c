@@ -661,52 +661,31 @@ err:
 
 /* SCSI_CMD_INQUIRY */
 
-/*@ ghost
-    // these two local variables help in the definition of the cmd_inquiry() function
-    // behaviors
-    static bool GHOST_invalid_transition = false;
-    static bool GHOST_invalid_cmd = false;
-  */
-
 /*@
   @ requires \valid_read(cdb);
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, cdb, &scsi_ctx);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
   @ assigns scsi_ctx.error, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
-            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd;
+            bbb_ctx.state, scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
-  @    ensures GHOST_invalid_cmd == \false;
-
-  @ behavior badinput:
-  @    assumes current_state == SCSI_IDLE;
-  @    assumes is_invalid_inquiry(&(cdb->payload.cdb6_inquiry));
-  @    ensures GHOST_invalid_transition == \false;
-  @    ensures GHOST_invalid_cmd == \true;
-  @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    assumes !is_invalid_inquiry(&(cdb->payload.cdb6_inquiry));
-  @    ensures GHOST_invalid_transition == \false;
-  @    ensures GHOST_invalid_cmd == \false;
-  @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures (\result == MBED_ERROR_NONE || \result == MBED_ERROR_INVPARAM);
 
 
   @ disjoint behaviors;
   @ complete behaviors;
   */
-static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cdb)
+static mbed_error_t scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     inquiry_data_t response = { 0 };
     cdb6_inquiry_t const * inq;
     uint8_t next_state;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-        GHOST_invalid_cmd = false;
-      */
 
     log_printf("%s:\n", __func__);
     /* Sanity check and next state detection */
@@ -790,29 +769,21 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
     } else {
         log_printf("allocation length is 0\n");
     }
-    /*@ assert GHOST_invalid_transition == \false; */
-    /*@ assert GHOST_invalid_cmd == \false; */
-    return;
+    return errcode;
 
  invalid_cmd:
-    /*@ ghost
-        GHOST_invalid_transition = false;
-        GHOST_invalid_cmd = true;
-      */
     log_printf("%s: malformed cmd\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVPARAM;
+    return errcode;
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_cmd = false;
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 /*@
@@ -821,11 +792,13 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
   @ requires \valid_read(current_cdb);
 
   @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.state ;
+  @ ensures \result == MBED_ERROR_NONE;
 
   */
-static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
-                                                  cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
+                                                          cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
 
     log_printf("%s\n", __func__);
@@ -840,7 +813,7 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
     /* TODO: Add callback ? */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
 
-    return;
+    return errcode;
     /* effective transition execution (if needed) */
 }
 
@@ -849,16 +822,16 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.error, scsi_ctx.state, GHOST_invalid_transition ;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.error, scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures (\result == MBED_ERROR_NONE || \result == MBED_ERROR_NOBACKEND);
 
 
   @ disjoint behaviors;
@@ -866,14 +839,12 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
 
 
   */
-static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
-                                            cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_read_format_capacities(scsi_state_t current_state,
+                                                         cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
 
-    /*@ ghost
-        GHOST_invalid_transition = false;
-     */
 
     log_printf("%s\n", __func__);
 
@@ -896,6 +867,7 @@ static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
         /* This should not happend in a nominal way (i.e. should have been set previously */
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                 ASCQ_NO_ADDITIONAL_SENSE);
+        errcode = MBED_ERROR_NOBACKEND;
         goto end;
     }
 
@@ -930,20 +902,18 @@ static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
         usb_bbb_send((uint8_t *) & response, size);
     }
 end:
-    /*@ assert GHOST_invalid_transition == \false; */
-    return;
+    return errcode;
 
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 
 }
+
 
 /*
  * SCSI_CMD_READ_6
@@ -955,19 +925,19 @@ end:
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
 
   // this assign line is the consequence of the synchronized scsi_data_sent() trigger (instead of async one)
   @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures (\result == MBED_ERROR_NONE || \result == MBED_ERROR_NOSTORAGE || \result == MBED_ERROR_INVPARAM);
 
 
   @ disjoint behaviors;
@@ -976,8 +946,9 @@ end:
 
 
   */
-static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint32_t num_sectors;
     uint32_t total_num_sectors;
 
@@ -985,9 +956,6 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
     uint16_t rw_size;
     uint64_t rw_addr;
     uint8_t next_state;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-      */
     mbed_error_t error;
 
     log_printf("%s\n", __func__);
@@ -1010,6 +978,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
     if (scsi_ctx.storage_size == 0) {
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
+        errcode = MBED_ERROR_NOSTORAGE;
         goto end;
     }
 
@@ -1048,6 +1017,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         if (error == MBED_ERROR_RDERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_NOSTORAGE;
             goto end;
         }
         /* send data we have just read */
@@ -1058,6 +1028,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
             /* uint32 overflow detected! */
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_INVPARAM;
             goto end;
         }
         /* increment read pointer */
@@ -1093,6 +1064,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         if (error == MBED_ERROR_RDERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_NOSTORAGE;
             goto end;
         }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
@@ -1117,20 +1089,14 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
     }
 
  end:
-    /*@ ghost
-        GHOST_invalid_transition = false;
-      */
-    /*@ assert GHOST_invalid_transition == \false; */
-    return;
+    return errcode;
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 
@@ -1140,19 +1106,19 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
 
   // this assign line is the consequence of the synchronized scsi_data_sent() trigger (instead of async one)
   @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures (\result == MBED_ERROR_NONE || \result == MBED_ERROR_NOSTORAGE || \result == MBED_ERROR_INVPARAM);
 
 
   @ disjoint behaviors;
@@ -1161,9 +1127,10 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
 
   */
-static void scsi_cmd_read_data10(const scsi_state_t current_state,
-                                 cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_read_data10(const scsi_state_t current_state,
+                                         cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint32_t num_sectors;
     uint32_t total_num_sectors;
 
@@ -1171,9 +1138,6 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
     uint16_t rw_size;
     uint64_t rw_addr;
     uint8_t next_state;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-      */
 
     mbed_error_t error;
 
@@ -1198,6 +1162,7 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
         log_printf("read capcity not yet set\n");
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
+        errcode = MBED_ERROR_NOSTORAGE;
         goto end;
     }
 
@@ -1231,7 +1196,8 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
         /* send data we have just read */
         if (error == MBED_ERROR_RDERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
-                       ASCQ_NO_ADDITIONAL_SENSE);
+                    ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_NOSTORAGE;
             goto end;
         }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
@@ -1241,7 +1207,8 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
             /* increment will generate overflow ! This should not happen as logical blocks of
              * 512 bytes should not exceed U32_MAX */
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
-                       ASCQ_NO_ADDITIONAL_SENSE);
+                    ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_INVPARAM;
             goto end;
 
         }
@@ -1278,6 +1245,7 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
         if (error == MBED_ERROR_RDERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_NOSTORAGE;
             goto end;
         }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
@@ -1301,20 +1269,14 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
 #endif
     }
  end:
-    /*@ ghost
-        GHOST_invalid_transition = false;
-      */
-    /*@ assert GHOST_invalid_transition == \false; */
-    return;
+    return errcode;
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
-               ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+            ASCQ_NO_ADDITIONAL_SENSE);
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 
@@ -1325,33 +1287,31 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
   @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
-            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition,
+            bbb_ctx.state, scsi_ctx.state,
             scsi_ctx.storage_size,scsi_ctx.block_size, scsi_ctx.error,
             scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures (\result == MBED_ERROR_NOSTORAGE || \result == MBED_ERROR_NONE);
 
 
   @ disjoint behaviors;
   @ complete behaviors;
 
   */
-static void scsi_cmd_read_capacity10(scsi_state_t current_state,
-                                     cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_read_capacity10(scsi_state_t current_state,
+                                             cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
     read_capacity10_parameter_data_t response;
     uint8_t ret;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-      */
 
     log_printf("%s\n", __func__);
 
@@ -1377,6 +1337,7 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
         /* unable to get back capacity from backend... */
         scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
+        errcode = MBED_ERROR_NOSTORAGE;
         goto err;
     }
 
@@ -1389,18 +1350,15 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
     usb_bbb_send((uint8_t *) & response,
                  sizeof(read_capacity10_parameter_data_t));
 err:
-    /*@ assert GHOST_invalid_transition == \false; */
-    return;
+    return errcode;
 
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 /* SCSI_CMD_READ_CAPACITY_16 */
@@ -1410,17 +1368,17 @@ err:
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
   @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
-            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition,
+            bbb_ctx.state, scsi_ctx.state,
             scsi_ctx.storage_size,scsi_ctx.block_size, scsi_ctx.error,
             scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
+  @    ensures (\result == MBED_ERROR_NONE || \result == MBED_ERROR_NOSTORAGE);
   @    ensures scsi_ctx.state == SCSI_IDLE;
 
 
@@ -1428,16 +1386,14 @@ err:
   @ complete behaviors;
 
   */
-static void scsi_cmd_read_capacity16(scsi_state_t current_state,
-                                     cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_read_capacity16(scsi_state_t current_state,
+                                             cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
     read_capacity16_parameter_data_t response;
     cdb16_read_capacity_16_t *rc16;
     uint8_t ret;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-      */
 
     log_printf("%s\n", __func__);
 
@@ -1462,6 +1418,7 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
         /* unable to get back capacity from backend... */
         scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
+        errcode = MBED_ERROR_NOSTORAGE;
         goto err;
     }
 
@@ -1498,18 +1455,15 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
 		         rc16->allocation_length : sizeof(response));
     }
 err:
-    /*@ assert GHOST_invalid_transition == \false; */
-    return;
+    return errcode;
 
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 
@@ -1519,26 +1473,23 @@ err:
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, scsi_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
+  @ assigns scsi_ctx, scsi_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
-  @    ensures GHOST_invalid_cmd == \false;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior badinput:
   @    assumes current_state == SCSI_IDLE;
   @    assumes is_invalid_report_luns(&current_cdb->payload.cdb12_report_luns);
-  @    ensures GHOST_invalid_transition == \false;
-  @    ensures GHOST_invalid_cmd == \true;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures \result == MBED_ERROR_INVPARAM;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
   @    assumes !is_invalid_report_luns(&current_cdb->payload.cdb12_report_luns);
-  @    ensures GHOST_invalid_transition == \false;
-  @    ensures GHOST_invalid_cmd == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures \result == MBED_ERROR_NONE;
 
 
   @ disjoint behaviors;
@@ -1546,16 +1497,13 @@ err:
 
 
   */
-static void scsi_cmd_report_luns(scsi_state_t current_state,
-                                 cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_report_luns(scsi_state_t current_state,
+                                         cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
     cdb12_report_luns_t *rl;
     bool    check_condition = false;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-        GHOST_invalid_cmd = false;
-     */
 
     log_printf("%s\n", __func__);
 
@@ -1604,9 +1552,7 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
     if (check_condition) {
         usb_bbb_send_csw(SCSI_STATUS_CHECK_CONDITION, 0);
     }
-    /*@ assert GHOST_invalid_transition == \false; */
-    /*@ assert GHOST_invalid_cmd == \false; */
-    return;
+    return errcode;
 
     /* XXX
      * If the logical unit inventory changes for any reason
@@ -1618,23 +1564,19 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
 
 
  invalid_cmd:
-    /*@ ghost
-        GHOST_invalid_cmd = true;
-      */
     log_printf("%s: malformed cmd\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVPARAM;
+    return errcode;
 
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 /* SCSI_CMD_REQUEST_SENSE */
@@ -1644,10 +1586,12 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
   @ assigns scsi_ctx, scsi_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
+  @ ensures \result == MBED_ERROR_NONE;
   */
-static void scsi_cmd_request_sense(scsi_state_t current_state,
-                                   cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_request_sense(scsi_state_t current_state,
+                                           cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
     request_sense_parameter_data_t data = { 0 };
 
@@ -1678,7 +1622,7 @@ static void scsi_cmd_request_sense(scsi_state_t current_state,
     scsi_ctx.error = 0;
 
     usb_bbb_send((uint8_t *) & data, sizeof(data));
-    return;
+    return errcode;
 }
 
 
@@ -1690,10 +1634,12 @@ static void scsi_cmd_request_sense(scsi_state_t current_state,
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
   @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
+  @ ensures \result == MBED_ERROR_NONE;
   */
-static void scsi_cmd_mode_sense10(scsi_state_t current_state,
-                                  cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_mode_sense10(scsi_state_t current_state,
+                                          cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
 
     log_printf("%s\n", __func__);
@@ -1717,7 +1663,7 @@ static void scsi_cmd_mode_sense10(scsi_state_t current_state,
     /*usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t)); */
     usb_bbb_send((uint8_t *) & response.mode10, sizeof(mode_parameter10_data_t));
 
-    return;
+    return errcode;
 }
 
 
@@ -1729,10 +1675,12 @@ static void scsi_cmd_mode_sense10(scsi_state_t current_state,
 
 
   @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
+  @ ensures \result == MBED_ERROR_NONE;
   */
-static void scsi_cmd_mode_sense6(scsi_state_t current_state,
-                                 cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_mode_sense6(scsi_state_t current_state,
+                                         cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
 
     log_printf("%s\n", __func__);
@@ -1752,7 +1700,7 @@ static void scsi_cmd_mode_sense6(scsi_state_t current_state,
 
     /*usb_bbb_send_csw(CSW_STATUS_SUCCESS, sizeof(mode_parameter_header_t)); */
     usb_bbb_send((uint8_t *) & response, sizeof(mode_parameter6_data_t));
-    return;
+    return errcode;
 }
 
 /* SCSI_CMD_MODE_SELECT(6) */
@@ -1761,29 +1709,27 @@ static void scsi_cmd_mode_sense6(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures \result == MBED_ERROR_NONE;
 
 
   @ disjoint behaviors;
   @ complete behaviors;
 
   */
-static void scsi_cmd_mode_select6(scsi_state_t current_state,
-                                  cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_mode_select6(scsi_state_t current_state,
+                                          cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-     */
 
     log_printf("%s\n", __func__);
 
@@ -1798,17 +1744,14 @@ static void scsi_cmd_mode_select6(scsi_state_t current_state,
     scsi_set_state(next_state);
 
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
-    /*@ assert GHOST_invalid_transition == \false; */
-    return;
+    return errcode;
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 
@@ -1818,29 +1761,27 @@ static void scsi_cmd_mode_select6(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures \result == MBED_ERROR_NONE;
 
 
   @ disjoint behaviors;
   @ complete behaviors;
 
   */
-static void scsi_cmd_mode_select10(scsi_state_t current_state,
-                                   cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_mode_select10(scsi_state_t current_state,
+                                           cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-     */
 
     log_printf("%s\n", __func__);
 
@@ -1857,16 +1798,14 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
     /* effective transition execution (if needed) */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
     /* @ assert bbb_ctx.state == USB_BBB_STATE_STATUS; */
-    return;
+    return errcode;
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 
@@ -1876,29 +1815,27 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures \result == MBED_ERROR_NONE;
 
 
   @ disjoint behaviors;
   @ complete behaviors;
 
   */
-static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
-                                     cdb_t * current_cdb)
+static mbed_error_t scsi_cmd_test_unit_ready(scsi_state_t current_state,
+                                             cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-     */
 
     log_printf("%s\n", __func__);
 
@@ -1915,19 +1852,14 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
 
     /* effective transition execution (if needed) */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
-    /*@ ghost
-       GHOST_invalid_transition = false;
-       */
-    return;
+    return errcode;
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 /*
@@ -1940,27 +1872,28 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state ;
   // below is the consequence of synchronous call to scsi_data_available() in waiting loop
   @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures \result == MBED_ERROR_NONE || \result == MBED_ERROR_NOSTORAGE || \result == MBED_ERROR_INVPARAM;
 
 
   @ disjoint behaviors;
   @ complete behaviors;
 
   */
-static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
+static mbed_error_t scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint32_t num_sectors;
 
     uint32_t rw_lba;
@@ -1969,9 +1902,6 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     mbed_error_t error;
     uint8_t next_state;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-      */
 
     log_printf("%s:\n", __func__);
 
@@ -1992,6 +1922,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
     if (scsi_ctx.storage_size == 0) {
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
+        errcode = MBED_ERROR_NOSTORAGE;
         goto end;
     }
 
@@ -2048,7 +1979,8 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
-                       ASCQ_NO_ADDITIONAL_SENSE);
+                    ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_NOSTORAGE;
             goto end;
         }
         uint32_t logicalblock_increment = scsi_ctx.global_buf_len / scsi_ctx.block_size;
@@ -2056,6 +1988,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
             /* uint32 overflow detected! */
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_INVPARAM;
             goto end;
         }
         rw_lba += logicalblock_increment;
@@ -2110,6 +2043,7 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                     ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_NOSTORAGE;
             goto end;
         }
         /* wait for async event making current state ready to recv */
@@ -2133,56 +2067,50 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 #endif
     }
  end:
-    /*@ ghost
-      GHOST_invalid_transition = false;
-      */
-    /*@ assert GHOST_invalid_transition == \false; */
-    return;
+    return errcode;
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 
 
 /* SCSI_CMD_WRITE(10) */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx,&GHOST_invalid_transition);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state ;
+  // below is the consequence of synchronous call to scsi_data_available() in waiting loop
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \true;
+  @    ensures \result == MBED_ERROR_INVSTATE;
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    ensures GHOST_invalid_transition == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
+  @    ensures \result == MBED_ERROR_NONE || \result == MBED_ERROR_NOSTORAGE || \result == MBED_ERROR_INVPARAM;
 
 
   @ disjoint behaviors;
   @ complete behaviors;
 
   */
-static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
+static mbed_error_t scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 {
+    mbed_error_t errcode = MBED_ERROR_NONE;
     uint32_t num_sectors;
 
     uint32_t rw_lba;
     uint16_t rw_size;
     uint64_t rw_addr;
-    /*@ ghost
-        GHOST_invalid_transition = false;
-      */
 
     mbed_error_t error;
     uint8_t next_state;
@@ -2206,7 +2134,8 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
     if (scsi_ctx.storage_size == 0) {
         scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
-        return;
+        errcode = MBED_ERROR_NOSTORAGE;
+        goto end;
     }
 
 
@@ -2260,7 +2189,8 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
-                       ASCQ_NO_ADDITIONAL_SENSE);
+                    ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_NOSTORAGE;
             goto end;
         }
         uint32_t logicalblock_increment = scsi_ctx.global_buf_len / scsi_ctx.block_size;
@@ -2268,6 +2198,7 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
             /* uint32 overflow detected! */
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_INVPARAM;
             goto end;
         }
         rw_lba += logicalblock_increment;
@@ -2320,6 +2251,7 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
+            errcode = MBED_ERROR_NOSTORAGE;
             goto end;
         }
         /* here, we wait for an asyncrhonous execution of a trigger setting the OUT EP as having
@@ -2342,20 +2274,14 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 #endif
     }
  end:
-    /*@ ghost
-      GHOST_invalid_transition = false;
-      */
-    /*@ assert GHOST_invalid_transition == \false; */
-    return;
+    return errcode;
 
  invalid_transition:
-    /*@ ghost
-        GHOST_invalid_transition = true;
-      */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
-               ASCQ_NO_ADDITIONAL_SENSE);
-    return;
+            ASCQ_NO_ADDITIONAL_SENSE);
+    errcode = MBED_ERROR_INVSTATE;
+    return errcode;
 }
 
 /*@
@@ -2377,18 +2303,18 @@ mbed_error_t scsi_initialize_automaton(void)
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires SCSI_IDLE <= scsi_ctx.state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
-            GHOST_invalid_transition, GHOST_invalid_cmd, bbb_ctx.state ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
 
   */
-void scsi_exec_automaton(void)
+mbed_error_t scsi_exec_automaton(void)
 {
     /* local cdb copy */
     cdb_t   local_cdb;
+    mbed_error_t errcode = MBED_ERROR_NONE;
 
     if (scsi_ctx.queue_empty == true) {
         request_data_membarrier();
-        return;
+        goto nothing_to_do;
     }
 
     /* critical section part. This part of the code is handling
@@ -2426,56 +2352,56 @@ void scsi_exec_automaton(void)
 
     switch (local_cdb.operation) {
         case SCSI_CMD_INQUIRY:
-            scsi_cmd_inquiry(current_state, &local_cdb); // ghost(alloc_len) */;
+            errcode = scsi_cmd_inquiry(current_state, &local_cdb); // ghost(alloc_len) */;
             break;
 
         case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
-            scsi_cmd_prevent_allow_medium_removal(current_state, &local_cdb);
+            errcode = scsi_cmd_prevent_allow_medium_removal(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_READ_6:
-            scsi_cmd_read_data6(current_state, &local_cdb);
+            errcode = scsi_cmd_read_data6(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_READ_10:
-            scsi_cmd_read_data10(current_state, &local_cdb);
+            errcode = scsi_cmd_read_data10(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_READ_CAPACITY_10:
-            scsi_cmd_read_capacity10(current_state, &local_cdb);
+            errcode = scsi_cmd_read_capacity10(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_READ_CAPACITY_16:
-            scsi_cmd_read_capacity16(current_state, &local_cdb);
+            errcode = scsi_cmd_read_capacity16(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_REPORT_LUNS:
-            scsi_cmd_report_luns(current_state, &local_cdb);
+            errcode = scsi_cmd_report_luns(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_READ_FORMAT_CAPACITIES:
-            scsi_cmd_read_format_capacities(current_state, &local_cdb);
+            errcode = scsi_cmd_read_format_capacities(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_MODE_SELECT_10:
-            scsi_cmd_mode_select10(current_state, &local_cdb);
+            errcode = scsi_cmd_mode_select10(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_MODE_SELECT_6:
-            scsi_cmd_mode_select6(current_state, &local_cdb);
+            errcode = scsi_cmd_mode_select6(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_MODE_SENSE_10:
-            scsi_cmd_mode_sense10(current_state, &local_cdb);
+            errcode = scsi_cmd_mode_sense10(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_MODE_SENSE_6:
-            scsi_cmd_mode_sense6(current_state, &local_cdb);
+            errcode = scsi_cmd_mode_sense6(current_state, &local_cdb);
             break;
 
 
         case SCSI_CMD_REQUEST_SENSE:
-            scsi_cmd_request_sense(current_state, &local_cdb);
+            errcode = scsi_cmd_request_sense(current_state, &local_cdb);
             break;
 #if 0
         case SCSI_CMD_SEND_DIAGNOSTIC:
@@ -2483,15 +2409,15 @@ void scsi_exec_automaton(void)
             break;
 #endif
         case SCSI_CMD_TEST_UNIT_READY:
-            scsi_cmd_test_unit_ready(current_state, &local_cdb);
+            errcode = scsi_cmd_test_unit_ready(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_WRITE_6:
-            scsi_write_data6(current_state, &local_cdb);
+            errcode = scsi_write_data6(current_state, &local_cdb);
             break;
 
         case SCSI_CMD_WRITE_10:
-            scsi_write_data10(current_state, &local_cdb);
+            errcode = scsi_write_data10(current_state, &local_cdb);
             break;
 
         default:
@@ -2501,10 +2427,9 @@ void scsi_exec_automaton(void)
                        ASCQ_NO_ADDITIONAL_SENSE);
             break;
     };
-    return;
 
  nothing_to_do:
-    return;
+    return errcode;
 }
 
 
