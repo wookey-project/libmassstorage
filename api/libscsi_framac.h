@@ -306,7 +306,11 @@ typedef struct {
 
 scsi_context_t scsi_ctx;
 
-static cdb_t queued_cdb = { 0 };
+cdb_t queued_cdb = { 0 };
+
+/* INFO: this variable is usually an application-scope variable, instead of libMSC local one. Although, for the FramaC sake of globals check, it has been set here, to be seen correclty from
+ * both scsi and bbb scopes, as framaC doesn't handle link-level resolution of variable address */
+bool reset_requested = false;
 
 void scsi_data_sent(void);
 

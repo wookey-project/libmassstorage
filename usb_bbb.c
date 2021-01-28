@@ -196,7 +196,9 @@ err:
 /*@
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, queued_cdb, scsi_ctx.state, reset_requested;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.queue_empty, scsi_ctx.size_to_process,
+        scsi_ctx.line_state, queued_cdb, scsi_ctx.state, reset_requested, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
+        scsi_ctx.direction;
   */
 #ifndef __FRAMAC__
 static
@@ -235,7 +237,8 @@ err:
 /*@
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx, scsi_ctx.state;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
+         scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction;
   */
 #ifndef __FRAMAC__
 static
@@ -385,7 +388,7 @@ predicate valid_iface_handlers(usbctrl_interface_t *iface) =
 /*@
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
   @ ensures bbb_ctx.state == USB_BBB_STATE_STATUS;
   */
 void usb_bbb_send_csw(uint8_t status, uint32_t data_residue)
@@ -412,7 +415,7 @@ void usb_bbb_send_csw(uint8_t status, uint32_t data_residue)
 /*@
   @ requires \separated(src, &cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
   */
 void usb_bbb_send(const uint8_t * src, uint32_t size)
 {

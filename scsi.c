@@ -99,7 +99,7 @@ scsi_context_t *scsi_get_context(void) {
   @ requires \separated(&cbw, &scsi_ctx,&GHOST_opaque_drv_privates, &bbb_ctx);
   @ requires sensekey < 0xff;
   @ assigns scsi_ctx.error,
-            GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.state;
+            GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.state;
   @ ensures scsi_ctx.state == SCSI_IDLE;
   */
 #ifndef __FRAMAC__
@@ -300,6 +300,9 @@ static inline bool scsi_is_ready_for_data_send(void)
   @ requires \separated(buffer + (0 .. size-1),&scsi_ctx,&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ assigns scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,GHOST_opaque_drv_privates, bbb_ctx.state;
 
+  // due to FramaC call to scsi_data_vailable()
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, scsi_ctx.size_to_process, scsi_ctx.state;
+
   @ behavior invbuffer:
   @    assumes buffer == NULL;
   @    ensures scsi_ctx.addr == \old(scsi_ctx.addr);
@@ -345,14 +348,24 @@ static mbed_error_t scsi_get_data(uint8_t *buffer, uint32_t size)
         errcode = MBED_ERROR_INVPARAM;
         goto err;
     }
+    /* here, we wait for an asyncrhonous execution of a trigger setting the OUT EP as having
+     * received data.
+     * This trigger is scsi_data_available(), which is executed when the bbb stack is triggered
+     * by the driver outep interrupt in DATA mode.
+     * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+     * this trigger, instead of waiting for its asyncrhonous execution.
+     */
+#ifdef __FRAMAC__
+    if (!scsi_is_ready_for_data_receive()) {
+        /* emulating asynchronous trigger */
+        scsi_data_available(scsi_ctx.global_buf_len);
+    }
+#else
     while (!scsi_is_ready_for_data_receive()) {
         request_data_membarrier();
-#ifdef __FRAMAC__
-        break;
-#else
         continue;
-#endif
     }
+#endif
 
     set_u8_with_membarrier(&scsi_ctx.direction, SCSI_DIRECTION_RECV);
 
@@ -372,7 +385,7 @@ err:
  */
 /*@
   @ requires \separated(data + (0 .. size-1),&scsi_ctx,&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
-  @ assigns scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,GHOST_opaque_drv_privates, bbb_ctx.state;
+  @ assigns scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
  */
 void scsi_send_data(uint8_t *data, uint32_t size)
 {
@@ -394,7 +407,7 @@ void scsi_send_data(uint8_t *data, uint32_t size)
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
 
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
   @ behavior buffer_bigger_than_sizetoprocess:
   @   assumes (size < scsi_ctx.size_to_process);
@@ -449,7 +462,7 @@ void scsi_data_available(uint32_t size)
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
 
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
   @ behavior size_bigger_than_buffer:
   @   assumes (scsi_ctx.size_to_process > scsi_ctx.global_buf_len);
@@ -575,9 +588,8 @@ static void scsi_forge_mode_sense_response(u_mode_parameter * response,
  */
 
 #ifndef __FRAMAC__
+/* XXX: we should use memory barriers instead of volatile here */
 extern volatile bool reset_requested;
-#else
-extern bool reset_requested;
 #endif
 
 
@@ -660,7 +672,7 @@ err:
   @ requires \valid_read(cdb);
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, cdb, &scsi_ctx);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
-  @ assigns scsi_ctx.error, GHOST_opaque_drv_privates,
+  @ assigns scsi_ctx.error, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
             bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd;
 
   @ behavior badstate:
@@ -784,6 +796,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
 
  invalid_cmd:
     /*@ ghost
+        GHOST_invalid_transition = false;
         GHOST_invalid_cmd = true;
       */
     log_printf("%s: malformed cmd\n", __func__);
@@ -793,6 +806,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
 
  invalid_transition:
     /*@ ghost
+        GHOST_invalid_cmd = false;
         GHOST_invalid_transition = true;
       */
     log_printf("%s: invalid_transition\n", __func__);
@@ -806,7 +820,7 @@ static void scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cd
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
   @ requires \valid_read(current_cdb);
 
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.state ;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.state ;
 
   */
 static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
@@ -835,7 +849,7 @@ static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.error, scsi_ctx.state, GHOST_invalid_transition ;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.error, scsi_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -941,7 +955,10 @@ end:
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
+
+  // this assign line is the consequence of the synchronized scsi_data_sent() trigger (instead of async one)
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1017,7 +1034,9 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, scsi_ctx.error, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
+      @ loop invariant scsi_ctx.size_to_process >= 0;
+      @ loop assigns num_sectors, rw_lba, error, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state,
+            scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.error, scsi_ctx.state;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         /* There is more data to send that the buffer is able to process,
@@ -1034,7 +1053,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         /* send data we have just read */
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         uint32_t logicalblock_increment = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-        if (((uint64_t)rw_lba + (uint64_t)logicalblock_increment) > UINT32_MAX) {
+        if ((UINT32_MAX - rw_lba) < logicalblock_increment) {
             /* uint32 overflow detected! */
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
@@ -1044,18 +1063,23 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         /*@ assert ((uint64_t)logicalblock_increment + (uint64_t)rw_lba <= UINT32_MAX); */
         rw_lba += logicalblock_increment;
         /* active wait for data to be sent */
-        /*@
-          @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-          @ loop assigns \nothing;
-          */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the IN EP as ready.
+         * This trigger is scsi_data_sent(), which is executed when all the previously data
+         * configured to be send has been transmitted to the host.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (!scsi_is_ready_for_data_send()) {
+            /* previous scsi_send_data() finished to be sent by the core (this should be an async trap in nominal mode) */
+            scsi_data_sent();
+        }
+#else
         while (!scsi_is_ready_for_data_send()) {
             request_data_membarrier();
-#if __FRAMAC__
-            break;
-#else
             continue;
-#endif
         }
+#endif
     }
 
     /* Fractional residue */
@@ -1072,20 +1096,29 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
         /* active wait for data to be sent */
-        /*@
-          @ loop assigns \nothing;
-          */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the IN EP as ready.
+         * This trigger is scsi_data_sent(), which is executed when all the previously data
+         * configured to be send has been transmitted to the host.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (!scsi_is_ready_for_data_send()) {
+            /* previous scsi_send_data() finished to be sent by the core (this should be an async trap in nominal mode) */
+            scsi_data_sent();
+        }
+#else
         while (!scsi_is_ready_for_data_send()) {
             request_data_membarrier();
-#ifdef __FRAMAC__
-            break;
-#else
             continue;
-#endif
         }
+#endif
     }
 
  end:
+    /*@ ghost
+        GHOST_invalid_transition = false;
+      */
     /*@ assert GHOST_invalid_transition == \false; */
     return;
 
@@ -1106,7 +1139,10 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
+
+  // this assign line is the consequence of the synchronized scsi_data_sent() trigger (instead of async one)
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1124,7 +1160,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
 
   */
-static void scsi_cmd_read_data10(scsi_state_t current_state,
+static void scsi_cmd_read_data10(const scsi_state_t current_state,
                                  cdb_t * current_cdb)
 {
     uint32_t num_sectors;
@@ -1144,10 +1180,12 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
     /* Sanity check and next state detection */
     if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
-        log_printf("not valid transition from state %d\n", current_state);
+        /* @ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
+    /* @ assert current_state == SCSI_IDLE; */
     next_state = scsi_next_state(current_state, current_cdb->operation);
+    /* @ assert next_state == SCSI_IDLE; */
 
     /* SCSI standard says that the host should not request READ10 cmd
      * before requesting GET_CAPACITY cmd. In this very case, we have to
@@ -1158,9 +1196,7 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
                    ASCQ_NO_ADDITIONAL_SENSE);
         goto end;
     }
-
-    /* entering READ state... */
-    scsi_set_state(next_state);
+    /* @ assert scsi_ctx.storage_size > 0; */
 
     rw_lba = ntohl(current_cdb->payload.cdb10.logical_block);
     rw_size = ntohs(current_cdb->payload.cdb10.transfer_blocks);
@@ -1178,7 +1214,9 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, scsi_ctx.error, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
+      @ loop invariant scsi_ctx.size_to_process >= 0;
+      @ loop assigns num_sectors, rw_lba, error, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state,
+            scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.error, scsi_ctx.state;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         /* There is more data to send that the buffer is able to process,
@@ -1206,18 +1244,23 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
         /* increment read pointer */
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
         /* active wait for data to be sent */
-        /*@
-          @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-          @ loop assigns \nothing;
-          */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the IN EP as ready.
+         * This trigger is scsi_data_sent(), which is executed when all the previously data
+         * configured to be send has been transmitted to the host.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (!scsi_is_ready_for_data_send()) {
+            /* previous scsi_send_data() finished to be sent by the core (this should be an async trap in nominal mode) */
+            scsi_data_sent();
+        }
+#else
         while (!scsi_is_ready_for_data_send()) {
             request_data_membarrier();
-#ifdef __FRAMAC__
-            break;
-#else
             continue;
-#endif
         }
+#endif
     }
 
     /* Fractional residue */
@@ -1234,19 +1277,28 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
         }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.size_to_process);
         /* active wait for data to be sent */
-        /*@
-          @ loop assigns \nothing;
-          */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the IN EP as ready.
+         * This trigger is scsi_data_sent(), which is executed when all the previously data
+         * configured to be send has been transmitted to the host.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (!scsi_is_ready_for_data_send()) {
+            /* previous scsi_send_data() finished to be sent by the core (this should be an async trap in nominal mode) */
+            scsi_data_sent();
+        }
+#else
         while (!scsi_is_ready_for_data_send()) {
             request_data_membarrier();
-#ifdef __FRAMAC__
-            break;
-#else
             continue;
-#endif
         }
+#endif
     }
  end:
+    /*@ ghost
+        GHOST_invalid_transition = false;
+      */
     /*@ assert GHOST_invalid_transition == \false; */
     return;
 
@@ -1267,8 +1319,10 @@ static void scsi_cmd_read_data10(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates,
-            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
+            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition,
+            scsi_ctx.storage_size,scsi_ctx.block_size, scsi_ctx.error,
+            scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1318,7 +1372,7 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
         /* unable to get back capacity from backend... */
         scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
-        return;
+        goto err;
     }
 
     /* what is expected is the _LAST_ LBA address ....
@@ -1329,13 +1383,14 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
 
     usb_bbb_send((uint8_t *) & response,
                  sizeof(read_capacity10_parameter_data_t));
+err:
     /*@ assert GHOST_invalid_transition == \false; */
     return;
 
 
  invalid_transition:
     /*@ ghost
-        GHOST_invalid_cmd = true;
+        GHOST_invalid_transition = true;
       */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
@@ -1349,8 +1404,10 @@ static void scsi_cmd_read_capacity10(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates,
-            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
+            bbb_ctx.state, scsi_ctx.state, GHOST_invalid_transition,
+            scsi_ctx.storage_size,scsi_ctx.block_size, scsi_ctx.error,
+            scsi_ctx.state;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1400,7 +1457,7 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
         /* unable to get back capacity from backend... */
         scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_NO_ADDITIONAL_SENSE,
                    ASCQ_NO_ADDITIONAL_SENSE);
-        return;
+        goto err;
     }
 
     /* get back cdb content from union */
@@ -1410,7 +1467,9 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
      * See Working draft SCSI block cmd  5.10.2 READ CAPACITY (16) */
 
     /* creating response... */
+#ifndef __FRAMAC__
     memset((void *) &response, 0x0, sizeof(read_capacity16_parameter_data_t));
+#endif
     response.ret_lba = (uint64_t) htonl(scsi_ctx.storage_size - 1);
     response.ret_block_length = htonl(scsi_ctx.block_size);
     response.prot_enable = 0;   /* no prot_enable, protection associated fields
@@ -1433,13 +1492,14 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
                      (rc16->allocation_length < sizeof(response)) ?
 		         rc16->allocation_length : sizeof(response));
     }
+err:
     /*@ assert GHOST_invalid_transition == \false; */
     return;
 
 
  invalid_transition:
     /*@ ghost
-        GHOST_invalid_cmd = true;
+        GHOST_invalid_transition = true;
       */
     log_printf("%s: invalid_transition\n", __func__);
     scsi_error(SCSI_SENSE_ILLEGAL_REQUEST, ASC_NO_ADDITIONAL_SENSE,
@@ -1454,7 +1514,7 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
+  @ assigns scsi_ctx, scsi_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1470,7 +1530,7 @@ static void scsi_cmd_read_capacity16(scsi_state_t current_state,
 
   @ behavior ok:
   @    assumes current_state == SCSI_IDLE;
-  @    assumes is_invalid_report_luns(&current_cdb->payload.cdb12_report_luns);
+  @    assumes !is_invalid_report_luns(&current_cdb->payload.cdb12_report_luns);
   @    ensures GHOST_invalid_transition == \false;
   @    ensures GHOST_invalid_cmd == \false;
   @    ensures scsi_ctx.state == SCSI_IDLE;
@@ -1578,7 +1638,7 @@ static void scsi_cmd_report_luns(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state ;
+  @ assigns scsi_ctx, scsi_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
   */
 static void scsi_cmd_request_sense(scsi_state_t current_state,
                                    cdb_t * current_cdb)
@@ -1624,7 +1684,7 @@ static void scsi_cmd_request_sense(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
   */
 static void scsi_cmd_mode_sense10(scsi_state_t current_state,
                                   cdb_t * current_cdb)
@@ -1663,7 +1723,7 @@ static void scsi_cmd_mode_sense10(scsi_state_t current_state,
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
   */
 static void scsi_cmd_mode_sense6(scsi_state_t current_state,
                                  cdb_t * current_cdb)
@@ -1696,7 +1756,7 @@ static void scsi_cmd_mode_sense6(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1753,7 +1813,7 @@ static void scsi_cmd_mode_select6(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1811,7 +1871,7 @@ static void scsi_cmd_mode_select10(scsi_state_t current_state,
   @ requires \valid_read(current_cdb);
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state, GHOST_invalid_transition ;
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1850,6 +1910,9 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
 
     /* effective transition execution (if needed) */
     usb_bbb_send_csw(CSW_STATUS_SUCCESS, 0);
+    /*@ ghost
+       GHOST_invalid_transition = false;
+       */
     return;
 
  invalid_transition:
@@ -1873,6 +1936,9 @@ static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
 
   @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition ;
+  // below is the consequence of synchronous call to scsi_data_available() in waiting loop
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction, scsi_ctx.state;
+
 
   @ behavior badstate:
   @    assumes current_state != SCSI_IDLE;
@@ -1947,25 +2013,33 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 
     /*@
       @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-      @ loop assigns num_sectors, error, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,  scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
+
+      @ loop assigns num_sectors, error, rw_lba,
+                     scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,GHOST_opaque_drv_privates, bbb_ctx.state,
+                     GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, scsi_ctx.size_to_process, scsi_ctx.state;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-	/* Wait until we have indeed received data from the USB lower layers */
-        /*@
-          @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-          @ loop assigns \nothing;
-          */
-        while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
-            request_data_membarrier();
+        /* Wait until we have indeed received data from the USB lower layers */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the OUT EP as having
+         * received data.
+         * This trigger is scsi_data_available(), which is executed when the bbb stack is triggered
+         * by the driver outep interrupt in DATA mode.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
 #ifdef __FRAMAC__
+        if (scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
             /* emulating asynchronous trigger */
-            break;
+            scsi_data_available(scsi_ctx.global_buf_len);
+        }
 #else
-		    continue;
+        while (scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
+            request_data_membarrier();
+            continue;
+        }
 #endif
-	    }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
@@ -1973,23 +2047,32 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
             goto end;
         }
         uint32_t logicalblock_increment = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-        if (((uint64_t)rw_lba + (uint64_t)logicalblock_increment) > UINT32_MAX) {
+        if ((UINT32_MAX - rw_lba) < logicalblock_increment) {
             /* uint32 overflow detected! */
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
             goto end;
         }
-        /*@ assert ((uint64_t)logicalblock_increment + (uint64_t)rw_lba <= UINT32_MAX); */
         rw_lba += logicalblock_increment;
         /* wait for async event making current state ready to recv */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the OUT EP as having
+         * received data.
+         * This trigger is scsi_data_available(), which is executed when the bbb stack is triggered
+         * by the driver outep interrupt in DATA mode.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (!scsi_is_ready_for_data_receive()) {
+            /* emulating asynchronous trigger */
+            scsi_data_available(scsi_ctx.global_buf_len);
+        }
+#else
         while (!scsi_is_ready_for_data_receive()) {
             request_data_membarrier();
-#ifdef __FRAMAC__
-            break;
-#else
             continue;
-#endif
         }
+#endif
     }
 
     /* Fractional residue */
@@ -2000,20 +2083,24 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
          * the ISR trigger decrement size_to_process */
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
         /* Wait until we have indeed received data from the USB lower layers */
-        /*@
-          @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-          @ loop invariant SCSI_TRANSMIT_LINE_READY <= scsi_ctx.line_state <= SCSI_TRANSMIT_LINE_ERROR;
-          @ loop assigns \nothing;
-          */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the OUT EP as having
+         * received data.
+         * This trigger is scsi_data_available(), which is executed when the bbb stack is triggered
+         * by the driver outep interrupt in DATA mode.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
+            /* emulating asynchronous trigger */
+            scsi_data_available(scsi_ctx.global_buf_len);
+        }
+#else
         while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
             request_data_membarrier();
-#ifdef __FRAMAC__
-            /* emulating asynchronous trigger */
-            break;
-#else
             continue;
-#endif
         }
+#endif
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
@@ -2021,16 +2108,29 @@ static void scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
             goto end;
         }
         /* wait for async event making current state ready to recv */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the OUT EP as having
+         * received data.
+         * This trigger is scsi_data_available(), which is executed when the bbb stack is triggered
+         * by the driver outep interrupt in DATA mode.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (!scsi_is_ready_for_data_receive()) {
+            /* emulating asynchronous trigger */
+            scsi_data_available(scsi_ctx.global_buf_len);
+        }
+#else
         while (!scsi_is_ready_for_data_receive()) {
             request_data_membarrier();
-#ifdef __FRAMAC__
-            break;
-#else
             continue;
-#endif
         }
+#endif
     }
  end:
+    /*@ ghost
+      GHOST_invalid_transition = false;
+      */
     /*@ assert GHOST_invalid_transition == \false; */
     return;
 
@@ -2123,40 +2223,65 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 #endif
 
     /*@
-      @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx,&GHOST_invalid_transition);
-      @ loop assigns num_sectors, error, scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state, scsi_ctx.state, GHOST_opaque_drv_privates, bbb_ctx.state, rw_lba;
+      @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx,&GHOST_invalid_transition,
+                            GHOST_in_eps + (..), &GHOST_opaque_drv_privates);
+      @ loop assigns num_sectors, error, rw_lba,
+                     scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,GHOST_opaque_drv_privates, bbb_ctx.state,
+                     GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, scsi_ctx.size_to_process, scsi_ctx.state;
       */
     while (scsi_ctx.size_to_process > scsi_ctx.global_buf_len) {
         scsi_get_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-	/* Wait until we have indeed received data from the USB lower layers */
-        /*@
-          @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx,&GHOST_invalid_transition);
-          @ loop assigns \nothing;
-          */
-	    while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
-            request_data_membarrier();
+        /* Wait until we have indeed received data from the USB lower layers */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the OUT EP as having
+         * received data.
+         * This trigger is scsi_data_available(), which is executed when the bbb stack is triggered
+         * by the driver outep interrupt in DATA mode.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+
 #ifdef __FRAMAC__
-            break;
+        if (scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
+            /* emulating asynchronous trigger */
+            scsi_data_available(scsi_ctx.global_buf_len);
+        }
 #else
-		    continue;
+        while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
+            request_data_membarrier();
+            continue;
+        }
 #endif
-	    }
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
             goto end;
         }
+        if ((UINT32_MAX - rw_lba) < (scsi_ctx.global_buf_len / scsi_ctx.block_size)) {
+            /* uint32 overflow detected! */
+            scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
+                       ASCQ_NO_ADDITIONAL_SENSE);
+            goto end;
+        }
         rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        /* here, we wait for an asyncrhonous execution of a trigger setting the IN EP as ready.
+         * This trigger is scsi_data_sent(), which is executed when all the previously data
+         * configured to be send has been transmitted to the host.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (!scsi_is_ready_for_data_receive()) {
+            /* emulating asynchronous trigger */
+            scsi_data_available(scsi_ctx.global_buf_len);
+        }
+#else
         while (!scsi_is_ready_for_data_receive()) {
             request_data_membarrier();
-#ifdef __FRAMAC__
-            break;
-#else
             continue;
-#endif
         }
+#endif
     }
 
     /* Fractional residue */
@@ -2167,35 +2292,53 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
          * the ISR trigger decrement size_to_process */
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
         /* Wait until we have indeed received data from the USB lower layers */
-        /*@
-          @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
-          @ loop invariant SCSI_TRANSMIT_LINE_READY <= scsi_ctx.line_state <= SCSI_TRANSMIT_LINE_ERROR;
-          @ loop assigns \nothing;
-          */
+        /* here, we wait for an asyncrhonous execution of a trigger setting the OUT EP as having
+         * received data.
+         * This trigger is scsi_data_available(), which is executed when the bbb stack is triggered
+         * by the driver outep interrupt in DATA mode.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY) {
+            /* emulating asynchronous trigger */
+            scsi_data_available(scsi_ctx.global_buf_len);
+        }
+#else
         while(scsi_ctx.line_state != SCSI_TRANSMIT_LINE_READY){
             request_data_membarrier();
-#ifdef __FRAMAC__
-            break;
-#else
             continue;
-#endif
         }
+#endif
         error = scsi_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
             goto end;
         }
+        /* here, we wait for an asyncrhonous execution of a trigger setting the OUT EP as having
+         * received data.
+         * This trigger is scsi_data_available(), which is executed when the bbb stack is triggered
+         * by the driver outep interrupt in DATA mode.
+         * Using FramaC, we can't emulate multithreaded execution, so we synchronously execute
+         * this trigger, instead of waiting for its asyncrhonous execution.
+         */
+#ifdef __FRAMAC__
+        if (!scsi_is_ready_for_data_receive()) {
+            /* emulating asynchronous trigger */
+            scsi_data_available(scsi_ctx.global_buf_len);
+        }
+#else
         while (!scsi_is_ready_for_data_receive()) {
             request_data_membarrier();
-#ifdef __FRAMAC__
-            break;
-#else
             continue;
-#endif
         }
+#endif
     }
  end:
+    /*@ ghost
+      GHOST_invalid_transition = false;
+      */
     /*@ assert GHOST_invalid_transition == \false; */
     return;
 
@@ -2228,7 +2371,8 @@ mbed_error_t scsi_initialize_automaton(void)
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
   @ requires SCSI_IDLE <= scsi_ctx.state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_invalid_transition, GHOST_invalid_cmd ;
+  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
+            GHOST_invalid_transition, GHOST_invalid_cmd, bbb_ctx.state ;
 
   */
 void scsi_exec_automaton(void)

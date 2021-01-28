@@ -225,8 +225,8 @@ err:
   @ disjoint behaviors;
   @ complete behaviors;
    */
-uint8_t scsi_next_state(scsi_state_t current_state,
-                        scsi_operation_code_t request)
+uint8_t scsi_next_state(const scsi_state_t current_state,
+                        const scsi_operation_code_t request)
 {
     uint8_t result = 0xff;
 
@@ -269,28 +269,30 @@ err:
   @ requires \valid_read(scsi_automaton[1].trans_list.transitions + (0 .. scsi_automaton[1].trans_list.number-1));
   @ assigns scsi_ctx.state;
 
-  @behavior inv_req:
+  @ behavior inv_req:
   @   assumes request == 0xff;
   @   ensures \result == \false;
   @   ensures scsi_ctx.state == \old(scsi_ctx.state);
 
-  @behavior trans_valid:
+  @ behavior trans_valid:
   @   assumes request != 0xff;
-  @   assumes \exists integer i ; 0 <= i < scsi_automaton[current_state].trans_list.number && scsi_automaton[current_state].trans_list.transitions[i].request == request;
+  @   assumes current_state == SCSI_IDLE ==> \exists integer i ; 0 <= i < scsi_automaton[SCSI_IDLE].trans_list.number && scsi_automaton[SCSI_IDLE].trans_list.transitions[i].request == request;
+  @   assumes current_state == SCSI_ERROR ==> \exists integer i ; 0 <= i < scsi_automaton[SCSI_ERROR].trans_list.number && scsi_automaton[SCSI_ERROR].trans_list.transitions[i].request == request;
   @   ensures \result == \true;
   @   ensures scsi_ctx.state == \old(scsi_ctx.state);
 
-  @behavior trans_invalid:
+  @ behavior trans_invalid:
   @   assumes request != 0xff;
-  @   assumes \forall integer i ; 0 <= i <scsi_automaton[current_state].trans_list.number ==> scsi_automaton[current_state].trans_list.transitions[i].request != request;
+  @   assumes current_state == SCSI_IDLE ==> (\forall integer i ; 0 <= i <scsi_automaton[SCSI_IDLE].trans_list.number ==> scsi_automaton[SCSI_IDLE].trans_list.transitions[i].request != request);
+  @   assumes current_state == SCSI_ERROR ==> (\forall integer i ; 0 <= i <scsi_automaton[SCSI_ERROR].trans_list.number ==> scsi_automaton[SCSI_ERROR].trans_list.transitions[i].request != request);
   @   ensures \result == \false;
   @   ensures scsi_ctx.state == SCSI_ERROR;
 
   @ disjoint behaviors;
   @ complete behaviors;
    */
-bool scsi_is_valid_transition(scsi_state_t current_state,
-                              scsi_operation_code_t request)
+bool scsi_is_valid_transition(const scsi_state_t current_state,
+                              const scsi_operation_code_t request)
 {
     bool result = false;
 
@@ -301,7 +303,6 @@ bool scsi_is_valid_transition(scsi_state_t current_state,
 
 
     const uint8_t num_trans = scsi_automaton[current_state].trans_list.number;
-    /*@ assert \valid_read(scsi_automaton[current_state].trans_list.transitions + (0 .. num_trans-1)); */
     /*@
       @ loop invariant 0 <= i <= num_trans ;
       @ loop invariant \forall integer prei; 0 <= prei < i ==> scsi_automaton[current_state].trans_list.transitions[prei].request != request;

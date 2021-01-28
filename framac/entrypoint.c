@@ -13,7 +13,6 @@
 /* massstorage specific exports for framac */
 #include "scsi_automaton.h"
 
-bool reset_requested = false;
 
 #define USB_BUF_SIZE 16384
 

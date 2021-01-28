@@ -99,7 +99,7 @@ static void full_device_reset(void)
  */
 /*@
     @ requires \separated(packet,&GHOST_opaque_drv_privates, &bbb_ctx);
-    @ assigns GHOST_opaque_drv_privates, bbb_ctx.state;
+    @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
   */
 mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((unused)),
                                              usbctrl_setup_pkt_t *packet)
