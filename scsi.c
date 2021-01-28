@@ -985,10 +985,10 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
     uint16_t rw_size;
     uint64_t rw_addr;
     uint8_t next_state;
-    mbed_error_t error;
     /*@ ghost
         GHOST_invalid_transition = false;
       */
+    mbed_error_t error;
 
     log_printf("%s\n", __func__);
 
@@ -1052,6 +1052,7 @@ static void scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
         }
         /* send data we have just read */
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
+        /* check for unsigned overflow */
         uint32_t logicalblock_increment = scsi_ctx.global_buf_len / scsi_ctx.block_size;
         if ((UINT32_MAX - rw_lba) < logicalblock_increment) {
             /* uint32 overflow detected! */
@@ -1187,6 +1188,9 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
     next_state = scsi_next_state(current_state, current_cdb->operation);
     /* @ assert next_state == SCSI_IDLE; */
 
+    /* entering READ state... */
+    scsi_set_state(next_state);
+
     /* SCSI standard says that the host should not request READ10 cmd
      * before requesting GET_CAPACITY cmd. In this very case, we have to
      * send back INVALID to the host */
@@ -1196,7 +1200,6 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
                    ASCQ_NO_ADDITIONAL_SENSE);
         goto end;
     }
-    /* @ assert scsi_ctx.storage_size > 0; */
 
     rw_lba = ntohl(current_cdb->payload.cdb10.logical_block);
     rw_size = ntohs(current_cdb->payload.cdb10.transfer_blocks);
@@ -1233,7 +1236,8 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
         }
         scsi_send_data(scsi_ctx.global_buf, scsi_ctx.global_buf_len);
         /* check for unsigned overflow */
-        if ((UINT32_MAX - rw_lba) < (scsi_ctx.global_buf_len / scsi_ctx.block_size)) {
+        uint32_t logicalblock_increment = scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        if ((UINT32_MAX - rw_lba) < logicalblock_increment) {
             /* increment will generate overflow ! This should not happen as logical blocks of
              * 512 bytes should not exceed U32_MAX */
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
@@ -1242,7 +1246,8 @@ static void scsi_cmd_read_data10(const scsi_state_t current_state,
 
         }
         /* increment read pointer */
-        rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        /*@ assert ((uint64_t)logicalblock_increment + (uint64_t)rw_lba <= UINT32_MAX); */
+        rw_lba += logicalblock_increment;
         /* active wait for data to be sent */
         /* here, we wait for an asyncrhonous execution of a trigger setting the IN EP as ready.
          * This trigger is scsi_data_sent(), which is executed when all the previously data
@@ -2223,8 +2228,8 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 #endif
 
     /*@
-      @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx,&GHOST_invalid_transition,
-                            GHOST_in_eps + (..), &GHOST_opaque_drv_privates);
+      @ loop invariant \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, current_cdb, &scsi_ctx);
+
       @ loop assigns num_sectors, error, rw_lba,
                      scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,GHOST_opaque_drv_privates, bbb_ctx.state,
                      GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, scsi_ctx.size_to_process, scsi_ctx.state;
@@ -2258,13 +2263,14 @@ static void scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
                        ASCQ_NO_ADDITIONAL_SENSE);
             goto end;
         }
-        if ((UINT32_MAX - rw_lba) < (scsi_ctx.global_buf_len / scsi_ctx.block_size)) {
+        uint32_t logicalblock_increment = scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        if ((UINT32_MAX - rw_lba) < logicalblock_increment) {
             /* uint32 overflow detected! */
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
             goto end;
         }
-        rw_lba += scsi_ctx.global_buf_len / scsi_ctx.block_size;
+        rw_lba += logicalblock_increment;
         /* here, we wait for an asyncrhonous execution of a trigger setting the IN EP as ready.
          * This trigger is scsi_data_sent(), which is executed when all the previously data
          * configured to be send has been transmitted to the host.
