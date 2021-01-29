@@ -80,6 +80,7 @@ typedef struct {
 
 /* IDLE SCSI transitions */
 static const scsi_operation_code_transition_t scsi_idle_trans[17] = {
+    {SCSI_CMD_TEST_UNIT_READY, SCSI_IDLE},
     {SCSI_CMD_INQUIRY, SCSI_IDLE},
     {SCSI_CMD_MODE_SELECT_10, SCSI_IDLE},
     {SCSI_CMD_MODE_SELECT_6, SCSI_IDLE},
@@ -94,7 +95,6 @@ static const scsi_operation_code_transition_t scsi_idle_trans[17] = {
     {SCSI_CMD_REPORT_LUNS, SCSI_IDLE},
     {SCSI_CMD_REQUEST_SENSE, SCSI_IDLE},
     {SCSI_CMD_SEND_DIAGNOSTIC, SCSI_IDLE},
-    {SCSI_CMD_TEST_UNIT_READY, SCSI_IDLE},
     {SCSI_CMD_WRITE_6, SCSI_IDLE},
     {SCSI_CMD_WRITE_10, SCSI_IDLE}
 };
@@ -207,12 +207,7 @@ err:
   @ requires \valid_read(scsi_automaton[1].trans_list.transitions + (0 .. scsi_automaton[1].trans_list.number-1));
   @ assigns \nothing;
 
-  @behavior inv_req:
-  @   assumes request == 0xff;
-  @   ensures \result == 0xff;
-
   @behavior req_found:
-  @   assumes request != 0xff;
   @   assumes \exists integer i ; 0 <= i < scsi_automaton[current_state].trans_list.number && scsi_automaton[current_state].trans_list.transitions[i].request == request;
   @   ensures \result != 0xff;
 
@@ -230,10 +225,6 @@ uint8_t scsi_next_state(const scsi_state_t current_state,
 {
     uint8_t result = 0xff;
 
-    if (request == 0xff) {
-        /* invalid request, may lead to invalid req_trans read */
-        return result;
-    }
     const uint8_t num_trans = scsi_automaton[current_state].trans_list.number;
     /*@
       @ loop invariant 0 <= i <= num_trans;
@@ -263,44 +254,98 @@ err:
  */
 
 /*@
+  logic boolean transition_exists(uint8_t req) =
+        (req == SCSI_CMD_SEND_DIAGNOSTIC ||
+         req == SCSI_CMD_INQUIRY ||
+         req == SCSI_CMD_MODE_SELECT_6 ||
+         req == SCSI_CMD_MODE_SELECT_10 ||
+         req == SCSI_CMD_MODE_SENSE_10 ||
+         req == SCSI_CMD_MODE_SENSE_6 ||
+         req == SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL ||
+         req == SCSI_CMD_READ_6 ||
+         req == SCSI_CMD_READ_10 ||
+         req == SCSI_CMD_READ_CAPACITY_10 ||
+         req == SCSI_CMD_READ_FORMAT_CAPACITIES ||
+         req == SCSI_CMD_REPORT_LUNS ||
+         req == SCSI_CMD_REQUEST_SENSE ||
+         req == SCSI_CMD_TEST_UNIT_READY ||
+         req == SCSI_CMD_WRITE_6 ||
+         req == SCSI_CMD_WRITE_10 ||
+         req == SCSI_CMD_READ_CAPACITY_16) ? \true : \false;
+
+   logic boolean transition_valid_for_idle(uint8_t req) =
+        (req == SCSI_CMD_SEND_DIAGNOSTIC ||
+         req == SCSI_CMD_INQUIRY ||
+         req == SCSI_CMD_MODE_SELECT_6 ||
+         req == SCSI_CMD_MODE_SELECT_10 ||
+         req == SCSI_CMD_MODE_SENSE_10 ||
+         req == SCSI_CMD_MODE_SENSE_6 ||
+         req == SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL ||
+         req == SCSI_CMD_READ_6 ||
+         req == SCSI_CMD_READ_10 ||
+         req == SCSI_CMD_READ_CAPACITY_10 ||
+         req == SCSI_CMD_READ_FORMAT_CAPACITIES ||
+         req == SCSI_CMD_REPORT_LUNS ||
+         req == SCSI_CMD_REQUEST_SENSE ||
+         req == SCSI_CMD_TEST_UNIT_READY ||
+         req == SCSI_CMD_WRITE_6 ||
+         req == SCSI_CMD_WRITE_10 ||
+         req == SCSI_CMD_READ_CAPACITY_16) ? \true : \false;
+
+   logic boolean transition_valid_for_error(uint8_t req) =
+        (req == SCSI_CMD_MODE_SENSE_10 ||
+         req == SCSI_CMD_MODE_SENSE_6 ||
+         req == SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL ||
+         req == SCSI_CMD_REQUEST_SENSE) ? \true : \false;
+
+*/
+
+/*@
   @ requires SCSI_IDLE <= current_state <= SCSI_ERROR;
-  @ requires \separated(scsi_automaton + (0 .. 1), scsi_automaton[0].trans_list.transitions + (0 .. scsi_automaton[0].trans_list.number-1),&scsi_ctx,scsi_automaton[1].trans_list.transitions + (0 .. scsi_automaton[1].trans_list.number-1));
+  @ requires (current_state == SCSI_IDLE || current_state == SCSI_ERROR);
+
+
+  // specifying the way the automaton structure is defined
+  @ requires scsi_automaton[SCSI_IDLE].state == SCSI_IDLE;
+  @ requires scsi_automaton[SCSI_ERROR].state == SCSI_ERROR;
+
+  @ requires scsi_automaton[SCSI_IDLE].trans_list.transitions == &(scsi_idle_trans[0]);
+  @ requires scsi_automaton[SCSI_ERROR].trans_list.transitions == &(scsi_error_trans[0]);
+
+  @ requires scsi_automaton[SCSI_IDLE].trans_list.number == (sizeof(scsi_idle_trans)/sizeof(scsi_operation_code_transition_t));
+  @ requires scsi_automaton[SCSI_ERROR].trans_list.number == (sizeof(scsi_error_trans)/sizeof(scsi_operation_code_transition_t));
+
   @ requires \valid_read(scsi_automaton[0].trans_list.transitions + (0 .. scsi_automaton[0].trans_list.number-1));
   @ requires \valid_read(scsi_automaton[1].trans_list.transitions + (0 .. scsi_automaton[1].trans_list.number-1));
+
+  // and the memory model consequences of it
+  @ requires \separated(scsi_automaton + (0 .. 1), scsi_automaton[0].trans_list.transitions + (0 .. scsi_automaton[0].trans_list.number-1),&scsi_ctx,scsi_automaton[1].trans_list.transitions + (0 .. scsi_automaton[1].trans_list.number-1));
+
   @ assigns scsi_ctx.state;
 
-  @ behavior inv_req:
-  @   assumes request == 0xff;
-  @   ensures \result == \false;
-  @   ensures scsi_ctx.state == \old(scsi_ctx.state);
+  // first, it transition does not exist, result is false and state is set to SCSI_ERROR
+  @ ensures !transition_exists((uint8_t)request) ==> \result == \false;
+  @ ensures !transition_exists((uint8_t)request) ==> scsi_ctx.state == SCSI_ERROR;
 
-  @ behavior trans_valid:
-  @   assumes request != 0xff;
-  @   assumes current_state == SCSI_IDLE ==> \exists integer i ; 0 <= i < scsi_automaton[SCSI_IDLE].trans_list.number && scsi_automaton[SCSI_IDLE].trans_list.transitions[i].request == request;
-  @   assumes current_state == SCSI_ERROR ==> \exists integer i ; 0 <= i < scsi_automaton[SCSI_ERROR].trans_list.number && scsi_automaton[SCSI_ERROR].trans_list.transitions[i].request == request;
-  @   ensures \result == \true;
-  @   ensures scsi_ctx.state == \old(scsi_ctx.state);
+  // if transition exists....
 
-  @ behavior trans_invalid:
-  @   assumes request != 0xff;
-  @   assumes current_state == SCSI_IDLE ==> (\forall integer i ; 0 <= i <scsi_automaton[SCSI_IDLE].trans_list.number ==> scsi_automaton[SCSI_IDLE].trans_list.transitions[i].request != request);
-  @   assumes current_state == SCSI_ERROR ==> (\forall integer i ; 0 <= i <scsi_automaton[SCSI_ERROR].trans_list.number ==> scsi_automaton[SCSI_ERROR].trans_list.transitions[i].request != request);
-  @   ensures \result == \false;
-  @   ensures scsi_ctx.state == SCSI_ERROR;
+  // specyfing SCSI_IDLE state transitions behavior. We split boolean expression to reduce proof complexity
+  @ ensures (current_state == SCSI_IDLE && transition_valid_for_idle((uint8_t)request)) ==>
+     \result == \true && scsi_ctx.state == \old(scsi_ctx.state);
 
-  @ disjoint behaviors;
-  @ complete behaviors;
+  @ ensures (current_state == SCSI_ERROR && transition_valid_for_error((uint8_t)request)) ==>
+     \result == \true && scsi_ctx.state == \old(scsi_ctx.state);
+
+  @ ensures (current_state == SCSI_IDLE && transition_valid_for_idle((uint8_t)request) == \false) ==> \result == \false;
+  @ ensures (current_state == SCSI_ERROR && transition_valid_for_error((uint8_t)request) == \false) ==> \result == \false;
+
+
    */
 bool scsi_is_valid_transition(const scsi_state_t current_state,
                               const scsi_operation_code_t request)
 {
     bool result = false;
-
-    if (request == 0xff) {
-        /* invalid request, may lead to invalid req_trans read */
-        return result;
-    }
-
+    const uint8_t req = request;
 
     const uint8_t num_trans = scsi_automaton[current_state].trans_list.number;
     /*@
@@ -310,11 +355,16 @@ bool scsi_is_valid_transition(const scsi_state_t current_state,
       @ loop variant num_trans - i ;
       */
     for (uint8_t i = 0; i < num_trans; ++i) {
-        if (scsi_automaton[current_state].trans_list.transitions[i].request == request) {
+        if (scsi_automaton[current_state].trans_list.transitions[i].request == req) {
+            /*@ assert current_state == SCSI_ERROR ==> transition_valid_for_error(req);*/
+            /*@ assert current_state == SCSI_IDLE ==> transition_valid_for_idle(req);*/
             result = true;
             goto err;
         }
     }
+
+    /*@ assert current_state == SCSI_ERROR ==> transition_valid_for_error(req) == \false;*/
+    /*@ assert current_state == SCSI_IDLE ==> transition_valid_for_idle(req) == \false;*/
     /*@ assert result == \false; */
     /*
      * Didn't find any request associated to current state. This is not a
@@ -323,7 +373,7 @@ bool scsi_is_valid_transition(const scsi_state_t current_state,
     log_printf("%s: invalid transition from state %d, request %d\n", __func__,
            current_state, request);
     scsi_set_state(SCSI_ERROR);
-    /* @ assert state == SCSI_ERROR; */
+    /* @ assert scsi_ctx.state == SCSI_ERROR; */
 err:
     return result;
 }

@@ -38,8 +38,6 @@
 #include "api/scsi.h"
 
 static mass_storage_reset_trigger_t ms_reset_trigger = NULL;
-static device_reset_trigger_t device_reset_trigger = NULL;
-
 
 /*
  * Enumeration phase MS_RESET
@@ -69,28 +67,6 @@ static void mass_storage_reset(void)
 /*
  * Nominal phase device reset (critical communication error with device)
  */
-/*@
-  @ assigns \nothing;
-  */
-static void full_device_reset(void)
-{
-    log_printf("Bulk-Only Mass Storage Reset\n");
-    if(device_reset_trigger != NULL){
-#ifndef __FRAMAC__
-        /* INFO: device_reset_trigger is an upper layer callaback. Here, we consider upper
-         * layer content as assigning nothing, as the current proof is handling local library
-         * proof, not upper one. */
-        /* Sanity check our callback before calling it */
-        if(handler_sanity_check((physaddr_t)device_reset_trigger)){
-            return;
-        } else {
-            device_reset_trigger();
-        }
-#endif
-    }
-}
-
-
 
 /**
  * \brief Class request handling for bulk mode.
@@ -99,7 +75,7 @@ static void full_device_reset(void)
  */
 /*@
     @ requires \separated(packet,&GHOST_opaque_drv_privates, &bbb_ctx);
-    @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
+    @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
   */
 mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((unused)),
                                              usbctrl_setup_pkt_t *packet)

@@ -690,13 +690,13 @@ static mbed_error_t scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * 
     log_printf("%s:\n", __func__);
     /* Sanity check and next state detection */
 
-    if (!scsi_is_valid_transition(current_state, cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_INQUIRY)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
 
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_INQUIRY);
     /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
 
@@ -796,7 +796,7 @@ static mbed_error_t scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * 
 
   */
 static mbed_error_t scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
-                                                          cdb_t * current_cdb)
+                                                          cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
@@ -805,7 +805,7 @@ static mbed_error_t scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_s
 
     /* no invalid transition as this CMD is allowed in both IDLE & ERROR states */
 
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL);
     scsi_set_state(next_state);
 
     log_printf("%s: Prevent allow medium removal: %x\n", __func__,
@@ -849,13 +849,13 @@ static mbed_error_t scsi_cmd_read_format_capacities(scsi_state_t current_state,
     log_printf("%s\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_READ_FORMAT_CAPACITIES)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
 
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_READ_FORMAT_CAPACITIES);
     /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
 
@@ -961,12 +961,12 @@ static mbed_error_t scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * curr
     log_printf("%s\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_READ_6)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_READ_6);
     /* @ assert next_state == SCSI_IDLE; */
 
     /* entering READ state... */
@@ -1144,12 +1144,12 @@ static mbed_error_t scsi_cmd_read_data10(const scsi_state_t current_state,
     log_printf("%s\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_READ_10)) {
         /* @ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_READ_10);
     /* @ assert next_state == SCSI_IDLE; */
 
     /* entering READ state... */
@@ -1306,7 +1306,7 @@ static mbed_error_t scsi_cmd_read_data10(const scsi_state_t current_state,
 
   */
 static mbed_error_t scsi_cmd_read_capacity10(scsi_state_t current_state,
-                                             cdb_t * current_cdb)
+                                             cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
@@ -1317,12 +1317,12 @@ static mbed_error_t scsi_cmd_read_capacity10(scsi_state_t current_state,
 
     /* Sanity check and next state detection */
 
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_READ_CAPACITY_10)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_READ_CAPACITY_10);
     /* @ assert next_state == SCSI_IDLE; */
 
 
@@ -1398,12 +1398,12 @@ static mbed_error_t scsi_cmd_read_capacity16(scsi_state_t current_state,
     log_printf("%s\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_READ_CAPACITY_16)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_READ_CAPACITY_16);
     /* @ assert next_state == SCSI_IDLE; */
 
     /* entering target state */
@@ -1508,7 +1508,7 @@ static mbed_error_t scsi_cmd_report_luns(scsi_state_t current_state,
     log_printf("%s\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_REPORT_LUNS)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
@@ -1522,7 +1522,7 @@ static mbed_error_t scsi_cmd_report_luns(scsi_state_t current_state,
     }
 
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_REPORT_LUNS);
     /* @ assert next_state == SCSI_IDLE; */
 
     scsi_set_state(next_state);
@@ -1589,7 +1589,7 @@ static mbed_error_t scsi_cmd_report_luns(scsi_state_t current_state,
   @ ensures \result == MBED_ERROR_NONE;
   */
 static mbed_error_t scsi_cmd_request_sense(scsi_state_t current_state,
-                                           cdb_t * current_cdb)
+                                           cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
@@ -1598,7 +1598,7 @@ static mbed_error_t scsi_cmd_request_sense(scsi_state_t current_state,
     log_printf("%s\n", __func__);
 
     /* @ assert SCSI_IDLE <= current_state <= SCSI_ERROR; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_REQUEST_SENSE);
     /* @ assert next_state == SCSI_IDLE; */
 
     scsi_set_state(next_state);
@@ -1637,7 +1637,7 @@ static mbed_error_t scsi_cmd_request_sense(scsi_state_t current_state,
   @ ensures \result == MBED_ERROR_NONE;
   */
 static mbed_error_t scsi_cmd_mode_sense10(scsi_state_t current_state,
-                                          cdb_t * current_cdb)
+                                          cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
@@ -1645,7 +1645,7 @@ static mbed_error_t scsi_cmd_mode_sense10(scsi_state_t current_state,
     log_printf("%s\n", __func__);
 
     /* @ assert SCSI_IDLE <= current_state <= SCSI_ERROR; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_MODE_SENSE_10);
     /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
 
@@ -1678,14 +1678,14 @@ static mbed_error_t scsi_cmd_mode_sense10(scsi_state_t current_state,
   @ ensures \result == MBED_ERROR_NONE;
   */
 static mbed_error_t scsi_cmd_mode_sense6(scsi_state_t current_state,
-                                         cdb_t * current_cdb)
+                                         cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
 
     log_printf("%s\n", __func__);
 
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_MODE_SENSE_6);
     scsi_set_state(next_state);
 
 #if SCSI_DEBUG > 1
@@ -1726,7 +1726,7 @@ static mbed_error_t scsi_cmd_mode_sense6(scsi_state_t current_state,
 
   */
 static mbed_error_t scsi_cmd_mode_select6(scsi_state_t current_state,
-                                          cdb_t * current_cdb)
+                                          cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
@@ -1734,12 +1734,12 @@ static mbed_error_t scsi_cmd_mode_select6(scsi_state_t current_state,
     log_printf("%s\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_MODE_SELECT_6)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_MODE_SELECT_6);
     /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
 
@@ -1778,7 +1778,7 @@ static mbed_error_t scsi_cmd_mode_select6(scsi_state_t current_state,
 
   */
 static mbed_error_t scsi_cmd_mode_select10(scsi_state_t current_state,
-                                           cdb_t * current_cdb)
+                                           cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
@@ -1786,12 +1786,12 @@ static mbed_error_t scsi_cmd_mode_select10(scsi_state_t current_state,
     log_printf("%s\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_MODE_SELECT_10)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_MODE_SELECT_10);
     /* @ assert next_state == SCSI_IDLE; */
     scsi_set_state(next_state);
 
@@ -1832,7 +1832,7 @@ static mbed_error_t scsi_cmd_mode_select10(scsi_state_t current_state,
 
   */
 static mbed_error_t scsi_cmd_test_unit_ready(scsi_state_t current_state,
-                                             cdb_t * current_cdb)
+                                             cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint8_t next_state;
@@ -1840,12 +1840,12 @@ static mbed_error_t scsi_cmd_test_unit_ready(scsi_state_t current_state,
     log_printf("%s\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_TEST_UNIT_READY)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_TEST_UNIT_READY);
     /* @ assert next_state == SCSI_IDLE; */
 
     scsi_set_state(next_state);
@@ -1906,12 +1906,12 @@ static mbed_error_t scsi_write_data6(scsi_state_t current_state, cdb_t * current
     log_printf("%s:\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_WRITE_6)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_WRITE_6);
     /* @ assert next_state == SCSI_IDLE; */
 
     scsi_set_state(next_state);
@@ -2118,12 +2118,12 @@ static mbed_error_t scsi_write_data10(scsi_state_t current_state, cdb_t * curren
     log_printf("%s:\n", __func__);
 
     /* Sanity check and next state detection */
-    if (!scsi_is_valid_transition(current_state, current_cdb->operation)) {
+    if (!scsi_is_valid_transition(current_state, SCSI_CMD_WRITE_10)) {
         /*@ assert current_state != SCSI_IDLE; */
         goto invalid_transition;
     }
     /* @ assert current_state == SCSI_IDLE; */
-    next_state = scsi_next_state(current_state, current_cdb->operation);
+    next_state = scsi_next_state(current_state, SCSI_CMD_WRITE_10);
     /* @ assert next_state == SCSI_IDLE; */
 
     scsi_set_state(next_state);
