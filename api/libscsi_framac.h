@@ -373,7 +373,6 @@ void scsi_error(uint16_t sensekey, uint8_t asc, uint8_t ascq);
   */
 inline void FC_memcpy_u8(uint8_t *dst, uint8_t const *src, uint8_t len)
 {
-
     /*@
       @ loop invariant 0 <= i <= len;
       @ loop assigns i, dst[0..len-1];
@@ -381,7 +380,9 @@ inline void FC_memcpy_u8(uint8_t *dst, uint8_t const *src, uint8_t len)
       */
     for (uint8_t i = 0; i < len; ++i) {
         dst[i] = src[i];
+        /*@ assert dst[i] == src[i]; */
     }
+    /* loops make wp forgetting everything. Let's help it... */
     return;
 }
 

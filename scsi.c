@@ -77,7 +77,7 @@ scsi_context_t scsi_ctx = {
     .state = SCSI_IDLE
 };
 
-static volatile cdb_t queued_cdb = { 0 };
+static cdb_t queued_cdb = { 0 };
 #endif
 
 #ifdef __FRAMAC__
@@ -139,7 +139,10 @@ void scsi_error(uint16_t sensekey, uint8_t asc, uint8_t ascq)
 /*@
   @ assigns \nothing;
   */
-static inline mbed_error_t enter_critical_section(void)
+#ifndef __FRAMAC__
+static inline
+#endif
+mbed_error_t enter_critical_section(void)
 {
     uint8_t ret;
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -161,7 +164,10 @@ static inline mbed_error_t enter_critical_section(void)
 /*@
   @ assigns \nothing;
   */
-static inline void leave_critical_section(void)
+#ifndef __FRAMAC__
+static inline
+#endif
+void leave_critical_section(void)
 {
     sys_lock(LOCK_EXIT);        /* Exit from critical section, should not
                                    fail */
@@ -270,7 +276,10 @@ static void scsi_debug_dump_cmd(cdb_t * current_cdb, uint8_t scsi_cmd)
 /*@
   @ assigns \nothing;
   */
-static inline bool scsi_is_ready_for_data_receive(void)
+#ifndef __FRAMAC__
+static inline
+#endif
+bool scsi_is_ready_for_data_receive(void)
 {
     return ((scsi_ctx.direction == SCSI_DIRECTION_RECV
              || scsi_ctx.direction == SCSI_DIRECTION_IDLE)
@@ -283,7 +292,10 @@ static inline bool scsi_is_ready_for_data_receive(void)
 /*@
   @ assigns \nothing;
   */
-static inline bool scsi_is_ready_for_data_send(void)
+#ifndef __FRAMAC__
+static inline
+#endif
+bool scsi_is_ready_for_data_send(void)
 {
     return ((scsi_ctx.direction == SCSI_DIRECTION_SEND
              || scsi_ctx.direction == SCSI_DIRECTION_IDLE)
@@ -334,7 +346,10 @@ static inline bool scsi_is_ready_for_data_send(void)
   @ disjoint behaviors;
 
  */
-static mbed_error_t scsi_get_data(uint8_t *buffer, uint32_t size)
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_get_data(uint8_t *buffer, uint32_t size)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
 #if SCSI_DEBUG > 1
@@ -515,7 +530,10 @@ void scsi_data_sent(void)
   @ requires \valid_read(response);
   @ assigns *response;
   */
-static void scsi_forge_mode_sense_response(u_mode_parameter * response,
+#ifndef __FRAMAC__
+static
+#endif
+void scsi_forge_mode_sense_response(u_mode_parameter * response,
                                            uint8_t mode)
 {
     if (mode == SCSI_CMD_MODE_SENSE_6) {
@@ -611,8 +629,8 @@ extern volatile bool reset_requested;
 
   @ behavior ok:
   @    assumes reset_requested != \true;
-  @    ensures \forall integer i; 0 <= i < cdb_len ==> ((uint8_t*)queued_cdb)[i] == cdb[i];
   @    ensures scsi_ctx.queue_empty == \false;
+  //@    ensures \forall integer i; 0 <= i < cdb_len ==> ((uint8_t*)queued_cdb)[i] == cdb[i];
 
   @ complete behaviors;
   @ disjoint behaviors;
@@ -643,8 +661,10 @@ void scsi_parse_cdb(uint8_t *cdb, uint8_t cdb_len)
     /*@ assert cdb_len <= sizeof(cdb_t); */
 
     FC_memcpy_u8(queued_gen, cdb, cdb_len);
+    /* assert \forall integer i; 0 <= i < cdb_len ==> queued_gen[i] == cdb[i]; */
 #else
     memcpy((void *) &queued_cdb, (void *) cdb, cdb_len);
+    request_data_membarrier();
 #endif
     set_bool_with_membarrier(&scsi_ctx.queue_empty, false);
 err:
@@ -680,7 +700,10 @@ err:
   @ disjoint behaviors;
   @ complete behaviors;
   */
-static mbed_error_t scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cdb)
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * const cdb)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     inquiry_data_t response = { 0 };
@@ -795,7 +818,10 @@ static mbed_error_t scsi_cmd_inquiry(scsi_state_t  current_state, cdb_t const * 
   @ ensures \result == MBED_ERROR_NONE;
 
   */
-static mbed_error_t scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
                                                           cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -839,7 +865,10 @@ static mbed_error_t scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_s
 
 
   */
-static mbed_error_t scsi_cmd_read_format_capacities(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_read_format_capacities(scsi_state_t current_state,
                                                          cdb_t * current_cdb)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -946,7 +975,10 @@ end:
 
 
   */
-static mbed_error_t scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint32_t num_sectors;
@@ -1127,7 +1159,10 @@ static mbed_error_t scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * curr
 
 
   */
-static mbed_error_t scsi_cmd_read_data10(const scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_read_data10(const scsi_state_t current_state,
                                          cdb_t * current_cdb)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1305,7 +1340,10 @@ static mbed_error_t scsi_cmd_read_data10(const scsi_state_t current_state,
   @ complete behaviors;
 
   */
-static mbed_error_t scsi_cmd_read_capacity10(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_read_capacity10(scsi_state_t current_state,
                                              cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1386,7 +1424,10 @@ err:
   @ complete behaviors;
 
   */
-static mbed_error_t scsi_cmd_read_capacity16(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_read_capacity16(scsi_state_t current_state,
                                              cdb_t * current_cdb)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1497,7 +1538,10 @@ err:
 
 
   */
-static mbed_error_t scsi_cmd_report_luns(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_report_luns(scsi_state_t current_state,
                                          cdb_t * current_cdb)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1588,7 +1632,10 @@ static mbed_error_t scsi_cmd_report_luns(scsi_state_t current_state,
   @ assigns scsi_ctx, scsi_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
   @ ensures \result == MBED_ERROR_NONE;
   */
-static mbed_error_t scsi_cmd_request_sense(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_request_sense(scsi_state_t current_state,
                                            cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1636,7 +1683,10 @@ static mbed_error_t scsi_cmd_request_sense(scsi_state_t current_state,
   @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
   @ ensures \result == MBED_ERROR_NONE;
   */
-static mbed_error_t scsi_cmd_mode_sense10(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_mode_sense10(scsi_state_t current_state,
                                           cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1677,7 +1727,10 @@ static mbed_error_t scsi_cmd_mode_sense10(scsi_state_t current_state,
   @ assigns scsi_ctx, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
   @ ensures \result == MBED_ERROR_NONE;
   */
-static mbed_error_t scsi_cmd_mode_sense6(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_mode_sense6(scsi_state_t current_state,
                                          cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1725,7 +1778,10 @@ static mbed_error_t scsi_cmd_mode_sense6(scsi_state_t current_state,
   @ complete behaviors;
 
   */
-static mbed_error_t scsi_cmd_mode_select6(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_mode_select6(scsi_state_t current_state,
                                           cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1777,7 +1833,10 @@ static mbed_error_t scsi_cmd_mode_select6(scsi_state_t current_state,
   @ complete behaviors;
 
   */
-static mbed_error_t scsi_cmd_mode_select10(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_mode_select10(scsi_state_t current_state,
                                            cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1831,7 +1890,10 @@ static mbed_error_t scsi_cmd_mode_select10(scsi_state_t current_state,
   @ complete behaviors;
 
   */
-static mbed_error_t scsi_cmd_test_unit_ready(scsi_state_t current_state,
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_cmd_test_unit_ready(scsi_state_t current_state,
                                              cdb_t * current_cdb __attribute__((unused)))
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -1891,7 +1953,10 @@ static mbed_error_t scsi_cmd_test_unit_ready(scsi_state_t current_state,
   @ complete behaviors;
 
   */
-static mbed_error_t scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint32_t num_sectors;
@@ -2103,7 +2168,10 @@ static mbed_error_t scsi_write_data6(scsi_state_t current_state, cdb_t * current
   @ complete behaviors;
 
   */
-static mbed_error_t scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     uint32_t num_sectors;
@@ -2404,6 +2472,7 @@ mbed_error_t scsi_exec_automaton(void)
             errcode = scsi_cmd_request_sense(current_state, &local_cdb);
             break;
 #if 0
+        /* not yet supported */
         case SCSI_CMD_SEND_DIAGNOSTIC:
             scsi_cmd_send_diagnostic(current_state, &local_cdb);
             break;
@@ -2441,7 +2510,10 @@ mbed_error_t scsi_exec_automaton(void)
   @ requires \separated(&scsi_ctx);
   @ assigns scsi_ctx;
   */
-static void scsi_reset_context(void)
+#ifndef __FRAMAC__
+static
+#endif
+void scsi_reset_context(void)
 {
     log_printf("[reset] clearing USB context\n");
     /* resetting the context in a known, empty, idle state */

@@ -45,7 +45,10 @@ static mass_storage_reset_trigger_t ms_reset_trigger = NULL;
 /*@
   @ assigns \nothing;
   */
-static void mass_storage_reset(void)
+#ifndef __FRAMAC__
+static
+#endif
+void mass_storage_reset(void)
 {
     log_printf("Bulk-Only Mass Storage Reset\n");
     if (ms_reset_trigger != NULL) {
@@ -74,7 +77,7 @@ static void mass_storage_reset(void)
  * @param packet Setup packet
  */
 /*@
-    @ requires \separated(packet,&GHOST_opaque_drv_privates, &bbb_ctx);
+    @ requires \separated(packet,&GHOST_opaque_drv_privates, &bbb_ctx, &scsi_ctx, &GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num]);
     @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
   */
 mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((unused)),

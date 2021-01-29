@@ -1,431 +1,58 @@
 [wp:pedantic-assigns] warning: WP uses \from to generate precise hypotheses, however their proof is not supported yet
-usb_bbb.c:228:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:231:[wp] warning: \valid_function not yet implemented
 (rte: function_pointer: \valid_function(bbb_ctx.cb_data_received))
-usb_bbb.c:228:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:231:[wp] warning: \valid_function not yet implemented
 (rte: pointer_value: \valid_function(bbb_ctx.cb_data_received))
-usb_bbb.c:263:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:266:[wp] warning: \valid_function not yet implemented
 (rte: function_pointer: \valid_function(bbb_ctx.cb_data_sent))
-usb_bbb.c:263:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:266:[wp] warning: \valid_function not yet implemented
 (rte: pointer_value: \valid_function(bbb_ctx.cb_data_sent))
-scsi.c:614:[wp] warning: Logic cast from struct (cdb_t) not implemented yet
-usb_bbb.c:408:[wp] warning: Cast with incompatible pointers types (source: scsi_csw*) (target: uint8*)
+usb_bbb.c:411:[wp] warning: Cast with incompatible pointers types (source: scsi_csw*) (target: uint8*)
 usb_bbb.c:127:[wp] warning: Cast with incompatible pointers types (source: scsi_cbw*) (target: uint8*)
 framac/entrypoint.c:422:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-framac/entrypoint.c:268:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:925:[wp] warning: Cast with incompatible pointers types
+scsi.c:926:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_capacity_list_t_106*) (target: uint8*)
-scsi.c:930:[wp] warning: Cast with incompatible pointers types
+scsi.c:931:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_capacity_list_t_106*) (target: uint8*)
-scsi.c:1380:[wp] warning: Cast with incompatible pointers types
+scsi.c:1388:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_read_capacity10_parameter_data_t_99*)
    (target: uint8*)
-scsi.c:1487:[wp] warning: Cast with incompatible pointers types
+scsi.c:1494:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_read_capacity16_parameter_data_t_100*)
    (target: uint8*)
-scsi.c:1587:[wp] warning: Cast with incompatible pointers types
+scsi.c:1588:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_report_luns_data_t_101*) (target: uint8*)
-scsi.c:1709:[wp] warning: Cast with incompatible pointers types
+scsi.c:1714:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_mode_parameter10_data_t_113*) (target: uint8*)
-scsi.c:1745:[wp] warning: Cast with incompatible pointers types
+scsi.c:1755:[wp] warning: Cast with incompatible pointers types
    (source: __anonunion_u_mode_parameter_114*) (target: uint8*)
-/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-usb_bbb.c:191:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:194:[wp] warning: \valid_function not yet implemented
 (rte: function_pointer: \valid_function(bbb_ctx.cb_cmd_received))
-usb_bbb.c:191:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:194:[wp] warning: \valid_function not yet implemented
 (rte: pointer_value: \valid_function(bbb_ctx.cb_cmd_received))
+framac/entrypoint.c:268:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-[wp] 1942 goals scheduled
+/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+/home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+[wp] 1407 goals scheduled
 [wp] [Failed] Goal typed_ref_lemma_u16_and_is_u16
 Z3 4.8.6: Timeout (15s) (cached)
 CVC4 1.7: Unknown (cached)
 Alt-Ergo 2.3.3: Timeout (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_parse_cdb_ok_ensures (Stronger)
-Z3 4.8.6: Timeout (Qed:87ms) (15s) (cached)
-CVC4 1.7: Timeout (Qed:87ms) (15s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:87ms) (15s) (cached)
 [wp] [Failed] Goal typed_ref_mass_storage_class_rqst_handler_assigns_exit_part2
 Z3 4.8.6: Timeout (Qed:12ms) (15s)
 CVC4 1.7: Unknown (Qed:12ms)
 Alt-Ergo 2.3.3: Timeout (Qed:12ms) (15s)
 [wp] [Failed] Goal typed_ref_mass_storage_class_rqst_handler_assigns_normal_part2
-Z3 4.8.6: Timeout (Qed:14ms) (15s)
-CVC4 1.7: Unknown (Qed:14ms)
-Alt-Ergo 2.3.3: Timeout (Qed:14ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_badstate_ensures
-Z3 4.8.6: Timeout (Qed:5.5s) (15s) (cached)
-CVC4 1.7: Timeout (Qed:5.5s) (15s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:5.5s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_badstate_ensures_2
-Z3 4.8.6: Timeout (Qed:5.1s) (15s) (cached)
-CVC4 1.7: Timeout (Qed:5.1s) (15s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:5.1s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_badstate_ensures (Stronger, 2 warnings)
-Z3 4.8.6: Timeout (Qed:980ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:980ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:980ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_data10_badstate_ensures
-Z3 4.8.6: Timeout (Qed:1.1s) (15s) (cached)
-CVC4 1.7: Unknown (Qed:1.1s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:1.1s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_data10_ok_ensures
-Z3 4.8.6: Timeout (Qed:846ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:846ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:846ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_badstate_ensures (Stronger)
-Z3 4.8.6: Timeout (Qed:547ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:547ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:547ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_data6_badstate_ensures
-Z3 4.8.6: Timeout (Qed:1s) (15s)
-CVC4 1.7: Unknown (Qed:1s)
-Alt-Ergo 2.3.3: Timeout (Qed:1s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_badstate_ensures (Stronger)
-Z3 4.8.6: Timeout (Qed:714ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:714ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:714ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_badstate_ensures (Stronger)
-Z3 4.8.6: Timeout (Qed:800ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:800ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:800ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_badstate_ensures_2 (Stronger)
-Z3 4.8.6: Timeout (Qed:799ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:799ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:799ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_mode_select6_badstate_ensures
-Z3 4.8.6: Timeout (Qed:150ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:150ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:150ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_mode_select10_badstate_ensures
-Z3 4.8.6: Timeout (Qed:148ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:148ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:148ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_badstate_ensures
-Z3 4.8.6: Timeout (Qed:163ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:163ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:163ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_loop_assigns_part4
-Z3 4.8.6: Timeout (Qed:477ms) (15s)
-CVC4 1.7: Unknown (Qed:477ms)
-Alt-Ergo 2.3.3: Timeout (Qed:477ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_loop_assigns_part7
-Z3 4.8.6: Timeout (Qed:727ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:727ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:727ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_loop_assigns_part6
-Z3 4.8.6: Timeout (Qed:618ms) (15s)
-CVC4 1.7: Unknown (Qed:618ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:618ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_badstate_ensures
-Z3 4.8.6: Timeout (Qed:1.7s) (15s)
-CVC4 1.7: Unknown (Qed:1.7s)
-Alt-Ergo 2.3.3: Timeout (Qed:1.7s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part04
-Z3 4.8.6: Timeout (Qed:97ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:97ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:97ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assert_rte_unsigned_overflow
-Z3 4.8.6: Timeout (Qed:269ms) (15s)
-CVC4 1.7: Unknown (Qed:269ms)
-Alt-Ergo 2.3.3: Timeout (Qed:269ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part08
-Z3 4.8.6: Timeout (Qed:136ms) (15s)
-CVC4 1.7: Unknown (Qed:136ms)
-Alt-Ergo 2.3.3: Timeout (Qed:136ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part09
-Z3 4.8.6: Timeout (Qed:206ms) (15s)
-CVC4 1.7: Unknown (Qed:206ms)
-Alt-Ergo 2.3.3: Timeout (Qed:206ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part11
-Z3 4.8.6: Timeout (Qed:253ms) (15s)
-CVC4 1.7: Unknown (Qed:253ms)
-Alt-Ergo 2.3.3: Timeout (Qed:253ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part13
-Z3 4.8.6: Timeout (Qed:255ms) (15s)
-CVC4 1.7: Unknown (Qed:255ms)
-Alt-Ergo 2.3.3: Timeout (Qed:255ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part16
-Z3 4.8.6: Timeout (Qed:293ms) (15s)
-CVC4 1.7: Unknown (Qed:293ms)
-Alt-Ergo 2.3.3: Timeout (Qed:293ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part17
-Z3 4.8.6: Timeout (Qed:187ms) (15s)
-CVC4 1.7: Unknown (Qed:187ms)
-Alt-Ergo 2.3.3: Timeout (Qed:187ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part19
-Z3 4.8.6: Timeout (Qed:282ms) (15s)
-CVC4 1.7: Unknown (Qed:282ms)
-Alt-Ergo 2.3.3: Timeout (Qed:282ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part24
-Z3 4.8.6: Timeout (Qed:90ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:90ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:90ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part04
-Z3 4.8.6: Timeout (Qed:92ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:92ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:92ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part08
-Z3 4.8.6: Timeout (Qed:185ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:185ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:185ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part21
-Z3 4.8.6: Timeout (Qed:306ms) (15s)
-CVC4 1.7: Unknown (Qed:306ms)
-Alt-Ergo 2.3.3: Timeout (Qed:306ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_exit_part23
-Z3 4.8.6: Timeout (Qed:296ms) (15s)
-CVC4 1.7: Unknown (Qed:296ms)
-Alt-Ergo 2.3.3: Timeout (Qed:296ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part13
-Z3 4.8.6: Timeout (Qed:260ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:260ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:260ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part09
-Z3 4.8.6: Timeout (Qed:170ms) (15s)
-CVC4 1.7: Unknown (Qed:170ms)
-Alt-Ergo 2.3.3: Timeout (Qed:170ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part11
-Z3 4.8.6: Timeout (Qed:245ms) (15s)
-CVC4 1.7: Unknown (Qed:245ms)
-Alt-Ergo 2.3.3: Timeout (Qed:245ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part18
-Z3 4.8.6: Timeout (Qed:284ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:284ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:284ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part14
-Z3 4.8.6: Timeout (Qed:170ms) (15s)
-CVC4 1.7: Unknown (Qed:170ms)
-Alt-Ergo 2.3.3: Timeout (Qed:170ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part21
-Z3 4.8.6: Timeout (Qed:105ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:105ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:105ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part16
-Z3 4.8.6: Timeout (Qed:327ms) (15s)
-CVC4 1.7: Unknown (Qed:327ms)
-Alt-Ergo 2.3.3: Timeout (Qed:327ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_assigns_normal_part20
-Z3 4.8.6: Timeout (Qed:341ms) (15s)
-CVC4 1.7: Unknown (Qed:341ms)
-Alt-Ergo 2.3.3: Timeout (Qed:341ms) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_badstate_ensures
-Z3 4.8.6: Timeout (Qed:3.4s) (15s)
-CVC4 1.7: Unknown (Qed:3.4s)
-Alt-Ergo 2.3.3: Timeout (Qed:3.4s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_0_badstate_ensures
-Z3 4.8.6: Timeout (Qed:5.8s) (15s) (cached)
-CVC4 1.7: Timeout (Qed:5.8s) (15s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:5.8s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_0_badstate_ensures_2
-Z3 4.8.6: Timeout (Qed:5.5s) (15s) (cached)
-CVC4 1.7: Timeout (Qed:5.5s) (15s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:5.5s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_inquiry_0_ok_ensures_3
-Z3 4.8.6: Timeout (Qed:5.4s) (15s) (cached)
-CVC4 1.7: Timeout (Qed:5.4s) (15s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:5.4s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_0_badstate_ensures (Stronger, 2 warnings)
-Z3 4.8.6: Timeout (Qed:1s) (15s) (cached)
-CVC4 1.7: Unknown (Qed:1s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:1s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_format_capacities_0_ok_ensures_2 (Stronger, 2 warnings)
-Z3 4.8.6: Timeout (Qed:1s) (15s) (cached)
-CVC4 1.7: Unknown (Qed:1s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:1s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_data6_0_badstate_ensures
-Z3 4.8.6: Timeout (Qed:1.5s) (15s) (cached)
-CVC4 1.7: Unknown (Qed:1.5s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:1.5s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_data10_0_badstate_ensures
-Z3 4.8.6: Timeout (Qed:1.3s) (15s) (cached)
-CVC4 1.7: Unknown (Qed:1.3s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:1.3s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_data10_0_ok_ensures
-Z3 4.8.6: Timeout (Qed:1s) (15s) (cached)
-CVC4 1.7: Unknown (Qed:1s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:1s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_data10_0_ok_ensures_2
-Z3 4.8.6: Timeout (Qed:1.2s) (15s) (cached)
-CVC4 1.7: Unknown (Qed:1.2s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:1.2s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_0_badstate_ensures (Stronger)
-Z3 4.8.6: Timeout (Qed:524ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:524ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:524ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_data6_0_ok_ensures_2
-Z3 4.8.6: Timeout (Qed:1.4s) (15s)
-CVC4 1.7: Unknown (Qed:1.4s)
-Alt-Ergo 2.3.3: Timeout (Qed:1.4s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity10_0_ok_ensures_2 (Stronger)
-Z3 4.8.6: Timeout (Qed:309ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:309ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:309ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_badstate_ensures (Stronger)
-Z3 4.8.6: Timeout (Qed:633ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:633ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:633ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_read_capacity16_0_ok_ensures_2 (Stronger)
-Z3 4.8.6: Timeout (Qed:431ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:431ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:431ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_0_badstate_ensures (Stronger)
-Z3 4.8.6: Timeout (Qed:743ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:743ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:743ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_0_badstate_ensures_2 (Stronger)
-Z3 4.8.6: Timeout (Qed:751ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:751ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:751ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_report_luns_0_ok_ensures_3 (Stronger)
-Z3 4.8.6: Timeout (Qed:772ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:772ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:772ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_mode_select6_0_badstate_ensures
-Z3 4.8.6: Timeout (Qed:167ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:167ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:167ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_mode_select6_0_ok_ensures_2
-Z3 4.8.6: Timeout (Qed:81ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:81ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:81ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_mode_select10_0_badstate_ensures
-Z3 4.8.6: Timeout (Qed:161ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:161ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:161ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_mode_select10_0_ok_ensures_2
-Z3 4.8.6: Timeout (Qed:79ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:79ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:79ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_0_badstate_ensures
-Z3 4.8.6: Timeout (Qed:167ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:167ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:167ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_cmd_test_unit_ready_0_ok_ensures_2
-Z3 4.8.6: Timeout (Qed:83ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:83ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:83ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_0_badstate_ensures
-Z3 4.8.6: Timeout (Qed:1.8s) (15s) (cached)
-CVC4 1.7: Unknown (Qed:1.8s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:1.8s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part04
-Z3 4.8.6: Timeout (Qed:122ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:122ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:122ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part08
-Z3 4.8.6: Timeout (Qed:184ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:184ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:184ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part09
-Z3 4.8.6: Timeout (Qed:205ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:205ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:205ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part11
-Z3 4.8.6: Timeout (Qed:235ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:235ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:235ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part13
-Z3 4.8.6: Timeout (Qed:234ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:234ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:234ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part16
-Z3 4.8.6: Timeout (Qed:264ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:264ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:264ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part17
-Z3 4.8.6: Timeout (Qed:182ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:182ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:182ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part19
-Z3 4.8.6: Timeout (Qed:253ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:253ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:253ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part21
-Z3 4.8.6: Timeout (Qed:250ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:250ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:250ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part23
-Z3 4.8.6: Timeout (Qed:265ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:265ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:265ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_exit_part24
-Z3 4.8.6: Timeout (Qed:75ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:75ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:75ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part04
-Z3 4.8.6: Timeout (Qed:86ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:86ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:86ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part08
-Z3 4.8.6: Timeout (Qed:172ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:172ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:172ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part09
-Z3 4.8.6: Timeout (Qed:151ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:151ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:151ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part11
-Z3 4.8.6: Timeout (Qed:181ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:181ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:181ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data6_0_ok_ensures_2
-Z3 4.8.6: Timeout (Qed:1.6s) (15s)
-CVC4 1.7: Unknown (Qed:1.6s)
-Alt-Ergo 2.3.3: Timeout (Qed:1.6s) (15s)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part13
-Z3 4.8.6: Timeout (Qed:191ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:191ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:191ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part14
-Z3 4.8.6: Timeout (Qed:125ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:125ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:125ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part16
-Z3 4.8.6: Timeout (Qed:180ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:180ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:180ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part18
-Z3 4.8.6: Timeout (Qed:207ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:207ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:207ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part20
-Z3 4.8.6: Timeout (Qed:221ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:221ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:221ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_assigns_normal_part21
-Z3 4.8.6: Timeout (Qed:60ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:60ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:60ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_badstate_ensures
-Z3 4.8.6: Timeout (Qed:2.4s) (15s) (cached)
-CVC4 1.7: Unknown (Qed:2.4s) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:2.4s) (15s) (cached)
-[wp] [Failed] Goal typed_ref_scsi_write_data10_0_ok_ensures_2
-Z3 4.8.6: Timeout (Qed:2.2s) (15s)
-CVC4 1.7: Unknown (Qed:2.2s)
-Alt-Ergo 2.3.3: Timeout (Qed:2.2s) (15s)
-[wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_call_scsi_parse_cdb_requires (Stronger, 2 warnings)
-Z3 4.8.6: Timeout (Qed:74ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:74ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:74ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_call_scsi_parse_cdb_requires_2 (Stronger, 2 warnings)
-Z3 4.8.6: Timeout (Qed:52ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:52ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:52ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_call_scsi_parse_cdb_requires (Stronger, 2 warnings)
-Z3 4.8.6: Timeout (Qed:76ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:76ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:76ms) (15s) (cached)
-[wp] [Failed] Goal typed_ref_usb_bbb_cmd_received_0_call_scsi_parse_cdb_requires_2 (Stronger, 2 warnings)
-Z3 4.8.6: Timeout (Qed:50ms) (15s) (cached)
-CVC4 1.7: Unknown (Qed:50ms) (cached)
-Alt-Ergo 2.3.3: Timeout (Qed:50ms) (15s) (cached)
-[wp] [Cache] found:1069, updated:79
-[wp] Proved goals: 1846 / 1942
-Qed:            1530  (0.05ms-59ms-5.5s)
-Alt-Ergo 2.3.3:  312  (12ms-6.5s-15s) (991) (interrupted: 96) (cached: 382)
-CVC4 1.7:        286  (40ms-453ms-2s) (46347) (interrupted: 6) (unknown: 90) (cached: 356)
-Z3 4.8.6:        262  (30ms-8s-15s) (337998) (interrupted: 96) (cached: 331)
+Z3 4.8.6: Timeout (Qed:13ms) (15s)
+CVC4 1.7: Unknown (Qed:13ms)
+Alt-Ergo 2.3.3: Timeout (Qed:13ms) (15s)
+[wp] [Cache] found:719, updated:53
+[wp] Proved goals: 1404 / 1407
+Qed:            1124  (0.05ms-37ms-4.8s)
+Alt-Ergo 2.3.3:  266  (12ms-15s) (764) (interrupted: 3) (cached: 248)
+CVC4 1.7:        257  (40ms-208ms-2s) (77430) (unknown: 3) (cached: 241)
+Z3 4.8.6:        240  (30ms-8.4s-15s) (1480772) (interrupted: 3) (cached: 230)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:367:[wp] warning: Memory model hypotheses for function 'usbctrl_declare':
 /*@
    behavior wp_typed_ref:
@@ -451,7 +78,7 @@ mbed_error_t usbctrl_declare_interface(uint32_t ctxh,
                                        usbctrl_interface_t *iface);
 usb_bbb.c:111:[wp:pedantic-assigns] warning: No 'assigns \result \from ...' specification for function 'usb_bbb_get_cbw'returning pointer type.
 Callers assumptions might be imprecise.
-scsi.c:624:[wp] warning: Memory model hypotheses for function 'scsi_parse_cdb':
+scsi.c:642:[wp] warning: Memory model hypotheses for function 'scsi_parse_cdb':
 /*@
    behavior wp_typed_ref:
      requires \separated(cdb + (..), &scsi_ctx, &reset_requested);
@@ -472,13 +99,13 @@ mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks,
                                            uint32_t *blocksize);
 framac/entrypoint.c:141:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'scsi_reset_device'.
 Callers assumptions might be imprecise.
-scsi.c:2538:[wp] warning: Memory model hypotheses for function 'scsi_early_init':
+scsi.c:2552:[wp] warning: Memory model hypotheses for function 'scsi_early_init':
 /*@
    behavior wp_typed_ref:
      requires \separated(buf + (..), &bbb_ctx, &cbw, &scsi_ctx);
    */
 mbed_error_t scsi_early_init(uint8_t *buf, uint16_t len);
-scsi.c:2603:[wp] warning: Memory model hypotheses for function 'scsi_init':
+scsi.c:2617:[wp] warning: Memory model hypotheses for function 'scsi_init':
 /*@
    behavior wp_typed_ref:
      requires
@@ -489,13 +116,13 @@ scsi.c:2603:[wp] warning: Memory model hypotheses for function 'scsi_init':
          );
    */
 mbed_error_t scsi_init(uint32_t usbdci_handler);
-scsi.c:390:[wp] warning: Memory model hypotheses for function 'scsi_send_data':
+scsi.c:405:[wp] warning: Memory model hypotheses for function 'scsi_send_data':
 /*@
    behavior wp_typed_ref:
      requires \separated(data + (..), &bbb_ctx, &cbw, &scsi_ctx);
    */
 void scsi_send_data(uint8_t *data, uint32_t size);
-usb_bbb.c:288:[wp] warning: Memory model hypotheses for function 'usb_bbb_declare':
+usb_bbb.c:291:[wp] warning: Memory model hypotheses for function 'usb_bbb_declare':
 /*@
    behavior wp_typed_ref:
      requires \separated(cmd_received + (..), &bbb_ctx);
@@ -505,15 +132,15 @@ usb_bbb.c:288:[wp] warning: Memory model hypotheses for function 'usb_bbb_declar
 void usb_bbb_declare(void (*cmd_received)(uint8_t *cdb, uint8_t cdb_len),
                      void (*data_received)(uint32_t size),
                      void (*data_sent)(void));
-usb_bbb.c:420:[wp] warning: Memory model hypotheses for function 'usb_bbb_send':
+usb_bbb.c:423:[wp] warning: Memory model hypotheses for function 'usb_bbb_send':
 /*@ behavior wp_typed_ref:
       requires \separated(src + (..), &bbb_ctx, &cbw); */
 void usb_bbb_send(uint8_t const *src, uint32_t size);
-usb_bbb.c:432:[wp] warning: Memory model hypotheses for function 'usb_bbb_recv':
+usb_bbb.c:435:[wp] warning: Memory model hypotheses for function 'usb_bbb_recv':
 /*@ behavior wp_typed_ref:
       requires \separated(dst + (..), &bbb_ctx, &cbw); */
 void usb_bbb_recv(uint8_t *dst, uint32_t size);
-usb_control_mass_storage.c:104:[wp] warning: Memory model hypotheses for function 'mass_storage_class_rqst_handler':
+usb_control_mass_storage.c:83:[wp] warning: Memory model hypotheses for function 'mass_storage_class_rqst_handler':
 /*@
    behavior wp_typed_ref:
      requires \separated(packet, &bbb_ctx, &scsi_ctx);
@@ -534,6 +161,212 @@ framac/entrypoint.c:482:[wp:pedantic-assigns] warning: No 'assigns' specificatio
 Callers assumptions might be imprecise.
 framac/entrypoint.c:524:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'main'.
 Callers assumptions might be imprecise.
+scsi.c:352:[wp] warning: Memory model hypotheses for function 'scsi_get_data':
+/*@
+   behavior wp_typed_ref:
+     requires \separated(buffer + (..), &bbb_ctx, &cbw, &scsi_ctx);
+   */
+mbed_error_t scsi_get_data(uint8_t *buffer, uint32_t size);
+scsi.c:536:[wp] warning: Memory model hypotheses for function 'scsi_forge_mode_sense_response':
+/*@
+   behavior wp_typed_ref:
+     requires \separated(response, &bbb_ctx, &cbw, &scsi_ctx);
+     requires \valid(response);
+   */
+void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t mode);
+scsi.c:706:[wp] warning: Memory model hypotheses for function 'scsi_cmd_inquiry':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+   */
+mbed_error_t scsi_cmd_inquiry(scsi_state_t current_state,
+                              cdb_t const * const cdb);
+scsi.c:824:[wp] warning: Memory model hypotheses for function 'scsi_cmd_prevent_allow_medium_removal':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
+                                                   cdb_t *current_cdb __attribute__((
+                                                   __unused__)));
+scsi.c:871:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_format_capacities':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+   */
+mbed_error_t scsi_cmd_read_format_capacities(scsi_state_t current_state,
+                                             cdb_t *current_cdb);
+scsi.c:981:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data6':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_read_data6(scsi_state_t current_state,
+                                 cdb_t *current_cdb);
+scsi.c:1165:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data10':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_read_data10(scsi_state_t const current_state,
+                                  cdb_t *current_cdb);
+scsi.c:1346:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity10':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_read_capacity10(scsi_state_t current_state,
+                                      cdb_t *current_cdb __attribute__((
+                                      __unused__)));
+scsi.c:1430:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity16':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+   */
+mbed_error_t scsi_cmd_read_capacity16(scsi_state_t current_state,
+                                      cdb_t *current_cdb);
+scsi.c:1544:[wp] warning: Memory model hypotheses for function 'scsi_cmd_report_luns':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+   */
+mbed_error_t scsi_cmd_report_luns(scsi_state_t current_state,
+                                  cdb_t *current_cdb);
+scsi.c:1638:[wp] warning: Memory model hypotheses for function 'scsi_cmd_request_sense':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_request_sense(scsi_state_t current_state,
+                                    cdb_t *current_cdb __attribute__((
+                                    __unused__)));
+scsi.c:1689:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense10':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_mode_sense10(scsi_state_t current_state,
+                                   cdb_t *current_cdb __attribute__((
+                                   __unused__)));
+scsi.c:1733:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense6':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_mode_sense6(scsi_state_t current_state,
+                                  cdb_t *current_cdb __attribute__((__unused__)));
+scsi.c:1784:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select6':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_mode_select6(scsi_state_t current_state,
+                                   cdb_t *current_cdb __attribute__((
+                                   __unused__)));
+scsi.c:1839:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select10':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_mode_select10(scsi_state_t current_state,
+                                    cdb_t *current_cdb __attribute__((
+                                    __unused__)));
+scsi.c:1896:[wp] warning: Memory model hypotheses for function 'scsi_cmd_test_unit_ready':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_cmd_test_unit_ready(scsi_state_t current_state,
+                                      cdb_t *current_cdb __attribute__((
+                                      __unused__)));
+scsi.c:1959:[wp] warning: Memory model hypotheses for function 'scsi_write_data6':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_write_data6(scsi_state_t current_state, cdb_t *current_cdb);
+scsi.c:2174:[wp] warning: Memory model hypotheses for function 'scsi_write_data10':
+/*@
+   behavior wp_typed_ref:
+     requires
+       \separated(
+         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
+         &bbb_ctx, &cbw, &scsi_ctx
+         );
+     requires \valid(current_cdb);
+   */
+mbed_error_t scsi_write_data10(scsi_state_t current_state, cdb_t *current_cdb);
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/regutils.h:41:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'min_u8'.
 Callers assumptions might be imprecise.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/regutils.h:80:[wp] warning: Memory model hypotheses for function 'get_reg_value':
@@ -693,206 +526,6 @@ __inline static void set_reg16_bits_0(uint16_t volatile *reg, uint16_t value);
 Callers assumptions might be imprecise.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:46:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'handler_sanity_check_with_panic'.
 Callers assumptions might be imprecise.
-scsi.c:337:[wp] warning: Memory model hypotheses for function 'scsi_get_data':
-/*@
-   behavior wp_typed_ref:
-     requires \separated(buffer + (..), &bbb_ctx, &cbw, &scsi_ctx);
-   */
-static mbed_error_t scsi_get_data(uint8_t *buffer, uint32_t size);
-scsi.c:518:[wp] warning: Memory model hypotheses for function 'scsi_forge_mode_sense_response':
-/*@
-   behavior wp_typed_ref:
-     requires \separated(response, &bbb_ctx, &cbw, &scsi_ctx);
-     requires \valid(response);
-   */
-static void scsi_forge_mode_sense_response(u_mode_parameter *response,
-                                           uint8_t mode);
-scsi.c:701:[wp] warning: Memory model hypotheses for function 'scsi_cmd_inquiry':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-   */
-static void scsi_cmd_inquiry(scsi_state_t current_state,
-                             cdb_t const * const cdb);
-scsi.c:826:[wp] warning: Memory model hypotheses for function 'scsi_cmd_prevent_allow_medium_removal':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
-                                                  cdb_t *current_cdb);
-scsi.c:869:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_format_capacities':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-   */
-static void scsi_cmd_read_format_capacities(scsi_state_t current_state,
-                                            cdb_t *current_cdb);
-scsi.c:979:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data6':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_read_data6(scsi_state_t current_state,
-                                cdb_t *current_cdb);
-scsi.c:1160:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data10':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_read_data10(scsi_state_t const current_state,
-                                 cdb_t *current_cdb);
-scsi.c:1337:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity10':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_read_capacity10(scsi_state_t current_state,
-                                     cdb_t *current_cdb);
-scsi.c:1422:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity16':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-   */
-static void scsi_cmd_read_capacity16(scsi_state_t current_state,
-                                     cdb_t *current_cdb);
-scsi.c:1540:[wp] warning: Memory model hypotheses for function 'scsi_cmd_report_luns':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-   */
-static void scsi_cmd_report_luns(scsi_state_t current_state,
-                                 cdb_t *current_cdb);
-scsi.c:1639:[wp] warning: Memory model hypotheses for function 'scsi_cmd_request_sense':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_request_sense(scsi_state_t current_state,
-                                   cdb_t *current_cdb);
-scsi.c:1685:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense10':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_mode_sense10(scsi_state_t current_state,
-                                  cdb_t *current_cdb);
-scsi.c:1724:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense6':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_mode_sense6(scsi_state_t current_state,
-                                 cdb_t *current_cdb);
-scsi.c:1771:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select6':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_mode_select6(scsi_state_t current_state,
-                                  cdb_t *current_cdb);
-scsi.c:1828:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select10':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_mode_select10(scsi_state_t current_state,
-                                   cdb_t *current_cdb);
-scsi.c:1886:[wp] warning: Memory model hypotheses for function 'scsi_cmd_test_unit_ready':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_test_unit_ready(scsi_state_t current_state,
-                                     cdb_t *current_cdb);
-scsi.c:1953:[wp] warning: Memory model hypotheses for function 'scsi_write_data6':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_write_data6(scsi_state_t current_state, cdb_t *current_cdb);
-scsi.c:2167:[wp] warning: Memory model hypotheses for function 'scsi_write_data10':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_write_data10(scsi_state_t current_state, cdb_t *current_cdb);
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/regutils.h:41:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'min_u8_1'.
 Callers assumptions might be imprecise.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/regutils.h:80:[wp] warning: Memory model hypotheses for function 'get_reg_value_1':
@@ -1209,207 +842,6 @@ __inline static void set_reg16_bits_4(uint16_t volatile *reg, uint16_t value);
 Callers assumptions might be imprecise.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:46:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'handler_sanity_check_with_panic_2'.
 Callers assumptions might be imprecise.
-scsi.c:337:[wp] warning: Memory model hypotheses for function 'scsi_get_data_0':
-/*@
-   behavior wp_typed_ref:
-     requires \separated(buffer + (..), &bbb_ctx, &cbw, &scsi_ctx);
-   */
-static mbed_error_t scsi_get_data_0(uint8_t *buffer, uint32_t size);
-scsi.c:518:[wp] warning: Memory model hypotheses for function 'scsi_forge_mode_sense_response_0':
-/*@
-   behavior wp_typed_ref:
-     requires \separated(response, &bbb_ctx, &cbw, &scsi_ctx);
-     requires \valid(response);
-   */
-static void scsi_forge_mode_sense_response_0(u_mode_parameter *response,
-                                             uint8_t mode);
-scsi.c:701:[wp] warning: Memory model hypotheses for function 'scsi_cmd_inquiry_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-   */
-static void scsi_cmd_inquiry_0(scsi_state_t current_state,
-                               cdb_t const * const cdb);
-scsi.c:826:[wp] warning: Memory model hypotheses for function 'scsi_cmd_prevent_allow_medium_removal_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_prevent_allow_medium_removal_0(scsi_state_t current_state,
-                                                    cdb_t *current_cdb);
-scsi.c:869:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_format_capacities_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-   */
-static void scsi_cmd_read_format_capacities_0(scsi_state_t current_state,
-                                              cdb_t *current_cdb);
-scsi.c:979:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data6_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_read_data6_0(scsi_state_t current_state,
-                                  cdb_t *current_cdb);
-scsi.c:1160:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data10_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_read_data10_0(scsi_state_t const current_state,
-                                   cdb_t *current_cdb);
-scsi.c:1337:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity10_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_read_capacity10_0(scsi_state_t current_state,
-                                       cdb_t *current_cdb);
-scsi.c:1422:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity16_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-   */
-static void scsi_cmd_read_capacity16_0(scsi_state_t current_state,
-                                       cdb_t *current_cdb);
-scsi.c:1540:[wp] warning: Memory model hypotheses for function 'scsi_cmd_report_luns_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb + (..), (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-   */
-static void scsi_cmd_report_luns_0(scsi_state_t current_state,
-                                   cdb_t *current_cdb);
-scsi.c:1639:[wp] warning: Memory model hypotheses for function 'scsi_cmd_request_sense_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_request_sense_0(scsi_state_t current_state,
-                                     cdb_t *current_cdb);
-scsi.c:1685:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense10_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_mode_sense10_0(scsi_state_t current_state,
-                                    cdb_t *current_cdb);
-scsi.c:1724:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense6_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_mode_sense6_0(scsi_state_t current_state,
-                                   cdb_t *current_cdb);
-scsi.c:1771:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select6_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_mode_select6_0(scsi_state_t current_state,
-                                    cdb_t *current_cdb);
-scsi.c:1828:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select10_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_mode_select10_0(scsi_state_t current_state,
-                                     cdb_t *current_cdb);
-scsi.c:1886:[wp] warning: Memory model hypotheses for function 'scsi_cmd_test_unit_ready_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_cmd_test_unit_ready_0(scsi_state_t current_state,
-                                       cdb_t *current_cdb);
-scsi.c:1953:[wp] warning: Memory model hypotheses for function 'scsi_write_data6_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_write_data6_0(scsi_state_t current_state, cdb_t *current_cdb);
-scsi.c:2167:[wp] warning: Memory model hypotheses for function 'scsi_write_data10_0':
-/*@
-   behavior wp_typed_ref:
-     requires
-       \separated(
-         current_cdb, (scsi_automaton_t const *)scsi_automaton + (..),
-         &bbb_ctx, &cbw, &scsi_ctx
-         );
-     requires \valid(current_cdb);
-   */
-static void scsi_write_data10_0(scsi_state_t current_state,
-                                cdb_t *current_cdb);
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/regutils.h:41:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'min_u8_5'.
 Callers assumptions might be imprecise.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/regutils.h:80:[wp] warning: Memory model hypotheses for function 'get_reg_value_5':

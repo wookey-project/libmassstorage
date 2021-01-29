@@ -150,7 +150,10 @@ void read_next_cmd(void)
   @ complete behaviors;
   @ disjoint behaviors;
   */
-static mbed_error_t usb_bbb_cmd_received(uint32_t size)
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t usb_bbb_cmd_received(uint32_t size)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     log_printf("[USB BBB] %s: %dB\n", __func__, size);
