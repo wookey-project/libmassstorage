@@ -630,7 +630,6 @@ extern volatile bool reset_requested;
   @ behavior ok:
   @    assumes reset_requested != \true;
   @    ensures scsi_ctx.queue_empty == \false;
-  //@    ensures \forall integer i; 0 <= i < cdb_len ==> ((uint8_t*)queued_cdb)[i] == cdb[i];
 
   @ complete behaviors;
   @ disjoint behaviors;
@@ -661,7 +660,6 @@ void scsi_parse_cdb(uint8_t *cdb, uint8_t cdb_len)
     /*@ assert cdb_len <= sizeof(cdb_t); */
 
     FC_memcpy_u8(queued_gen, cdb, cdb_len);
-    /* assert \forall integer i; 0 <= i < cdb_len ==> queued_gen[i] == cdb[i]; */
 #else
     memcpy((void *) &queued_cdb, (void *) cdb, cdb_len);
     request_data_membarrier();

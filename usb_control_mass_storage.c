@@ -78,7 +78,8 @@ void mass_storage_reset(void)
  */
 /*@
     @ requires \separated(packet,&GHOST_opaque_drv_privates, &bbb_ctx, &scsi_ctx, &GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num]);
-    @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
+    @ assigns GHOST_in_eps[0].state, GHOST_opaque_drv_privates,
+           bbb_ctx.state, bbb_ctx.state;
   */
 mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((unused)),
                                              usbctrl_setup_pkt_t *packet)
