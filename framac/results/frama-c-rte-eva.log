@@ -29,12 +29,12 @@
 for clause 'assigns *ctxh, num_ctx, GHOST_num_ctx, ctx_list[\old(num_ctx)],
                     GHOST_opaque_drv_privates;'
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:362:[eva] cannot evaluate ACSL term, unsupported ACSL construct: == operation on non-supported type usbctrl_context_t
-scsi.c:2646:[eva] Trace partitioning superposing up to 100 states
-scsi.c:2646:[eva] Trace partitioning superposing up to 200 states
-scsi.c:2646:[eva] Trace partitioning superposing up to 300 states
-scsi.c:2646:[eva] Trace partitioning superposing up to 400 states
-scsi.c:2646:[eva] Trace partitioning superposing up to 500 states
-scsi.c:2646:[eva] starting to merge loop iterations
+scsi.c:2644:[eva] Trace partitioning superposing up to 100 states
+scsi.c:2644:[eva] Trace partitioning superposing up to 200 states
+scsi.c:2644:[eva] Trace partitioning superposing up to 300 states
+scsi.c:2644:[eva] Trace partitioning superposing up to 400 states
+scsi.c:2644:[eva] Trace partitioning superposing up to 500 states
+scsi.c:2644:[eva] starting to merge loop iterations
 [eva] using specification for function usbctrl_declare_interface
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:492:[eva] warning: no 'assigns \result \from ...' clause specified for
 function usbctrl_declare_interface
@@ -73,44 +73,44 @@ scsi_automaton.c:351:[eva:alarm] warning: function scsi_is_valid_transition: pos
 scsi_automaton.c:358:[eva:alarm] warning: function scsi_is_valid_transition: postcondition got status unknown.
 [eva] using specification for function htonl
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/arpa/inet.h:72:[eva] warning: no 'assigns \result \from ...' clause specified for function htonl
-scsi.c:1415:[eva:alarm] warning: function scsi_cmd_read_capacity16, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1419:[eva:alarm] warning: function scsi_cmd_read_capacity16, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1413:[eva:alarm] warning: function scsi_cmd_read_capacity16, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1417:[eva:alarm] warning: function scsi_cmd_read_capacity16, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 scsi_automaton.c:370:[eva:alarm] warning: loop invariant got status unknown.
 scsi_automaton.c:290:[eva:alarm] warning: loop invariant got status unknown.
-scsi.c:1331:[eva:alarm] warning: function scsi_cmd_read_capacity10, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1336:[eva:alarm] warning: function scsi_cmd_read_capacity10, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1769:[eva:alarm] warning: function scsi_cmd_mode_select6, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1774:[eva:alarm] warning: function scsi_cmd_mode_select6, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1824:[eva:alarm] warning: function scsi_cmd_mode_select10, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1829:[eva:alarm] warning: function scsi_cmd_mode_select10, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1329:[eva:alarm] warning: function scsi_cmd_read_capacity10, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1334:[eva:alarm] warning: function scsi_cmd_read_capacity10, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1767:[eva:alarm] warning: function scsi_cmd_mode_select6, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1772:[eva:alarm] warning: function scsi_cmd_mode_select6, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1822:[eva:alarm] warning: function scsi_cmd_mode_select10, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1827:[eva:alarm] warning: function scsi_cmd_mode_select10, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 [eva] using specification for function ntohs
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/arpa/inet.h:88:[eva] warning: no 'assigns \result \from ...' clause specified for function ntohs
-scsi.c:855:[eva:alarm] warning: function scsi_cmd_read_format_capacities, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:860:[eva:alarm] warning: function scsi_cmd_read_format_capacities, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:853:[eva:alarm] warning: function scsi_cmd_read_format_capacities, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:858:[eva:alarm] warning: function scsi_cmd_read_format_capacities, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 [eva] using specification for function ntohl
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/arpa/inet.h:107:[eva] warning: no 'assigns \result \from ...' clause specified for function ntohl
-scsi.c:1521:[eva:alarm] warning: function scsi_cmd_report_luns, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1527:[eva:alarm] warning: function scsi_cmd_report_luns, behavior badinput: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1533:[eva:alarm] warning: function scsi_cmd_report_luns, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:739:[eva:alarm] warning: assertion got status unknown.
-scsi.c:745:[eva:alarm] warning: assertion got status unknown.
-scsi.c:750:[eva:alarm] warning: assertion got status unknown.
+scsi.c:1519:[eva:alarm] warning: function scsi_cmd_report_luns, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1525:[eva:alarm] warning: function scsi_cmd_report_luns, behavior badinput: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1531:[eva:alarm] warning: function scsi_cmd_report_luns, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:737:[eva:alarm] warning: assertion got status unknown.
+scsi.c:743:[eva:alarm] warning: assertion got status unknown.
+scsi.c:748:[eva:alarm] warning: assertion got status unknown.
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/string.h:85:[eva] cannot evaluate ACSL term, unsupported ACSL construct: logic function strlen
-scsi.c:693:[eva:alarm] warning: function scsi_cmd_inquiry, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:697:[eva:alarm] warning: function scsi_cmd_inquiry, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:691:[eva:alarm] warning: function scsi_cmd_inquiry, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:695:[eva:alarm] warning: function scsi_cmd_inquiry, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sync.h:69:[eva:alarm] warning: function set_u32_with_membarrier__fc_inline: postcondition got status unknown.
 scsi.c:484:[eva:alarm] warning: function scsi_data_sent, behavior size_bigger_than_buffer: postcondition got status unknown.
 scsi.c:487:[eva:alarm] warning: function scsi_data_sent, behavior size_bigger_than_buffer: postcondition got status unknown.
-scsi.c:964:[eva:alarm] warning: function scsi_cmd_read_data6, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:969:[eva:alarm] warning: function scsi_cmd_read_data6, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1148:[eva:alarm] warning: function scsi_cmd_read_data10, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1153:[eva:alarm] warning: function scsi_cmd_read_data10, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:962:[eva:alarm] warning: function scsi_cmd_read_data6, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:967:[eva:alarm] warning: function scsi_cmd_read_data6, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1146:[eva:alarm] warning: function scsi_cmd_read_data10, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1151:[eva:alarm] warning: function scsi_cmd_read_data10, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 scsi.c:429:[eva:alarm] warning: function scsi_data_available, behavior buffer_bigger_than_sizetoprocess: postcondition got status unknown.
 scsi.c:432:[eva:alarm] warning: function scsi_data_available, behavior buffer_bigger_than_sizetoprocess: postcondition got status unknown.
-scsi.c:1944:[eva:alarm] warning: function scsi_write_data6, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1949:[eva:alarm] warning: function scsi_write_data6, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:2159:[eva:alarm] warning: function scsi_write_data10, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:2164:[eva:alarm] warning: function scsi_write_data10, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1942:[eva:alarm] warning: function scsi_write_data6, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1947:[eva:alarm] warning: function scsi_write_data6, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:2157:[eva:alarm] warning: function scsi_write_data10, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:2162:[eva:alarm] warning: function scsi_write_data10, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 scsi.c:431:[eva:alarm] warning: function scsi_data_available, behavior buffer_bigger_than_sizetoprocess: postcondition got status unknown.
 scsi.c:429:[eva:alarm] warning: function scsi_data_available, behavior buffer_bigger_than_sizetoprocess: postcondition got status unknown. (Behavior may be inactive, no reduction performed.)
 scsi.c:432:[eva:alarm] warning: function scsi_data_available, behavior buffer_bigger_than_sizetoprocess: postcondition got status unknown. (Behavior may be inactive, no reduction performed.)
@@ -132,13 +132,13 @@ scsi.c:429:[eva:alarm] warning: function scsi_data_available, behavior buffer_bi
 scsi.c:433:[eva:alarm] warning: function scsi_data_available, behavior buffer_bigger_than_sizetoprocess: postcondition got status unknown.
 scsi.c:489:[eva:alarm] warning: function scsi_data_sent, behavior size_bigger_than_buffer: postcondition got status unknown. (Behavior may be inactive, no reduction performed.)
 scsi.c:496:[eva:alarm] warning: function scsi_data_sent, behavior size_smaller_than_buffer: postcondition got status unknown. (Behavior may be inactive, no reduction performed.)
-scsi.c:1881:[eva:alarm] warning: function scsi_cmd_test_unit_ready, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
-scsi.c:1886:[eva:alarm] warning: function scsi_cmd_test_unit_ready, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1879:[eva:alarm] warning: function scsi_cmd_test_unit_ready, behavior badstate: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
+scsi.c:1884:[eva:alarm] warning: function scsi_cmd_test_unit_ready, behavior ok: postcondition got status invalid. (Behavior may be inactive, no reduction performed.)
 framac/entrypoint.c:203:[eva] cannot properly split on \result == 0
 framac/entrypoint.c:178:[eva] cannot properly split on \result == 13
-scsi.c:1124:[eva] Trace partitioning superposing up to 100 states
+scsi.c:1122:[eva] Trace partitioning superposing up to 100 states
 framac/entrypoint.c:188:[eva] cannot properly split on \result == 12
-scsi.c:2135:[eva] Trace partitioning superposing up to 100 states
+scsi.c:2133:[eva] Trace partitioning superposing up to 100 states
 [eva] using specification for function usbotghs_send_zlp
 /home/phil/Travail/Wookey/soft/gitlab/newusb//drivers/socs/stm32f439/usbotghs/api/libusbotghs.h:336:[eva] warning: no \from part for clause 'assigns GHOST_opaque_drv_privates;'
 scsi.c:488:[eva:alarm] warning: function scsi_data_sent, behavior size_bigger_than_buffer: postcondition got status unknown.
@@ -231,114 +231,114 @@ scsi.c:567:[eva] assertion 'rte,mem_access' got final status valid.
 scsi.c:568:[eva] assertion 'rte,mem_access' got final status valid.
 scsi.c:569:[eva] assertion 'rte,mem_access' got final status valid.
 scsi.c:570:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:647:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:669:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:727:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:734:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:737:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:743:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:764:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:766:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:646:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:667:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:725:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:732:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:735:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:741:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:762:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:764:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:763:[eva] assertion 'rte,pointer_value' got final status valid.
 scsi.c:765:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:768:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 scsi.c:767:[eva] assertion 'rte,pointer_value' got final status valid.
 scsi.c:770:[eva] assertion 'rte,unsigned_downcast' got final status valid.
 scsi.c:769:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:772:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:771:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:789:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:892:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:915:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:910:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:907:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:913:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:787:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:890:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:913:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:908:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:905:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:911:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:923:[eva] assertion 'rte,mem_access' got final status valid.
 scsi.c:925:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:927:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:928:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1019:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:1019:[eva] assertion 'rte,signed_downcast' got final status valid.
-scsi.c:1019:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1019:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:1019:[eva] assertion 'rte,signed_overflow' got final status valid.
-scsi.c:1020:[eva] assertion 'rte,signed_downcast' got final status valid.
-scsi.c:1022:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1023:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1027:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1027:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1029:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1047:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1056:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1058:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1059:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1068:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1094:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1102:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1204:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1205:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1206:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1210:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1210:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1212:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1229:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1238:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1240:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1241:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1252:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1278:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:1286:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1373:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1372:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1385:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:1457:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1456:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1467:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1476:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:926:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1017:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1017:[eva] assertion 'rte,signed_downcast' got final status valid.
+scsi.c:1017:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1017:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1017:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi.c:1018:[eva] assertion 'rte,signed_downcast' got final status valid.
+scsi.c:1020:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1021:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1025:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1025:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1027:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1045:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1054:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1056:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1057:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1066:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1092:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1100:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1202:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1203:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1204:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1208:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1208:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1210:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1227:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1236:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1238:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1239:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1250:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1276:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:1284:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1371:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1370:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1383:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1455:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1454:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1465:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1474:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:1491:[eva] assertion 'rte,mem_access' got final status valid.
 scsi.c:1493:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1495:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1495:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1561:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1563:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1574:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1589:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1590:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1714:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:1997:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:1997:[eva] assertion 'rte,signed_downcast' got final status valid.
+scsi.c:1493:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1559:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1561:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1572:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1587:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1588:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1712:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1995:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1995:[eva] assertion 'rte,signed_downcast' got final status valid.
+scsi.c:1995:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:1995:[eva] assertion 'rte,unsigned_downcast' got final status valid.
+scsi.c:1995:[eva] assertion 'rte,signed_overflow' got final status valid.
+scsi.c:1996:[eva] assertion 'rte,signed_downcast' got final status valid.
 scsi.c:1997:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:1997:[eva] assertion 'rte,unsigned_downcast' got final status valid.
-scsi.c:1997:[eva] assertion 'rte,signed_overflow' got final status valid.
-scsi.c:1998:[eva] assertion 'rte,signed_downcast' got final status valid.
-scsi.c:1999:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:2000:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:2005:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:2005:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2023:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2024:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:2051:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:2052:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:2059:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:2084:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2087:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:2210:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:2211:[eva] assertion 'rte,mem_access' got final status valid.
-scsi.c:2212:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:2217:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:2217:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2235:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2236:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:2264:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:2265:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:2272:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:2295:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2298:[eva] assertion 'rte,division_by_zero' got final status valid.
-scsi.c:2411:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:1998:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:2003:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:2003:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2021:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2022:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:2049:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:2050:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:2057:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:2082:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2085:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:2208:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:2209:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:2210:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:2215:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:2215:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2233:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2234:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:2262:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:2263:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:2270:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:2293:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2296:[eva] assertion 'rte,division_by_zero' got final status valid.
+scsi.c:2409:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2518:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2519:[eva] assertion 'rte,pointer_value' got final status valid.
 scsi.c:2520:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2521:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2522:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2525:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2621:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2646:[eva] assertion 'rte,unsigned_overflow' got final status valid.
-scsi.c:2647:[eva] assertion 'rte,pointer_value' got final status valid.
-scsi.c:2647:[eva] assertion 'rte,mem_access' got final status valid.
+scsi.c:2523:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2619:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2644:[eva] assertion 'rte,unsigned_overflow' got final status valid.
+scsi.c:2645:[eva] assertion 'rte,pointer_value' got final status valid.
+scsi.c:2645:[eva] assertion 'rte,mem_access' got final status valid.
 scsi_automaton.c:195:[eva] assertion 'rte,mem_access' got final status valid.
 scsi_automaton.c:230:[eva] assertion 'rte,pointer_value' got final status valid.
 scsi_automaton.c:287:[eva] assertion 'rte,index_bound' got final status valid.
@@ -370,84 +370,84 @@ usb_bbb.c:370:[eva] assertion 'rte,pointer_value' got final status valid.
 usb_bbb.c:408:[eva] assertion 'rte,pointer_value' got final status valid.
 usb_bbb.c:426:[eva] assertion 'rte,pointer_value' got final status valid.
 usb_bbb.c:438:[eva] assertion 'rte,pointer_value' got final status valid.
-usb_control_mass_storage.c:90:[eva] assertion 'rte,mem_access' got final status valid.
+usb_control_mass_storage.c:91:[eva] assertion 'rte,mem_access' got final status valid.
 [eva] ====== VALUES COMPUTED ======
 [eva] ####### Value execution feedback #########
 Long running functions (does not include current running time):
 ===============================================================
-+ main: executed: 1x total: 345.898s
-    | test_fcn_driver_eva 2x 344.181s (99.5%) | 5 others: 1.713s (0.5%) | self: 0.004s (0.0%)|
-+ launch_data_recv_and_exec: executed: 82x total: 344.515s
-    | scsi_exec_automaton 244x 339.857s (98.6%) | 4 others: 3.773s (1.1%) | self: 0.885s (0.3%)|
-+ test_fcn_driver_eva: executed: 2x total: 344.181s
-    | launch_data_recv_and_exec 80x 343.995s (99.9%) | 8 others: 0.106s (0.0%) | self: 0.080s (0.0%)|
-+ scsi_exec_automaton: executed: 245x total: 339.860s
-    | scsi_write_data6 144x 158.965s (46.8%) | scsi_cmd_read_data6 144x 131.584s (38.7%) | 21 others: 46.031s (13.5%) | self: 3.280s (1.0%)|
-+ scsi_write_data6: executed: 144x total: 158.965s
-    | scsi_get_data 18034x 55.983s (35.2%) | scsi_data_available 18310x 31.151s (19.6%) | scsi_error 9441x 27.158s (17.1%) | 7 others: 2.300s (1.4%) | self: 42.373s (26.7%)|
-+ scsi_cmd_read_data6: executed: 144x total: 131.584s
-    | scsi_send_data 18034x 33.695s (25.6%) | scsi_data_sent 18034x 30.179s (22.9%) | scsi_error 9303x 26.848s (20.4%) | 7 others: 2.245s (1.7%) | self: 38.617s (29.3%)|
-+ usb_bbb_send_csw: executed: 44135x total: 88.139s
-    | usbotghs_send_data 44135x 28.153s (31.9%) | 1 others: 2.006s (2.3%) | self: 57.980s (65.8%)|
-+ scsi_error: executed: 22989x total: 66.542s
-    | usb_bbb_send_csw 22989x 46.018s (69.2%) | 1 others: 0.718s (1.1%) | self: 19.806s (29.8%)|
-+ scsi_get_data: executed: 18602x total: 59.204s
-    | usb_bbb_recv 19154x 30.916s (52.2%) | 4 others: 4.679s (7.9%) | self: 23.609s (39.9%)|
-+ usbotghs_send_data: executed: 65619x total: 42.446s
-    | self: 42.446s (100.0%)|
-+ scsi_data_available: executed: 20138x total: 35.028s
-    | usb_bbb_send_csw 10444x 20.870s (59.6%) | 3 others: 1.966s (5.6%) | self: 12.192s (34.8%)|
-+ scsi_send_data: executed: 18602x total: 34.773s
-    | usb_bbb_send 18602x 23.723s (68.2%) | set_u8_with_membarrier__fc_inline 37204x 1.820s (5.2%) | self: 9.230s (26.5%)|
-+ scsi_data_sent: executed: 18994x total: 32.726s
-    | usb_bbb_send_csw 9762x 19.334s (59.1%) | 3 others: 1.847s (5.6%) | self: 11.545s (35.3%)|
-+ usb_bbb_recv: executed: 19154x total: 30.916s
-    | usbotghs_set_recv_fifo 19154x 10.048s (32.5%) | usbotghs_activate_endpoint 19154x 7.224s (23.4%) | 1 others: 0.807s (2.6%) | self: 12.837s (41.5%)|
-+ usb_bbb_send: executed: 21482x total: 27.576s
-    | usbotghs_send_data 21482x 14.292s (51.8%) | 1 others: 0.918s (3.3%) | self: 12.366s (44.8%)|
-+ scsi_write_data10: executed: 144x total: 11.452s
-    | scsi_error 1130x 3.305s (28.9%) | scsi_get_data 568x 3.221s (28.1%) | scsi_data_available 844x 1.985s (17.3%) | 8 others: 0.854s (7.5%) | self: 2.087s (18.2%)|
-+ usbotghs_set_recv_fifo: executed: 19713x total: 10.331s
-    | self: 10.331s (100.0%)|
-+ usbotghs_activate_endpoint: executed: 19713x total: 7.427s
-    | self: 7.427s (100.0%)|
++ main: executed: 1x total: 339.476s
+    | test_fcn_driver_eva 2x 337.766s (99.5%) | 5 others: 1.706s (0.5%) | self: 0.005s (0.0%)|
++ launch_data_recv_and_exec: executed: 82x total: 338.091s
+    | scsi_exec_automaton 244x 333.493s (98.6%) | 4 others: 3.728s (1.1%) | self: 0.870s (0.3%)|
++ test_fcn_driver_eva: executed: 2x total: 337.766s
+    | launch_data_recv_and_exec 80x 337.583s (99.9%) | 8 others: 0.104s (0.0%) | self: 0.078s (0.0%)|
++ scsi_exec_automaton: executed: 245x total: 333.495s
+    | scsi_write_data6 144x 155.577s (46.7%) | scsi_cmd_read_data6 144x 129.475s (38.8%) | 21 others: 45.215s (13.6%) | self: 3.228s (1.0%)|
++ scsi_write_data6: executed: 144x total: 155.577s
+    | scsi_get_data 18034x 54.549s (35.1%) | scsi_data_available 18310x 30.530s (19.6%) | scsi_error 9441x 26.630s (17.1%) | 7 others: 2.225s (1.4%) | self: 41.642s (26.8%)|
++ scsi_cmd_read_data6: executed: 144x total: 129.475s
+    | scsi_send_data 18034x 32.977s (25.5%) | scsi_data_sent 18034x 29.862s (23.1%) | scsi_error 9303x 26.454s (20.4%) | 7 others: 2.189s (1.7%) | self: 37.993s (29.3%)|
++ usb_bbb_send_csw: executed: 44135x total: 86.678s
+    | usbotghs_send_data 44135x 27.573s (31.8%) | 1 others: 1.962s (2.3%) | self: 57.143s (65.9%)|
++ scsi_error: executed: 22989x total: 65.414s
+    | usb_bbb_send_csw 22989x 45.219s (69.1%) | 1 others: 0.695s (1.1%) | self: 19.500s (29.8%)|
++ scsi_get_data: executed: 18602x total: 57.712s
+    | usb_bbb_recv 19154x 30.129s (52.2%) | 4 others: 4.522s (7.8%) | self: 23.060s (40.0%)|
++ usbotghs_send_data: executed: 65619x total: 41.575s
+    | self: 41.575s (100.0%)|
++ scsi_data_available: executed: 20138x total: 34.343s
+    | usb_bbb_send_csw 10444x 20.375s (59.3%) | 3 others: 1.925s (5.6%) | self: 12.043s (35.1%)|
++ scsi_send_data: executed: 18602x total: 34.040s
+    | usb_bbb_send 18602x 23.208s (68.2%) | set_u8_with_membarrier__fc_inline 37204x 1.771s (5.2%) | self: 9.061s (26.6%)|
++ scsi_data_sent: executed: 18994x total: 32.389s
+    | usb_bbb_send_csw 9762x 19.162s (59.2%) | 3 others: 1.807s (5.6%) | self: 11.420s (35.3%)|
++ usb_bbb_recv: executed: 19154x total: 30.129s
+    | usbotghs_set_recv_fifo 19154x 9.753s (32.4%) | usbotghs_activate_endpoint 19154x 6.988s (23.2%) | 1 others: 0.784s (2.6%) | self: 12.604s (41.8%)|
++ usb_bbb_send: executed: 21482x total: 26.996s
+    | usbotghs_send_data 21482x 14.001s (51.9%) | 1 others: 0.891s (3.3%) | self: 12.105s (44.8%)|
++ scsi_write_data10: executed: 144x total: 11.236s
+    | scsi_error 1130x 3.240s (28.8%) | scsi_get_data 568x 3.162s (28.1%) | scsi_data_available 844x 1.957s (17.4%) | 8 others: 0.831s (7.4%) | self: 2.046s (18.2%)|
++ usbotghs_set_recv_fifo: executed: 19713x total: 10.032s
+    | self: 10.032s (100.0%)|
++ usbotghs_activate_endpoint: executed: 19713x total: 7.190s
+    | self: 7.190s (100.0%)|
 + scsi_cmd_read_data10: executed: 144x total: 6.919s
-    | scsi_error 854x 2.514s (36.3%) | scsi_send_data 568x 1.078s (15.6%) | scsi_data_sent 568x 0.960s (13.9%) | scsi_is_valid_transition 144x 0.388s (5.6%) | 7 others: 0.368s (5.3%) | self: 1.611s (23.3%)|
-+ set_u8_with_membarrier__fc_inline: executed: 117260x total: 5.932s
-    | self: 5.932s (100.0%)|
+    | scsi_error 854x 2.498s (36.1%) | scsi_send_data 568x 1.064s (15.4%) | scsi_data_sent 568x 0.952s (13.8%) | scsi_is_valid_transition 144x 0.378s (5.5%) | 7 others: 0.364s (5.3%) | self: 1.663s (24.0%)|
++ set_u8_with_membarrier__fc_inline: executed: 117260x total: 5.764s
+    | self: 5.764s (100.0%)|
 
 Execution time per callstack (includes current running time):
 =============================================================
-+ main: executed: 1x total: 345.898s
-| + test_fcn_driver_eva: executed: 2x total: 344.181s
-| | + launch_data_recv_and_exec: executed: 80x total: 343.995s
-| | | + scsi_exec_automaton: executed: 242x total: 339.423s
-| | | | + scsi_write_data6: executed: 142x total: 158.937s
-| | | | | + scsi_data_available: executed: 9226x total: 28.966s
-| | | | | | + usb_bbb_send_csw: executed: 9226x total: 18.361s
-| | | | | | | + usbotghs_send_data: executed: 9226x total: 5.873s
-| | | | | + scsi_get_data: executed: 9088x total: 28.605s
-| | | | | | + usb_bbb_recv: executed: 9226x total: 14.972s
-| | | | | + scsi_get_data: executed: 8946x total: 27.378s
-| | | | | | + usb_bbb_recv: executed: 9084x total: 14.586s
-| | | | | + scsi_error: executed: 4542x total: 13.152s
-| | | | | | + usb_bbb_send_csw: executed: 4542x total: 9.069s
-| | | | | + scsi_error: executed: 4613x total: 13.115s
-| | | | | | + usb_bbb_send_csw: executed: 4613x total: 9.097s
-| | | | + scsi_cmd_read_data6: executed: 142x total: 131.564s
-| | | | | + scsi_data_sent: executed: 9088x total: 28.621s
-| | | | | | + usb_bbb_send_csw: executed: 9088x total: 17.968s
-| | | | | + scsi_send_data: executed: 9088x total: 17.114s
-| | | | | | + usb_bbb_send: executed: 9088x total: 11.697s
-| | | | | | | + usbotghs_send_data: executed: 9088x total: 5.919s
-| | | | | + scsi_send_data: executed: 8946x total: 16.580s
-| | | | | | + usb_bbb_send: executed: 8946x total: 11.295s
-| | | | | | | + usbotghs_send_data: executed: 8946x total: 6.017s
-| | | | | + scsi_error: executed: 4544x total: 13.052s
-| | | | | | + usb_bbb_send_csw: executed: 4544x total: 9.044s
-| | | | | + scsi_error: executed: 4473x total: 12.904s
-| | | | | | + usb_bbb_send_csw: executed: 4473x total: 8.892s
-| | | | + scsi_write_data10: executed: 142x total: 11.425s
++ main: executed: 1x total: 339.476s
+| + test_fcn_driver_eva: executed: 2x total: 337.766s
+| | + launch_data_recv_and_exec: executed: 80x total: 337.583s
+| | | + scsi_exec_automaton: executed: 242x total: 333.070s
+| | | | + scsi_write_data6: executed: 142x total: 155.551s
+| | | | | + scsi_data_available: executed: 9226x total: 28.389s
+| | | | | | + usb_bbb_send_csw: executed: 9226x total: 17.922s
+| | | | | | | + usbotghs_send_data: executed: 9226x total: 5.726s
+| | | | | + scsi_get_data: executed: 9088x total: 27.868s
+| | | | | | + usb_bbb_recv: executed: 9226x total: 14.569s
+| | | | | + scsi_get_data: executed: 8946x total: 26.681s
+| | | | | | + usb_bbb_recv: executed: 9084x total: 14.226s
+| | | | | + scsi_error: executed: 4542x total: 12.985s
+| | | | | | + usb_bbb_send_csw: executed: 4542x total: 8.954s
+| | | | | + scsi_error: executed: 4613x total: 12.772s
+| | | | | | + usb_bbb_send_csw: executed: 4613x total: 8.862s
+| | | | + scsi_cmd_read_data6: executed: 142x total: 129.456s
+| | | | | + scsi_data_sent: executed: 9088x total: 28.332s
+| | | | | | + usb_bbb_send_csw: executed: 9088x total: 17.810s
+| | | | | + scsi_send_data: executed: 9088x total: 16.817s
+| | | | | | + usb_bbb_send: executed: 9088x total: 11.489s
+| | | | | | | + usbotghs_send_data: executed: 9088x total: 5.811s
+| | | | | + scsi_send_data: executed: 8946x total: 16.160s
+| | | | | | + usb_bbb_send: executed: 8946x total: 10.998s
+| | | | | | | + usbotghs_send_data: executed: 8946x total: 5.862s
+| | | | | + scsi_error: executed: 4544x total: 12.884s
+| | | | | | + usb_bbb_send_csw: executed: 4544x total: 8.919s
+| | | | | + scsi_error: executed: 4473x total: 12.690s
+| | | | | | + usb_bbb_send_csw: executed: 4473x total: 8.740s
+| | | | + scsi_write_data10: executed: 142x total: 11.209s
 | | | | + scsi_cmd_read_data10: executed: 142x total: 6.899s
 ################
 [eva] Listing red statuses in file framac/results/eva_report_red.txt
