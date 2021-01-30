@@ -138,9 +138,9 @@ void usbctrl_configuration_set(void)
 }
 
 
-void scsi_reset_device(void)
+void usbmsc_reset_device(void)
 {
-    scsi_reinit();
+    usbmsc_reinit();
 }
 
 /*@
@@ -216,18 +216,18 @@ mbed_error_t prepare_ctrl_ctx(void)
 
     // declare buffer, declare device.
     /* should fail */
-    errcode = scsi_early_init(NULL, USB_BUF_SIZE);
+    errcode = usbmsc_declare(NULL, USB_BUF_SIZE);
     /* @ \assert errcode != MBED_ERROR_NONE ; */
-    errcode = scsi_early_init(usb_buf, USB_BUF_SIZE);
+    errcode = usbmsc_declare(usb_buf, USB_BUF_SIZE);
     /* @ \assert errcode == MBED_ERROR_NONE ; */
     // register interface toward libusbctrl
-    errcode = scsi_init(42);
+    errcode = usbmsc_initialize(42);
     /* @ \assert errcode != MBED_ERROR_NONE ; */
-    errcode = scsi_init(usbxdci_handler);
+    errcode = usbmsc_initialize(usbxdci_handler);
     /* @ \assert errcode == MBED_ERROR_NONE ; */
     usbctrl_start_device(usbxdci_handler);
 
-    scsi_initialize_automaton();
+    usbmsc_initialize_automaton();
 
 err:
     return errcode;
@@ -237,13 +237,13 @@ err:
 
 void test_fcn_massstorage(){
 
-    // Here scsi_exec_automaton should be a endless loop, waiting for
+    // Here usbmsc_exec_automaton should be a endless loop, waiting for
     // content pushed by ISR.
     // This content is the result of received data (SCSI messages)
     // read and push into the incomming queue.
     // the SCSI automaton execute the corresponding SCSI cmd, while the
     // ISR only parse and push the received SCSI cmd.
-    scsi_exec_automaton();
+    usbmsc_exec_automaton();
 
 }
 
@@ -274,7 +274,7 @@ static inline void launch_data_recv_and_exec(struct scsi_cbw *cbw)
     ctx->queue_empty = false;
     /* @ assert scsi_ctx.queue_empty == \false ; */
     // parsing content
-    scsi_exec_automaton();
+    usbmsc_exec_automaton();
 
     // all cmd exec send back something, assuming this "something" is correctly sent now.
     // This is required to set the SCSI line state to the correct state for next cmd.
@@ -492,7 +492,7 @@ void test_fcn_driver_eva_reset() {
 
     mass_storage_class_rqst_handler(usbxdci_handler, &pkt);
 
-    scsi_reinit();
+    usbmsc_reinit();
 
     reset_requested = true;
 
@@ -513,7 +513,7 @@ void test_fcn_driver_eva_reset() {
     ctx->size_to_process = 4096;
     scsi_data_sent();
 
-    scsi_reinit();
+    usbmsc_reinit();
 
     return;
 }

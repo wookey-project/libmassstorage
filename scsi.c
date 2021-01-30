@@ -32,7 +32,7 @@
 #include "libc/sync.h"
 
 #include "libusbctrl.h"
-#include "api/scsi.h"
+#include "api/libusbmsc.h"
 #include "usb_bbb.h"
 
 #include "usb_control_mass_storage.h"
@@ -80,12 +80,6 @@ scsi_context_t scsi_ctx = {
 static cdb_t queued_cdb = { 0 };
 #endif
 
-#ifdef __FRAMAC__
-/* In FramaC mode, the scsi_ctx symbol is visible (as defined in a header to allow its usage in ACSL declaration).
- * Nevertheless, WP consider it as static and any modification out of this object will not impact the symbol value used here.
- * To correct this, a dedicated getter for this symbol is written here to export the correct symbol value to the EVA entrypoint.
- * This permits to handle correct settings of the context from entrypoint object file. */
-
 /*@
   @ assigns \nothing;
   @ ensures \result == &scsi_ctx;
@@ -93,7 +87,6 @@ static cdb_t queued_cdb = { 0 };
 scsi_context_t *scsi_get_context(void) {
     return &scsi_ctx;
 };
-#endif
 
 /*@
   @ requires \separated(&cbw, &scsi_ctx,&GHOST_opaque_drv_privates, &bbb_ctx);
@@ -1043,7 +1036,7 @@ mbed_error_t scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb
 
         /* INFO: num_sectors may be defined out of the loop */
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-        error = scsi_storage_backend_read(rw_lba, num_sectors);
+        error = usbmsc_storage_backend_read(rw_lba, num_sectors);
         if (error == MBED_ERROR_RDERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
@@ -1090,7 +1083,7 @@ mbed_error_t scsi_cmd_read_data6(scsi_state_t current_state, cdb_t * current_cdb
         log_printf("%s: sending data residue to host.\n", __func__);
 #endif
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
-        error = scsi_storage_backend_read((uint32_t) rw_lba, num_sectors);
+        error = usbmsc_storage_backend_read((uint32_t) rw_lba, num_sectors);
         if (error == MBED_ERROR_RDERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
@@ -1225,7 +1218,7 @@ mbed_error_t scsi_cmd_read_data10(const scsi_state_t current_state,
 
         /* INFO: num_sectors may be defined out of the loop */
         num_sectors = scsi_ctx.global_buf_len / scsi_ctx.block_size;
-        error = scsi_storage_backend_read(rw_lba, num_sectors);
+        error = usbmsc_storage_backend_read(rw_lba, num_sectors);
         /* send data we have just read */
         if (error == MBED_ERROR_RDERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
@@ -1274,7 +1267,7 @@ mbed_error_t scsi_cmd_read_data10(const scsi_state_t current_state,
         log_printf("%s: sending data residue to host.\n", __func__);
 #endif
         num_sectors = (scsi_ctx.size_to_process) / scsi_ctx.block_size;
-        error = scsi_storage_backend_read((uint32_t) rw_lba, num_sectors);
+        error = usbmsc_storage_backend_read((uint32_t) rw_lba, num_sectors);
         if (error == MBED_ERROR_RDERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_UNRECOVERED_READ_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
@@ -1367,7 +1360,7 @@ mbed_error_t scsi_cmd_read_capacity10(scsi_state_t current_state,
 
     /* let's get capacity from upper layer */
     ret =
-        scsi_storage_backend_capacity(&(scsi_ctx.storage_size),
+        usbmsc_storage_backend_capacity(&(scsi_ctx.storage_size),
                                       &(scsi_ctx.block_size));
     if (ret != 0) {
         /* unable to get back capacity from backend... */
@@ -1451,7 +1444,7 @@ mbed_error_t scsi_cmd_read_capacity16(scsi_state_t current_state,
 
     /* let's get capacity from upper layer */
     ret =
-        scsi_storage_backend_capacity(&(scsi_ctx.storage_size),
+        usbmsc_storage_backend_capacity(&(scsi_ctx.storage_size),
                                       &(scsi_ctx.block_size));
     if (ret != 0) {
         /* unable to get back capacity from backend... */
@@ -2039,7 +2032,7 @@ mbed_error_t scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
             continue;
         }
 #endif
-        error = scsi_storage_backend_write(rw_lba, num_sectors);
+        error = usbmsc_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                     ASCQ_NO_ADDITIONAL_SENSE);
@@ -2102,7 +2095,7 @@ mbed_error_t scsi_write_data6(scsi_state_t current_state, cdb_t * current_cdb)
             continue;
         }
 #endif
-        error = scsi_storage_backend_write(rw_lba, num_sectors);
+        error = usbmsc_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                     ASCQ_NO_ADDITIONAL_SENSE);
@@ -2252,7 +2245,7 @@ mbed_error_t scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
             continue;
         }
 #endif
-        error = scsi_storage_backend_write(rw_lba, num_sectors);
+        error = usbmsc_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                     ASCQ_NO_ADDITIONAL_SENSE);
@@ -2313,7 +2306,7 @@ mbed_error_t scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
             continue;
         }
 #endif
-        error = scsi_storage_backend_write(rw_lba, num_sectors);
+        error = usbmsc_storage_backend_write(rw_lba, num_sectors);
         if (error == MBED_ERROR_WRERROR) {
             scsi_error(SCSI_SENSE_MEDIUM_ERROR, ASC_WRITE_ERROR,
                        ASCQ_NO_ADDITIONAL_SENSE);
@@ -2355,7 +2348,7 @@ mbed_error_t scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
   @ assigns bbb_ctx.state, GHOST_opaque_drv_privates;
   */
-mbed_error_t scsi_initialize_automaton(void)
+mbed_error_t usbmsc_initialize_automaton(void)
 {
     /* read first command */
     read_next_cmd();
@@ -2372,7 +2365,7 @@ mbed_error_t scsi_initialize_automaton(void)
   @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
 
   */
-mbed_error_t scsi_exec_automaton(void)
+mbed_error_t usbmsc_exec_automaton(void)
 {
     /* local cdb copy */
     cdb_t   local_cdb;
@@ -2547,7 +2540,7 @@ void scsi_reset_context(void)
   @ disjoint behaviors;
   @ complete behaviors;
   */
-mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
+mbed_error_t usbmsc_declare(uint8_t * buf, uint16_t len)
 {
 
     log_printf("%s\n", __func__);
@@ -2612,7 +2605,7 @@ mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len)
   @ complete behaviors;
 
   */
-mbed_error_t scsi_init(uint32_t usbdci_handler)
+mbed_error_t usbmsc_initialize(uint32_t usbdci_handler)
 {
     uint32_t i;
     mbed_error_t errcode = MBED_ERROR_NONE;
@@ -2664,7 +2657,7 @@ err:
   @ requires \separated(&scsi_ctx,&GHOST_opaque_drv_privates,&bbb_ctx);
   @ assigns bbb_ctx.state, scsi_ctx;
   */
-void scsi_reinit(void)
+void usbmsc_reinit(void)
 {
     usb_bbb_reconfigure();
     scsi_reset_context();

@@ -25,7 +25,7 @@
 #define SCSI_AUTOMATON_H_
 
 #include "libc/types.h"
-#include "api/scsi.h"
+#include "api/libusbmsc.h"
 #include "scsi_cmd.h"
 
 #ifndef __FRAMAC__

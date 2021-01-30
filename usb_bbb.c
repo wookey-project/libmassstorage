@@ -29,7 +29,7 @@
 #include "libc/syscall.h"
 #include "libc/sanhandlers.h"
 #include "libc/sync.h"
-#include "api/scsi.h"
+#include "api/libusbmsc.h"
 #include "usb_control_mass_storage.h"
 
 #define BBB_DEBUG CONFIG_USR_LIB_MASSSTORAGE_BBB_DEBUG

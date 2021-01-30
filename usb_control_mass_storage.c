@@ -35,9 +35,9 @@
 #include "libc/syscall.h"
 #include "libc/sanhandlers.h"
 #include "libusbctrl.h"
-#include "api/scsi.h"
+#include "api/libusbmsc.h"
 
-static mass_storage_reset_trigger_t ms_reset_trigger = NULL;
+static mass_storage_reset_trigger_t ms_reset_trigger = usbmsc_reset_stack;
 
 /*
  * Enumeration phase MS_RESET
@@ -57,10 +57,9 @@ void mass_storage_reset(void)
         /* INFO: ms_reset_trigger is an upper layer callaback. Here, we consider upper
          * layer content as assigning nothing, as the current proof is handling local library
          * proof, not upper one. */
-        if(handler_sanity_check((physaddr_t)ms_reset_trigger)){
+        if (handler_sanity_check((physaddr_t)ms_reset_trigger)) {
             return;
-        }
-        else{
+        } else {
             ms_reset_trigger();
         }
 #endif

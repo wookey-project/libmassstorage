@@ -21,8 +21,8 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#ifndef SCSI_H
-# define SCSI_H
+#ifndef LIBUSBMSC_H
+# define LIBUSBMSC_H
 
 #include "libusbctrl.h"
 
@@ -35,7 +35,7 @@
  */
 
 #ifdef __FRAMAC__
-# include "libscsi_framac.h"
+# include "libusbmsc_framac.h"
 #endif
 
 
@@ -78,7 +78,7 @@
  *
  * \return 0 on success
  */
-mbed_error_t scsi_storage_backend_read(uint32_t sector_addr, uint32_t num_sectors);
+mbed_error_t usbmsc_storage_backend_read(uint32_t sector_addr, uint32_t num_sectors);
 
 /*
  * \brief Write data to the storage backend
@@ -88,7 +88,7 @@ mbed_error_t scsi_storage_backend_read(uint32_t sector_addr, uint32_t num_sector
  *
  * \return 0 on success
  */
-mbed_error_t scsi_storage_backend_write(uint32_t sector_addr, uint32_t num_sectors);
+mbed_error_t usbmsc_storage_backend_write(uint32_t sector_addr, uint32_t num_sectors);
 
 /*
  * \brief get back the backend storage capacity
@@ -98,7 +98,7 @@ mbed_error_t scsi_storage_backend_write(uint32_t sector_addr, uint32_t num_secto
  *
  * \return 0 on success
  */
-mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize);
+mbed_error_t usbmsc_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize);
 
 
 /*
@@ -113,27 +113,20 @@ mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocks
  * SCSI stack is up and running.
  *
  */
-void scsi_reset_device(void);
+void usbmsc_reset_stack(void);
 
 /***********************************************************
  * libSCSI API
  ***********************************************************/
 
-mbed_error_t scsi_early_init(uint8_t * buf, uint16_t len);
+mbed_error_t usbmsc_declare(uint8_t * buf, uint16_t len);
 
-mbed_error_t scsi_init(uint32_t usbdci_handler);
+mbed_error_t usbmsc_initialize(uint32_t usbdci_handler);
 
-mbed_error_t scsi_initialize_automaton(void);
+mbed_error_t usbmsc_initialize_automaton(void);
 
-void scsi_reinit(void);
+void usbmsc_reinit(void);
 
-void scsi_send_data(uint8_t *data, uint32_t size);
+mbed_error_t usbmsc_exec_automaton(void);
 
-
-int scsi_is_ready_for_data(void);
-
-void scsi_send_status(void);
-
-mbed_error_t scsi_exec_automaton(void);
-
-#endif /* SCSI_H */
+#endif /* LIBUSBMSC_H */
