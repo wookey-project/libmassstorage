@@ -119,14 +119,44 @@ void usbmsc_reset_stack(void);
  * libSCSI API
  ***********************************************************/
 
+/*@
+  @ assigns GHOST_opaque_usbmsc_privates;
+
+  @ behavior invbuf:
+  @    assumes buf == NULL || len == 0;
+  @    ensures \result == MBED_ERROR_INVPARAM;
+
+  @ behavior ok:
+  @    assumes buf != NULL && len > 0;
+  @    ensures \result == MBED_ERROR_NONE;
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+  */
 mbed_error_t usbmsc_declare(uint8_t * buf, uint16_t len);
 
+/*@
+  @ assigns GHOST_opaque_usbmsc_privates;
+  // hard to specify public behavior here
+  */
 mbed_error_t usbmsc_initialize(uint32_t usbdci_handler);
 
+/*@
+  @ requires \separated(&GHOST_opaque_drv_privates, &GHOST_opaque_usbmsc_privates);
+  @ assigns GHOST_opaque_usbmsc_privates, GHOST_opaque_drv_privates;
+  */
 mbed_error_t usbmsc_initialize_automaton(void);
 
+/*@
+  @ assigns GHOST_opaque_usbmsc_privates;
+  */
 void usbmsc_reinit(void);
 
+/*@
+  @ requires \separated(&GHOST_opaque_drv_privates, &GHOST_opaque_usbmsc_privates);
+
+  @ assigns GHOST_opaque_drv_privates, GHOST_opaque_usbmsc_privates ;
+  */
 mbed_error_t usbmsc_exec_automaton(void);
 
 #endif /* LIBUSBMSC_H */

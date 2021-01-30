@@ -28,6 +28,12 @@
 #include "libc/stdio.h"
 #include "libc/nostd.h"
 #include "libc/regutils.h"
+
+#ifdef __FRAMAC__
+# include "usbmsc_framac_private.h"
+#endif
+
+
 #include "scsi_dbg.h"
 #include "usb_bbb.h"
 #include "usb_control_mass_storage.h"

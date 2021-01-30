@@ -28,6 +28,9 @@
 #include "libc/sync.h"
 #include "scsi.h"
 #include "scsi_dbg.h"
+#ifdef __FRAMAC__
+# include "usbmsc_framac_private.h"
+#endif
 
 
 /****************************************************************

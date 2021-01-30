@@ -31,6 +31,9 @@
 #include "libc/sync.h"
 #include "api/libusbmsc.h"
 #include "usb_control_mass_storage.h"
+#ifdef __FRAMAC__
+# include "usbmsc_framac_private.h"
+#endif
 
 #define BBB_DEBUG CONFIG_USR_LIB_MASSSTORAGE_BBB_DEBUG
 

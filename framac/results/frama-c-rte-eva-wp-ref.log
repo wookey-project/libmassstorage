@@ -1,50 +1,50 @@
 [wp:pedantic-assigns] warning: WP uses \from to generate precise hypotheses, however their proof is not supported yet
-usb_bbb.c:231:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:234:[wp] warning: \valid_function not yet implemented
 (rte: function_pointer: \valid_function(bbb_ctx.cb_data_received))
-usb_bbb.c:231:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:234:[wp] warning: \valid_function not yet implemented
 (rte: pointer_value: \valid_function(bbb_ctx.cb_data_received))
-usb_bbb.c:266:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:269:[wp] warning: \valid_function not yet implemented
 (rte: function_pointer: \valid_function(bbb_ctx.cb_data_sent))
-usb_bbb.c:266:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:269:[wp] warning: \valid_function not yet implemented
 (rte: pointer_value: \valid_function(bbb_ctx.cb_data_sent))
-usb_bbb.c:411:[wp] warning: Cast with incompatible pointers types (source: scsi_csw*) (target: uint8*)
-usb_bbb.c:127:[wp] warning: Cast with incompatible pointers types (source: scsi_cbw*) (target: uint8*)
-framac/entrypoint.c:422:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-scsi.c:924:[wp] warning: Cast with incompatible pointers types
+usb_bbb.c:414:[wp] warning: Cast with incompatible pointers types (source: scsi_csw*) (target: uint8*)
+usb_bbb.c:130:[wp] warning: Cast with incompatible pointers types (source: scsi_cbw*) (target: uint8*)
+framac/entrypoint.c:403:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+scsi.c:917:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_capacity_list_t_106*) (target: uint8*)
-scsi.c:929:[wp] warning: Cast with incompatible pointers types
+scsi.c:922:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_capacity_list_t_106*) (target: uint8*)
-scsi.c:1386:[wp] warning: Cast with incompatible pointers types
+scsi.c:1379:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_read_capacity10_parameter_data_t_99*)
    (target: uint8*)
-scsi.c:1492:[wp] warning: Cast with incompatible pointers types
+scsi.c:1485:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_read_capacity16_parameter_data_t_100*)
    (target: uint8*)
-scsi.c:1586:[wp] warning: Cast with incompatible pointers types
+scsi.c:1579:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_report_luns_data_t_101*) (target: uint8*)
-scsi.c:1712:[wp] warning: Cast with incompatible pointers types
+scsi.c:1705:[wp] warning: Cast with incompatible pointers types
    (source: __anonstruct_mode_parameter10_data_t_113*) (target: uint8*)
-scsi.c:1753:[wp] warning: Cast with incompatible pointers types
+scsi.c:1746:[wp] warning: Cast with incompatible pointers types
    (source: __anonunion_u_mode_parameter_114*) (target: uint8*)
-usb_bbb.c:194:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:197:[wp] warning: \valid_function not yet implemented
 (rte: function_pointer: \valid_function(bbb_ctx.cb_cmd_received))
-usb_bbb.c:194:[wp] warning: \valid_function not yet implemented
+usb_bbb.c:197:[wp] warning: \valid_function not yet implemented
 (rte: pointer_value: \valid_function(bbb_ctx.cb_cmd_received))
-framac/entrypoint.c:268:[wp] warning: Missing assigns clause (assigns 'everything' instead)
+framac/entrypoint.c:249:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/std/api/libc/sanhandlers.h:34:[wp] warning: Missing assigns clause (assigns 'everything' instead)
-[wp] 1405 goals scheduled
+[wp] 1403 goals scheduled
 [wp] [Failed] Goal typed_ref_lemma_u16_and_is_u16
 Z3 4.8.6: Timeout (15s) (cached)
 CVC4 1.7: Unknown (cached)
 Alt-Ergo 2.3.3: Timeout (15s) (cached)
-[wp] [Cache] found:774, updated:4
-[wp] Proved goals: 1404 / 1405
-Qed:            1124  (0.05ms-38ms-5.3s)
-Alt-Ergo 2.3.3:  266  (12ms-15s) (764) (interrupted: 1) (cached: 267)
-CVC4 1.7:        264  (40ms-192ms-2s) (77430) (unknown: 1) (cached: 262)
-Z3 4.8.6:        245  (30ms-8.2s-15s) (1480772) (interrupted: 1) (cached: 245)
+[wp] [Cache] found:720, updated:46
+[wp] Proved goals: 1402 / 1403
+Qed:            1122  (0.05ms-38ms-4.6s)
+Alt-Ergo 2.3.3:  264  (12ms-15s) (764) (interrupted: 1) (cached: 248)
+CVC4 1.7:        259  (50ms-205ms-2s) (77430) (unknown: 1) (cached: 242)
+Z3 4.8.6:        240  (30ms-8.4s-15s) (1481389) (interrupted: 1) (cached: 230)
 /home/phil/Travail/Wookey/soft/gitlab/newusb//libs/usbctrl/api/libusbctrl.h:367:[wp] warning: Memory model hypotheses for function 'usbctrl_declare':
 /*@
    behavior wp_typed_ref:
@@ -68,17 +68,7 @@ mbed_error_t usbctrl_declare(uint32_t dev_id, uint32_t *ctxh);
    */
 mbed_error_t usbctrl_declare_interface(uint32_t ctxh,
                                        usbctrl_interface_t *iface);
-usb_bbb.c:111:[wp:pedantic-assigns] warning: No 'assigns \result \from ...' specification for function 'usb_bbb_get_cbw'returning pointer type.
-Callers assumptions might be imprecise.
-scsi.c:641:[wp] warning: Memory model hypotheses for function 'scsi_parse_cdb':
-/*@
-   behavior wp_typed_ref:
-     requires \separated(cdb + (..), &scsi_ctx, &reset_requested);
-   */
-void scsi_parse_cdb(uint8_t *cdb, uint8_t cdb_len);
-scsi.c:93:[wp:pedantic-assigns] warning: No 'assigns \result \from ...' specification for function 'scsi_get_context'returning pointer type.
-Callers assumptions might be imprecise.
-framac/entrypoint.c:197:[wp] warning: Memory model hypotheses for function 'scsi_storage_backend_capacity':
+framac/entrypoint.c:178:[wp] warning: Memory model hypotheses for function 'usbmsc_storage_backend_capacity':
 /*@
    behavior wp_typed_ref:
      requires \separated(blocksize, &variable_errcode);
@@ -87,17 +77,17 @@ framac/entrypoint.c:197:[wp] warning: Memory model hypotheses for function 'scsi
      requires \valid(blocksize);
      requires \valid(numblocks);
    */
-mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks,
-                                           uint32_t *blocksize);
-framac/entrypoint.c:141:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'scsi_reset_device'.
+mbed_error_t usbmsc_storage_backend_capacity(uint32_t *numblocks,
+                                             uint32_t *blocksize);
+framac/entrypoint.c:142:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'usbmsc_reset_stack'.
 Callers assumptions might be imprecise.
-scsi.c:2550:[wp] warning: Memory model hypotheses for function 'scsi_early_init':
+scsi.c:2538:[wp] warning: Memory model hypotheses for function 'usbmsc_declare':
 /*@
    behavior wp_typed_ref:
      requires \separated(buf + (..), &bbb_ctx, &cbw, &scsi_ctx);
    */
-mbed_error_t scsi_early_init(uint8_t *buf, uint16_t len);
-scsi.c:2615:[wp] warning: Memory model hypotheses for function 'scsi_init':
+mbed_error_t usbmsc_declare(uint8_t *buf, uint16_t len);
+scsi.c:2606:[wp] warning: Memory model hypotheses for function 'usbmsc_initialize':
 /*@
    behavior wp_typed_ref:
      requires
@@ -107,14 +97,18 @@ scsi.c:2615:[wp] warning: Memory model hypotheses for function 'scsi_init':
          &scsi_ctx
          );
    */
-mbed_error_t scsi_init(uint32_t usbdci_handler);
-scsi.c:405:[wp] warning: Memory model hypotheses for function 'scsi_send_data':
+mbed_error_t usbmsc_initialize(uint32_t usbdci_handler);
+usb_bbb.c:114:[wp:pedantic-assigns] warning: No 'assigns \result \from ...' specification for function 'usb_bbb_get_cbw'returning pointer type.
+Callers assumptions might be imprecise.
+scsi.c:634:[wp] warning: Memory model hypotheses for function 'scsi_parse_cdb':
 /*@
    behavior wp_typed_ref:
-     requires \separated(data + (..), &bbb_ctx, &cbw, &scsi_ctx);
+     requires \separated(cdb + (..), &scsi_ctx, &reset_requested);
    */
-void scsi_send_data(uint8_t *data, uint32_t size);
-usb_bbb.c:291:[wp] warning: Memory model hypotheses for function 'usb_bbb_declare':
+void scsi_parse_cdb(uint8_t *cdb, uint8_t cdb_len);
+scsi.c:87:[wp:pedantic-assigns] warning: No 'assigns \result \from ...' specification for function 'scsi_get_context'returning pointer type.
+Callers assumptions might be imprecise.
+usb_bbb.c:294:[wp] warning: Memory model hypotheses for function 'usb_bbb_declare':
 /*@
    behavior wp_typed_ref:
      requires \separated(cmd_received + (..), &bbb_ctx);
@@ -124,15 +118,15 @@ usb_bbb.c:291:[wp] warning: Memory model hypotheses for function 'usb_bbb_declar
 void usb_bbb_declare(void (*cmd_received)(uint8_t *cdb, uint8_t cdb_len),
                      void (*data_received)(uint32_t size),
                      void (*data_sent)(void));
-usb_bbb.c:423:[wp] warning: Memory model hypotheses for function 'usb_bbb_send':
+usb_bbb.c:426:[wp] warning: Memory model hypotheses for function 'usb_bbb_send':
 /*@ behavior wp_typed_ref:
       requires \separated(src + (..), &bbb_ctx, &cbw); */
 void usb_bbb_send(uint8_t const *src, uint32_t size);
-usb_bbb.c:435:[wp] warning: Memory model hypotheses for function 'usb_bbb_recv':
+usb_bbb.c:438:[wp] warning: Memory model hypotheses for function 'usb_bbb_recv':
 /*@ behavior wp_typed_ref:
       requires \separated(dst + (..), &bbb_ctx, &cbw); */
 void usb_bbb_recv(uint8_t *dst, uint32_t size);
-usb_control_mass_storage.c:84:[wp] warning: Memory model hypotheses for function 'mass_storage_class_rqst_handler':
+usb_control_mass_storage.c:89:[wp] warning: Memory model hypotheses for function 'mass_storage_class_rqst_handler':
 /*@
    behavior wp_typed_ref:
      requires \separated(packet, &bbb_ctx, &scsi_ctx);
@@ -141,32 +135,38 @@ usb_control_mass_storage.c:84:[wp] warning: Memory model hypotheses for function
 mbed_error_t mass_storage_class_rqst_handler(uint32_t usbdci_handler __attribute__((
                                              __unused__)),
                                              usbctrl_setup_pkt_t *packet);
-framac/entrypoint.c:212:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'prepare_ctrl_ctx'.
+framac/entrypoint.c:193:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'prepare_ctrl_ctx'.
 Callers assumptions might be imprecise.
-framac/entrypoint.c:238:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'test_fcn_massstorage'.
+framac/entrypoint.c:219:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'test_fcn_massstorage'.
 Callers assumptions might be imprecise.
-framac/entrypoint.c:250:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'test_fcn_massstorage_errorcases'.
+framac/entrypoint.c:231:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'test_fcn_massstorage_errorcases'.
 Callers assumptions might be imprecise.
-framac/entrypoint.c:341:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'test_fcn_driver_eva'.
+framac/entrypoint.c:322:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'test_fcn_driver_eva'.
 Callers assumptions might be imprecise.
-framac/entrypoint.c:482:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'test_fcn_driver_eva_reset'.
+framac/entrypoint.c:463:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'test_fcn_driver_eva_reset'.
 Callers assumptions might be imprecise.
-framac/entrypoint.c:524:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'main'.
+framac/entrypoint.c:505:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'main'.
 Callers assumptions might be imprecise.
-scsi.c:352:[wp] warning: Memory model hypotheses for function 'scsi_get_data':
+scsi.c:345:[wp] warning: Memory model hypotheses for function 'scsi_get_data':
 /*@
    behavior wp_typed_ref:
      requires \separated(buffer + (..), &bbb_ctx, &cbw, &scsi_ctx);
    */
 mbed_error_t scsi_get_data(uint8_t *buffer, uint32_t size);
-scsi.c:536:[wp] warning: Memory model hypotheses for function 'scsi_forge_mode_sense_response':
+scsi.c:398:[wp] warning: Memory model hypotheses for function 'scsi_send_data':
+/*@
+   behavior wp_typed_ref:
+     requires \separated(data + (..), &bbb_ctx, &cbw, &scsi_ctx);
+   */
+void scsi_send_data(uint8_t *data, uint32_t size);
+scsi.c:529:[wp] warning: Memory model hypotheses for function 'scsi_forge_mode_sense_response':
 /*@
    behavior wp_typed_ref:
      requires \separated(response, &bbb_ctx, &cbw, &scsi_ctx);
      requires \valid(response);
    */
 void scsi_forge_mode_sense_response(u_mode_parameter *response, uint8_t mode);
-scsi.c:704:[wp] warning: Memory model hypotheses for function 'scsi_cmd_inquiry':
+scsi.c:697:[wp] warning: Memory model hypotheses for function 'scsi_cmd_inquiry':
 /*@
    behavior wp_typed_ref:
      requires
@@ -177,7 +177,7 @@ scsi.c:704:[wp] warning: Memory model hypotheses for function 'scsi_cmd_inquiry'
    */
 mbed_error_t scsi_cmd_inquiry(scsi_state_t current_state,
                               cdb_t const * const cdb);
-scsi.c:822:[wp] warning: Memory model hypotheses for function 'scsi_cmd_prevent_allow_medium_removal':
+scsi.c:815:[wp] warning: Memory model hypotheses for function 'scsi_cmd_prevent_allow_medium_removal':
 /*@
    behavior wp_typed_ref:
      requires
@@ -190,7 +190,7 @@ scsi.c:822:[wp] warning: Memory model hypotheses for function 'scsi_cmd_prevent_
 mbed_error_t scsi_cmd_prevent_allow_medium_removal(scsi_state_t current_state,
                                                    cdb_t *current_cdb __attribute__((
                                                    __unused__)));
-scsi.c:869:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_format_capacities':
+scsi.c:862:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_format_capacities':
 /*@
    behavior wp_typed_ref:
      requires
@@ -201,7 +201,7 @@ scsi.c:869:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_for
    */
 mbed_error_t scsi_cmd_read_format_capacities(scsi_state_t current_state,
                                              cdb_t *current_cdb);
-scsi.c:979:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data6':
+scsi.c:972:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data6':
 /*@
    behavior wp_typed_ref:
      requires
@@ -213,7 +213,7 @@ scsi.c:979:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_dat
    */
 mbed_error_t scsi_cmd_read_data6(scsi_state_t current_state,
                                  cdb_t *current_cdb);
-scsi.c:1163:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data10':
+scsi.c:1156:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_data10':
 /*@
    behavior wp_typed_ref:
      requires
@@ -225,7 +225,7 @@ scsi.c:1163:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_da
    */
 mbed_error_t scsi_cmd_read_data10(scsi_state_t const current_state,
                                   cdb_t *current_cdb);
-scsi.c:1344:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity10':
+scsi.c:1337:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity10':
 /*@
    behavior wp_typed_ref:
      requires
@@ -238,7 +238,7 @@ scsi.c:1344:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_ca
 mbed_error_t scsi_cmd_read_capacity10(scsi_state_t current_state,
                                       cdb_t *current_cdb __attribute__((
                                       __unused__)));
-scsi.c:1428:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity16':
+scsi.c:1421:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_capacity16':
 /*@
    behavior wp_typed_ref:
      requires
@@ -249,7 +249,7 @@ scsi.c:1428:[wp] warning: Memory model hypotheses for function 'scsi_cmd_read_ca
    */
 mbed_error_t scsi_cmd_read_capacity16(scsi_state_t current_state,
                                       cdb_t *current_cdb);
-scsi.c:1542:[wp] warning: Memory model hypotheses for function 'scsi_cmd_report_luns':
+scsi.c:1535:[wp] warning: Memory model hypotheses for function 'scsi_cmd_report_luns':
 /*@
    behavior wp_typed_ref:
      requires
@@ -260,7 +260,7 @@ scsi.c:1542:[wp] warning: Memory model hypotheses for function 'scsi_cmd_report_
    */
 mbed_error_t scsi_cmd_report_luns(scsi_state_t current_state,
                                   cdb_t *current_cdb);
-scsi.c:1636:[wp] warning: Memory model hypotheses for function 'scsi_cmd_request_sense':
+scsi.c:1629:[wp] warning: Memory model hypotheses for function 'scsi_cmd_request_sense':
 /*@
    behavior wp_typed_ref:
      requires
@@ -273,7 +273,7 @@ scsi.c:1636:[wp] warning: Memory model hypotheses for function 'scsi_cmd_request
 mbed_error_t scsi_cmd_request_sense(scsi_state_t current_state,
                                     cdb_t *current_cdb __attribute__((
                                     __unused__)));
-scsi.c:1687:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense10':
+scsi.c:1680:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense10':
 /*@
    behavior wp_typed_ref:
      requires
@@ -286,7 +286,7 @@ scsi.c:1687:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_se
 mbed_error_t scsi_cmd_mode_sense10(scsi_state_t current_state,
                                    cdb_t *current_cdb __attribute__((
                                    __unused__)));
-scsi.c:1731:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense6':
+scsi.c:1724:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_sense6':
 /*@
    behavior wp_typed_ref:
      requires
@@ -298,7 +298,7 @@ scsi.c:1731:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_se
    */
 mbed_error_t scsi_cmd_mode_sense6(scsi_state_t current_state,
                                   cdb_t *current_cdb __attribute__((__unused__)));
-scsi.c:1782:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select6':
+scsi.c:1775:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select6':
 /*@
    behavior wp_typed_ref:
      requires
@@ -311,7 +311,7 @@ scsi.c:1782:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_se
 mbed_error_t scsi_cmd_mode_select6(scsi_state_t current_state,
                                    cdb_t *current_cdb __attribute__((
                                    __unused__)));
-scsi.c:1837:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select10':
+scsi.c:1830:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_select10':
 /*@
    behavior wp_typed_ref:
      requires
@@ -324,7 +324,7 @@ scsi.c:1837:[wp] warning: Memory model hypotheses for function 'scsi_cmd_mode_se
 mbed_error_t scsi_cmd_mode_select10(scsi_state_t current_state,
                                     cdb_t *current_cdb __attribute__((
                                     __unused__)));
-scsi.c:1894:[wp] warning: Memory model hypotheses for function 'scsi_cmd_test_unit_ready':
+scsi.c:1887:[wp] warning: Memory model hypotheses for function 'scsi_cmd_test_unit_ready':
 /*@
    behavior wp_typed_ref:
      requires
@@ -337,7 +337,7 @@ scsi.c:1894:[wp] warning: Memory model hypotheses for function 'scsi_cmd_test_un
 mbed_error_t scsi_cmd_test_unit_ready(scsi_state_t current_state,
                                       cdb_t *current_cdb __attribute__((
                                       __unused__)));
-scsi.c:1957:[wp] warning: Memory model hypotheses for function 'scsi_write_data6':
+scsi.c:1950:[wp] warning: Memory model hypotheses for function 'scsi_write_data6':
 /*@
    behavior wp_typed_ref:
      requires
@@ -348,7 +348,7 @@ scsi.c:1957:[wp] warning: Memory model hypotheses for function 'scsi_write_data6
      requires \valid(current_cdb);
    */
 mbed_error_t scsi_write_data6(scsi_state_t current_state, cdb_t *current_cdb);
-scsi.c:2172:[wp] warning: Memory model hypotheses for function 'scsi_write_data10':
+scsi.c:2165:[wp] warning: Memory model hypotheses for function 'scsi_write_data10':
 /*@
    behavior wp_typed_ref:
      requires
@@ -420,9 +420,9 @@ Callers assumptions might be imprecise.
 /*@ behavior wp_typed_ref:
       requires \valid(reg); */
 __inline static void set_reg16_bits(uint16_t volatile *reg, uint16_t value);
-framac/entrypoint.c:265:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'launch_data_recv_and_exec'.
+framac/entrypoint.c:246:[wp:pedantic-assigns] warning: No 'assigns' specification for function 'launch_data_recv_and_exec'.
 Callers assumptions might be imprecise.
-framac/entrypoint.c:265:[wp] warning: Memory model hypotheses for function 'launch_data_recv_and_exec':
+framac/entrypoint.c:246:[wp] warning: Memory model hypotheses for function 'launch_data_recv_and_exec':
 /*@
    behavior wp_typed_ref:
      requires

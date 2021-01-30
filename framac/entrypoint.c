@@ -3,7 +3,8 @@
 #include "libc/string.h"
 #include "generated/devlist.h"
 #include "libusbctrl.h"
-#include "api/scsi.h"
+#include "api/libusbmsc.h"
+#include "usbmsc_framac_private.h"
 #include "usb_bbb.h"
 #include "scsi_log.h"
 #include "usbmass_desc.h"
@@ -138,29 +139,9 @@ void usbctrl_configuration_set(void)
 }
 
 
-void usbmsc_reset_device(void)
+void usbmsc_reset_stack(void)
 {
     usbmsc_reinit();
-}
-
-/*@
-  @ assigns \nothing;
-  */
-mbed_error_t storage_read(uint32_t sector_address __attribute__((unused)),
-                          uint32_t num_sectors    __attribute__((unused)))
-{
-    mbed_error_t errcode = variable_errcode;
-    return errcode;
-}
-
-/*@
-  @ assigns \nothing;
-  */
-mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
-                           uint32_t num_sectors    __attribute__((unused)))
-{
-    mbed_error_t errcode = variable_errcode;
-    return errcode;
 }
 
 /* TODO: The 2 following functions may fails in case of storage error (read error/write error).
@@ -171,7 +152,7 @@ mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
 /*@
   @ assigns \nothing;
   */
-mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unused)),
+mbed_error_t usbmsc_storage_backend_read(uint32_t sector_addr __attribute__((unused)),
                                        uint32_t num_sectors __attribute__((unused)))
 {
     mbed_error_t errcode = variable_errcode;
@@ -181,7 +162,7 @@ mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unuse
 /*@
   @ assigns \nothing;
   */
-mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unused)),
+mbed_error_t usbmsc_storage_backend_write(uint32_t sector_addr __attribute__((unused)),
                                         uint32_t num_sectors __attribute__((unused)))
 {
     mbed_error_t errcode = variable_errcode;
@@ -194,7 +175,7 @@ mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unus
   @ requires \separated(numblocks, blocksize);
   @ assigns *numblocks, *blocksize;
 */
-mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize)
+mbed_error_t usbmsc_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize)
 {
     mbed_error_t errcode = variable_errcode;
     /* 4GB backend storage size */

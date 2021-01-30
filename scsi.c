@@ -2344,12 +2344,15 @@ mbed_error_t scsi_write_data10(scsi_state_t current_state, cdb_t * current_cdb)
 }
 
 /*@
-  @ requires \separated(&bbb_ctx,&GHOST_opaque_drv_privates);
+  @ requires \separated(&bbb_ctx,&GHOST_opaque_drv_privates, &GHOST_opaque_usbmsc_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
   @ assigns bbb_ctx.state, GHOST_opaque_drv_privates;
   */
 mbed_error_t usbmsc_initialize_automaton(void)
 {
+    /*@ ghost
+        GHOST_opaque_usbmsc_privates = 1;
+      */
     /* read first command */
     read_next_cmd();
     return MBED_ERROR_NONE;
@@ -2359,10 +2362,10 @@ mbed_error_t usbmsc_initialize_automaton(void)
  * SCSI Automaton execution
  */
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &scsi_ctx);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates, &GHOST_opaque_usbmsc_privates, &scsi_ctx);
   @ requires SCSI_IDLE <= scsi_ctx.state <= SCSI_ERROR;
 
-  @ assigns scsi_ctx, GHOST_opaque_drv_privates, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
+  @ assigns scsi_ctx, bbb_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state ;
 
   */
 mbed_error_t usbmsc_exec_automaton(void)
@@ -2371,6 +2374,9 @@ mbed_error_t usbmsc_exec_automaton(void)
     cdb_t   local_cdb;
     mbed_error_t errcode = MBED_ERROR_NONE;
 
+    /*@ ghost
+        GHOST_opaque_usbmsc_privates = 1;
+      */
     if (scsi_ctx.queue_empty == true) {
         request_data_membarrier();
         goto nothing_to_do;
@@ -2526,23 +2532,15 @@ void scsi_reset_context(void)
  */
 
 /*@
-  @ requires \separated(&scsi_ctx, &bbb_ctx, buf + (0..len-1), &cbw);
+  @ requires \separated(&scsi_ctx, &bbb_ctx, buf + (0..len-1), &cbw, &GHOST_opaque_usbmsc_privates);
   @ assigns scsi_ctx, bbb_ctx;
-
-  @ behavior invbuf:
-  @    assumes buf == NULL || len == 0;
-  @    ensures \result == MBED_ERROR_INVPARAM;
-
-  @ behavior ok:
-  @    assumes buf != NULL && len > 0;
-  @    ensures \result == MBED_ERROR_NONE;
-
-  @ disjoint behaviors;
-  @ complete behaviors;
   */
 mbed_error_t usbmsc_declare(uint8_t * buf, uint16_t len)
 {
 
+    /*@ ghost
+        GHOST_opaque_usbmsc_privates = 1;
+      */
     log_printf("%s\n", __func__);
 
     if (!buf || len == 0) {
@@ -2609,6 +2607,10 @@ mbed_error_t usbmsc_initialize(uint32_t usbdci_handler)
 {
     uint32_t i;
     mbed_error_t errcode = MBED_ERROR_NONE;
+
+    /*@ ghost
+        GHOST_opaque_usbmsc_privates = 1;
+      */
     if (scsi_ctx.global_buf == NULL) {
         errcode = MBED_ERROR_INVSTATE;
         goto err;
@@ -2654,11 +2656,14 @@ err:
 }
 
 /*@
-  @ requires \separated(&scsi_ctx,&GHOST_opaque_drv_privates,&bbb_ctx);
+  @ requires \separated(&scsi_ctx,&GHOST_opaque_drv_privates,&bbb_ctx, &GHOST_opaque_usbmsc_privates);
   @ assigns bbb_ctx.state, scsi_ctx;
   */
 void usbmsc_reinit(void)
 {
+    /*@ ghost
+        GHOST_opaque_usbmsc_privates = 1;
+      */
     usb_bbb_reconfigure();
     scsi_reset_context();
 }

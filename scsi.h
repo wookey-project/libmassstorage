@@ -24,6 +24,8 @@
 #ifndef SCSI_H_
 #define SCSI_H_
 
+#include "usbmsc_framac_private.h"
+
 #ifndef __FRAMAC__
 typedef enum {
     SCSI_TRANSMIT_LINE_READY = 0,
