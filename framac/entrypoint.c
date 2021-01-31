@@ -3,7 +3,8 @@
 #include "libc/string.h"
 #include "generated/devlist.h"
 #include "libusbctrl.h"
-#include "api/scsi.h"
+#include "api/libusbmsc.h"
+#include "usbmsc_framac_private.h"
 #include "usb_bbb.h"
 #include "scsi_log.h"
 #include "usbmass_desc.h"
@@ -13,7 +14,6 @@
 /* massstorage specific exports for framac */
 #include "scsi_automaton.h"
 
-bool reset_requested = false;
 
 #define USB_BUF_SIZE 16384
 
@@ -139,29 +139,9 @@ void usbctrl_configuration_set(void)
 }
 
 
-void scsi_reset_device(void)
+void usbmsc_reset_stack(void)
 {
-    scsi_reinit();
-}
-
-/*@
-  @ assigns \nothing;
-  */
-mbed_error_t storage_read(uint32_t sector_address __attribute__((unused)),
-                          uint32_t num_sectors    __attribute__((unused)))
-{
-    mbed_error_t errcode = variable_errcode;
-    return errcode;
-}
-
-/*@
-  @ assigns \nothing;
-  */
-mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
-                           uint32_t num_sectors    __attribute__((unused)))
-{
-    mbed_error_t errcode = variable_errcode;
-    return errcode;
+    usbmsc_reinit();
 }
 
 /* TODO: The 2 following functions may fails in case of storage error (read error/write error).
@@ -172,7 +152,7 @@ mbed_error_t storage_write(uint32_t sector_address __attribute__((unused)),
 /*@
   @ assigns \nothing;
   */
-mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unused)),
+mbed_error_t usbmsc_storage_backend_read(uint32_t sector_addr __attribute__((unused)),
                                        uint32_t num_sectors __attribute__((unused)))
 {
     mbed_error_t errcode = variable_errcode;
@@ -182,7 +162,7 @@ mbed_error_t scsi_storage_backend_read(uint32_t sector_addr __attribute__((unuse
 /*@
   @ assigns \nothing;
   */
-mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unused)),
+mbed_error_t usbmsc_storage_backend_write(uint32_t sector_addr __attribute__((unused)),
                                         uint32_t num_sectors __attribute__((unused)))
 {
     mbed_error_t errcode = variable_errcode;
@@ -195,7 +175,7 @@ mbed_error_t scsi_storage_backend_write(uint32_t sector_addr __attribute__((unus
   @ requires \separated(numblocks, blocksize);
   @ assigns *numblocks, *blocksize;
 */
-mbed_error_t scsi_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize)
+mbed_error_t usbmsc_storage_backend_capacity(uint32_t *numblocks, uint32_t *blocksize)
 {
     mbed_error_t errcode = variable_errcode;
     /* 4GB backend storage size */
@@ -217,18 +197,18 @@ mbed_error_t prepare_ctrl_ctx(void)
 
     // declare buffer, declare device.
     /* should fail */
-    errcode = scsi_early_init(NULL, USB_BUF_SIZE);
+    errcode = usbmsc_declare(NULL, USB_BUF_SIZE);
     /* @ \assert errcode != MBED_ERROR_NONE ; */
-    errcode = scsi_early_init(usb_buf, USB_BUF_SIZE);
+    errcode = usbmsc_declare(usb_buf, USB_BUF_SIZE);
     /* @ \assert errcode == MBED_ERROR_NONE ; */
     // register interface toward libusbctrl
-    errcode = scsi_init(42);
+    errcode = usbmsc_initialize(42);
     /* @ \assert errcode != MBED_ERROR_NONE ; */
-    errcode = scsi_init(usbxdci_handler);
+    errcode = usbmsc_initialize(usbxdci_handler);
     /* @ \assert errcode == MBED_ERROR_NONE ; */
     usbctrl_start_device(usbxdci_handler);
 
-    scsi_initialize_automaton();
+    usbmsc_initialize_automaton();
 
 err:
     return errcode;
@@ -238,13 +218,13 @@ err:
 
 void test_fcn_massstorage(){
 
-    // Here scsi_exec_automaton should be a endless loop, waiting for
+    // Here usbmsc_exec_automaton should be a endless loop, waiting for
     // content pushed by ISR.
     // This content is the result of received data (SCSI messages)
     // read and push into the incomming queue.
     // the SCSI automaton execute the corresponding SCSI cmd, while the
     // ISR only parse and push the received SCSI cmd.
-    scsi_exec_automaton();
+    usbmsc_exec_automaton();
 
 }
 
@@ -275,7 +255,7 @@ static inline void launch_data_recv_and_exec(struct scsi_cbw *cbw)
     ctx->queue_empty = false;
     /* @ assert scsi_ctx.queue_empty == \false ; */
     // parsing content
-    scsi_exec_automaton();
+    usbmsc_exec_automaton();
 
     // all cmd exec send back something, assuming this "something" is correctly sent now.
     // This is required to set the SCSI line state to the correct state for next cmd.
@@ -493,7 +473,7 @@ void test_fcn_driver_eva_reset() {
 
     mass_storage_class_rqst_handler(usbxdci_handler, &pkt);
 
-    scsi_reinit();
+    usbmsc_reinit();
 
     reset_requested = true;
 
@@ -514,7 +494,7 @@ void test_fcn_driver_eva_reset() {
     ctx->size_to_process = 4096;
     scsi_data_sent();
 
-    scsi_reinit();
+    usbmsc_reinit();
 
     return;
 }

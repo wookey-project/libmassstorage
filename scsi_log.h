@@ -95,6 +95,8 @@ typedef enum {
 #define ASCQ_UNRECOVERED_READ_ERROR                0x00
 #define ASCQ_WRITE_PROTECTED                       0x00
 
+
+#ifndef __FRAMAC__
 /* SCSI errors */
 /*@
   @ assigns \nothing;
@@ -119,5 +121,15 @@ static inline uint8_t scsi_error_get_ascq(uint32_t error)
 {
     return (uint8_t) (error & 0xff);
 }
+#else
+/* prototype export of exactly the same functions, hosted in scsi_log.c */
+
+scsi_sense_key_t scsi_error_get_sense_key(uint32_t error);
+
+uint8_t scsi_error_get_asc(uint32_t error);
+
+uint8_t scsi_error_get_ascq(uint32_t error);
+
+#endif/*!__FRAMAC__*/
 
 #endif

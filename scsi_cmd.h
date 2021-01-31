@@ -24,6 +24,8 @@
 #ifndef SCSI_CMD_H_
 #define SCSI_CMD_H_
 
+#include "usbmsc_framac_private.h"
+
 /* SCSI commands list */
 typedef enum {
     SCSI_CMD_FORMAT_UNIT = 0x04,        // Mandatory

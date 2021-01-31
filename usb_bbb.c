@@ -29,8 +29,11 @@
 #include "libc/syscall.h"
 #include "libc/sanhandlers.h"
 #include "libc/sync.h"
-#include "api/scsi.h"
+#include "api/libusbmsc.h"
 #include "usb_control_mass_storage.h"
+#ifdef __FRAMAC__
+# include "usbmsc_framac_private.h"
+#endif
 
 #define BBB_DEBUG CONFIG_USR_LIB_MASSSTORAGE_BBB_DEBUG
 
@@ -150,7 +153,10 @@ void read_next_cmd(void)
   @ complete behaviors;
   @ disjoint behaviors;
   */
-static mbed_error_t usb_bbb_cmd_received(uint32_t size)
+#ifndef __FRAMAC__
+static
+#endif
+mbed_error_t usb_bbb_cmd_received(uint32_t size)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
     log_printf("[USB BBB] %s: %dB\n", __func__, size);
@@ -196,7 +202,9 @@ err:
 /*@
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.size_to_process, scsi_ctx.line_state, queued_cdb, state, reset_requested;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.tag, bbb_ctx.state, scsi_ctx.queue_empty, scsi_ctx.size_to_process,
+        scsi_ctx.line_state, queued_cdb, scsi_ctx.state, reset_requested, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
+        scsi_ctx.direction;
   */
 #ifndef __FRAMAC__
 static
@@ -233,9 +241,10 @@ err:
 }
 
 /*@
-  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&state);
+  @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates,&scsi_ctx);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx, state;
+  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state, scsi_ctx.state, GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state,
+         scsi_ctx.size_to_process, scsi_ctx.line_state, scsi_ctx.direction;
   */
 #ifndef __FRAMAC__
 static
@@ -354,7 +363,7 @@ mbed_error_t usb_bbb_configure(uint32_t usbdci_handler)
 }
 
 /*@
-  @ requires \separated(&scsi_ctx,&state,&GHOST_opaque_drv_privates,&bbb_ctx);
+  @ requires \separated(&scsi_ctx,&GHOST_opaque_drv_privates,&bbb_ctx);
   @ assigns bbb_ctx.state;
   */
 void usb_bbb_reconfigure(void)
@@ -385,7 +394,7 @@ predicate valid_iface_handlers(usbctrl_interface_t *iface) =
 /*@
   @ requires \separated(&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
   @ ensures bbb_ctx.state == USB_BBB_STATE_STATUS;
   */
 void usb_bbb_send_csw(uint8_t status, uint32_t data_residue)
@@ -412,7 +421,7 @@ void usb_bbb_send_csw(uint8_t status, uint32_t data_residue)
 /*@
   @ requires \separated(src, &cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ requires \valid_read(bbb_ctx.iface.eps + (0 .. 1));
-  @ assigns GHOST_opaque_drv_privates, bbb_ctx.state;
+  @ assigns GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
   */
 void usb_bbb_send(const uint8_t * src, uint32_t size)
 {

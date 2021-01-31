@@ -203,6 +203,7 @@ FRAMAC_EVA_FLAGS:=\
 		    -eva-use-spec usbotghs_endpoint_stall_clear \
 		    -eva-use-spec usbotghs_endpoint_set_nak \
 		    -eva-use-spec usbotghs_endpoint_clear_nak \
+			-eva-use-spec usbotghs_activate_endpoint \
 		    -eva-log a:$(EVA_LOGFILE) \
 		    -eva-report-red-statuses $(EVAREPORT)\
             -metrics \
