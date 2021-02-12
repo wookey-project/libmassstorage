@@ -144,15 +144,20 @@ LIBUSB_API_DIR ?= $(PROJ_FILES)/libs/usbctrl/api
 # itself and thus by upper layers, including drivers and libraries.
 EWOK_API_DIR ?= $(PROJ_FILES)/kernel/src/C/exported
 
-SESSION     := framac/results/frama-c-rte-eva-wp-ref.session
-LOGFILE     := framac/results/frama-c-rte-eva-wp-ref.log
-EVA_SESSION := framac/results/frama-c-rte-eva.session
-EVA_LOGFILE := framac/results/frama-c-rte-eva.log
-TIMESTAMP   := framac/results/timestamp-calcium_wp-eva.txt
-EVAREPORT   := framac/results/eva_report_red.txt
+FRAMAC_RESULTSDIR := framac/results
+
+SESSION     := $(FRAMAC_RESULTSDIR)/frama-c-rte-eva-wp-ref.session
+LOGFILE     := $(FRAMAC_RESULTSDIR)/frama-c-rte-eva-wp-ref.log
+EVA_SESSION := $(FRAMAC_RESULTSDIR)/frama-c-rte-eva.session
+EVA_LOGFILE := $(FRAMAC_RESULTSDIR)/frama-c-rte-eva.log
+TIMESTAMP   := $(FRAMAC_RESULTSDIR)/timestamp-calcium_wp-eva.txt
+EVAREPORT   := $(FRAMAC_RESULTSDIR)/eva_report_red.txt
 JOBS        := $(shell nproc)
 # Does this flag could be overriden by env (i.e. using ?=)
 TIMEOUT     := 15
+
+$(FRAMAC_RESULTSDIR):
+	$(call cmd,mkdir)
 
 FRAMAC_GEN_FLAGS:=\
 			-absolute-valid-range 0x40040000-0x40044000 \
@@ -213,38 +218,45 @@ FRAMAC_WP_FLAGS:=\
 	        -wp \
   			-wp-model "Typed+ref+int" \
   			-wp-literals \
-  			-wp-prover alt-ergo,cvc4,z3 \
+  			-wp-prover alt-ergo,cvc4,z3,tip \
+            -wp-prop="-@lemma" \
+            -wp-time-margin 25 \
    			-wp-timeout $(TIMEOUT) \
 			-wp-smoke-tests \
 			-wp-no-smoke-dead-code \
    			-wp-log a:$(LOGFILE)
 
+FRAMAC_WP_LEMMAS_FLAGS:=\
+           -wp-prop="@lemma" \
+           -wp-auto="wp:split,wp:bitrange"
 
-frama-c-parsing:
+frama-c-parsing: $(FRAMAC_RESULTSDIR)
 	frama-c framac/entrypoint.c scsi*.c usb*.c \
 		 -c11 \
 		 -no-frama-c-stdlib \
 		 -cpp-extra-args="-nostdinc -I framac/include -I $(LIBUSB_API_DIR) -I $(LIBSTD_API_DIR) -I $(USBOTGHS_API_DIR) -I $(USBOTGHS_DEVHEADER_PATH) -I $(EWOK_API_DIR)"
 
-frama-c-eva:
+frama-c-eva: $(FRAMAC_RESULTSDIR)
 	frama-c framac/entrypoint.c scsi*.c usb*.c -c11 \
 		    $(FRAMAC_GEN_FLAGS) \
 			$(FRAMAC_EVA_FLAGS) \
 			-save $(EVA_SESSION) \
    			-time $(TIMESTAMP)
 
-frama-c:
+frama-c: $(FRAMAC_RESULTSDIR)
 	frama-c framac/entrypoint.c scsi*.c usb*.c -c11 \
 		    $(FRAMAC_GEN_FLAGS) \
 			$(FRAMAC_EVA_FLAGS) \
    		    -then \
 			$(FRAMAC_WP_FLAGS) \
+			-then \
+			$(FRAMAC_WP_LEMMAS_FLAGS) \
    			-save $(SESSION) \
    			-time $(TIMESTAMP)
 
-frama-c-instantiate:
+frama-c-instantiate: $(FRAMAC_RESULTSDIR)
 	frama-c  scsi.c $(FRAMAC_INS_FLAGS) -machdep x86_32 \
-			-save framac/results/frama-c-instanciate.session
+			-save $(FRAMAC_RESULTSDIR)/frama-c-instanciate.session
 
 frama-c-gui:
 	frama-c-gui -load $(SESSION)

@@ -3,5 +3,5 @@
 framac/results/eva_report_red.txt
 framac/results/*.session
 framac/results/*.error
-framac/results/*.crash
+framac/results/*
 framac/results/frama-c-rte-eva.log
