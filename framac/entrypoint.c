@@ -243,7 +243,11 @@ void test_fcn_massstorage_errorcases(){
  * Most of the coverage should be handled here.
  */
 
-static inline void launch_data_recv_and_exec(struct scsi_cbw *cbw)
+/*@
+  @ requires \separated(cbw, &queued_cdb, &reset_requested, &bbb_ctx);
+  @ requires \valid(cbw);
+  */
+void launch_data_recv_and_exec(struct scsi_cbw *cbw)
 {
     // garbage on cdb
     for (uint8_t i = 1; i < 16; ++i) {
