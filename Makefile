@@ -221,6 +221,7 @@ FRAMAC_WP_FLAGS:=\
   			-wp-prover alt-ergo,cvc4,z3,tip \
             -wp-prop="-@lemma" \
             -wp-time-margin 25 \
+			-wp-check-memory-model \
    			-wp-timeout $(TIMEOUT) \
 			-wp-smoke-tests \
 			-wp-no-smoke-dead-code \

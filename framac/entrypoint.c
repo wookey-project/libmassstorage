@@ -407,6 +407,8 @@ void test_fcn_driver_eva(void) {
     for (uint8_t i = 0; i < 40; ++i) {
         cbw->cdb_len.cdb_len = cmd_sequence[i].cdb_len;
         cbw->cdb[0]  = cmd_sequence[i].cmd;
+        /*@ assert \separated(cbw, &queued_cdb, &reset_requested, &bbb_ctx); */
+        /*@ assert \valid(cbw); */
         launch_data_recv_and_exec(cbw);
     }
 
@@ -489,6 +491,8 @@ void test_fcn_driver_eva_reset() {
     cbw->cdb_len.reserved = 0;
     cbw->cdb_len.cdb_len = sizeof(cdb6_t);
     cbw->cdb[0]  = SCSI_CMD_READ_6;
+    /*@ assert \separated(cbw, &queued_cdb, &reset_requested, &bbb_ctx); */
+    /*@ assert \valid(cbw); */
     launch_data_recv_and_exec(cbw);
 
     reset_requested = false;
