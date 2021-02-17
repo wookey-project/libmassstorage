@@ -231,7 +231,6 @@ FRAMAC_WP_FLAGS:=\
   			-wp-prover $(FRAMAC_WP_PROVERS),tip \
             -wp-prop="-@lemma" \
             -wp-time-margin 25 \
-			-wp-check-memory-model \
    			-wp-timeout $(TIMEOUT) \
 			-wp-smoke-tests \
 			-wp-no-smoke-dead-code \
