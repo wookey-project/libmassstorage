@@ -268,6 +268,13 @@ static void scsi_debug_dump_cmd(cdb_t * current_cdb, uint8_t scsi_cmd)
 
 /*@
   @ assigns \nothing;
+  @ ensures ((scsi_ctx.direction == SCSI_DIRECTION_RECV ||
+              scsi_ctx.direction == SCSI_DIRECTION_IDLE) &&
+              scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY) ==> \result == \true;
+
+  @ ensures !((scsi_ctx.direction == SCSI_DIRECTION_RECV ||
+               scsi_ctx.direction == SCSI_DIRECTION_IDLE) &&
+               scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY) ==> \result == \false;
   */
 #ifndef __FRAMAC__
 static inline
@@ -284,6 +291,12 @@ bool scsi_is_ready_for_data_receive(void)
  */
 /*@
   @ assigns \nothing;
+  @ ensures ((scsi_ctx.direction == SCSI_DIRECTION_SEND ||
+              scsi_ctx.direction == SCSI_DIRECTION_IDLE) &&
+              scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY) ==> \result == \true;
+  @ ensures !((scsi_ctx.direction == SCSI_DIRECTION_SEND ||
+              scsi_ctx.direction == SCSI_DIRECTION_IDLE) &&
+              scsi_ctx.line_state == SCSI_TRANSMIT_LINE_READY) ==> \result == \false;
   */
 #ifndef __FRAMAC__
 static inline
@@ -392,20 +405,29 @@ err:
  * transmission terminaison is acknowledge by a trigger on scsi_data_sent()
  */
 /*@
+  @ requires (size > 0);
+  @ requires \valid_read(data + (0 .. size-1));
   @ requires \separated(data + (0 .. size-1),&scsi_ctx,&cbw, &bbb_ctx,&GHOST_opaque_drv_privates);
   @ assigns scsi_ctx.addr, scsi_ctx.direction, scsi_ctx.line_state,GHOST_in_eps[bbb_ctx.iface.eps[1].ep_num].state, bbb_ctx.state;
+  @ ensures scsi_ctx.direction == SCSI_DIRECTION_SEND;
+  @ ensures scsi_ctx.line_state == SCSI_TRANSMIT_LINE_BUSY;
  */
+#ifndef __FRAMAC__
+static
+#endif
 void scsi_send_data(uint8_t *data, uint32_t size)
 {
 #if SCSI_DEBUG > 1
     log_printf("%s: size: %d \n", __func__, size);
 #endif
 
+
     set_u8_with_membarrier(&scsi_ctx.direction, SCSI_DIRECTION_SEND);
     set_u8_with_membarrier(&scsi_ctx.line_state, SCSI_TRANSMIT_LINE_BUSY);
     scsi_ctx.addr = 0;
 
     usb_bbb_send(data, size);
+    return;
 }
 
 /*
