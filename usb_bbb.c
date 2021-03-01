@@ -314,7 +314,7 @@ err:
 
 /*@
   @ requires \separated(&GHOST_opaque_drv_privates,&bbb_ctx);
-  @ assigns ctx_list[usbdci_handler], bbb_ctx.iface;
+  @ assigns GHOST_opaque_libusbdci_privates, bbb_ctx.iface;
   */
 mbed_error_t usb_bbb_configure(uint32_t usbdci_handler)
 {

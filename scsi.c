@@ -2610,9 +2610,9 @@ mbed_error_t usbmsc_declare(uint8_t * buf, uint16_t len)
  * 2)
  */
 /*@
-  @ requires \separated(&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &GHOST_opaque_drv_privates,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
+  @ requires \separated(&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &GHOST_opaque_drv_privates,&bbb_ctx, &GHOST_opaque_libusbdci_privates);
 
-  @ assigns scsi_ctx, scsi_ctx.global_buf[0 .. scsi_ctx.global_buf_len-1], ctx_list[0 .. CONFIG_USBCTRL_FW_MAX_CTX-1], bbb_ctx.iface, scsi_ctx.state;
+  @ assigns scsi_ctx, scsi_ctx.global_buf[0 .. scsi_ctx.global_buf_len-1], GHOST_opaque_libusbdci_privates, bbb_ctx.iface, scsi_ctx.state;
 
   @ behavior invbuf:
   @    assumes scsi_ctx.global_buf == NULL || scsi_ctx.global_buf_len == 0;
@@ -2654,7 +2654,7 @@ mbed_error_t usbmsc_initialize(uint32_t usbdci_handler)
 
     /*@
       @ loop invariant 0 <= i <= scsi_ctx.global_buf_len;
-      @ loop invariant \separated(&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &GHOST_opaque_drv_privates,&bbb_ctx, ctx_list + (0 .. CONFIG_USBCTRL_FW_MAX_CTX-1));
+      @ loop invariant \separated(&scsi_ctx,scsi_ctx.global_buf + (0 .. scsi_ctx.global_buf_len), &GHOST_opaque_drv_privates,&bbb_ctx, &GHOST_opaque_libusbdci_privates);
       @ loop assigns i, scsi_ctx.global_buf[0 .. scsi_ctx.global_buf_len-1];
       @ loop variant scsi_ctx.global_buf_len - i;
       */

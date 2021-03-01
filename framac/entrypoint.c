@@ -321,27 +321,16 @@ static const cmd_data_t cmd_sequence[] = {
 };
 
 /*@
-  @ requires \separated(&cbw,&ctx_list+(..),&GHOST_opaque_drv_privates,&scsi_ctx,&bbb_ctx);
+  @ requires \separated(&cbw,&GHOST_opaque_libusbdci_privates,&GHOST_opaque_drv_privates,&scsi_ctx,&bbb_ctx);
   */
 void test_fcn_driver_eva(void) {
 
 
     mbed_error_t errcode;
-    usbctrl_context_t *ctx = NULL;
-    ctx = &(ctx_list[0]);
-
-    /* assert \valid(ctx); */
 
     uint16_t maxlen = Frama_C_interval_16(0,65535);
-    /*@ assert ctx != (usbctrl_context_t*)NULL ; */
     uint8_t curr_cfg = 0; /* first cfg declared */
     uint8_t iface = 0; /* first iface declared */
-
-    /* @ assert ctx->cfg[curr_cfg].interfaces[iface].configured == \true; */
-    /* @ assert ctx->cfg[curr_cfg].interfaces[iface].usb_ep_number < MAX_EP_PER_INTERFACE; */
-
-    uint8_t max_ep = ctx->cfg[curr_cfg].interfaces[iface].usb_ep_number ;  // cyril : meme chose que pour max_iface, wp passe maintenant
-    /* @ assert max_ep < MAX_EP_PER_INTERFACE; */
 
 
     /* here, we got back the USB Ctrl context associated to the current USB interface. This
@@ -367,9 +356,6 @@ void test_fcn_driver_eva(void) {
             512, /* mpsize */
             USB_BACKEND_EP_ODDFRAME,
             usb_bbb_data_sent);
-    ctx->cfg[curr_cfg].interfaces[iface].eps[0].configured = true;
-    ctx->cfg[curr_cfg].interfaces[iface].eps[1].configured = true;
-
     usbctrl_configuration_set();
 
     // 1) step1: GetMaxLun command (class request)
@@ -516,9 +502,6 @@ int main(void)
     mbed_error_t errcode;
 
     errcode = prepare_ctrl_ctx();
-    if (errcode != MBED_ERROR_NONE) {
-        goto err;
-    }
     test_fcn_massstorage() ;
     test_fcn_massstorage_errorcases() ;
     test_fcn_driver_eva() ;
